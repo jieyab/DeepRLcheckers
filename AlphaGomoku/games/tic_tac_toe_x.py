@@ -17,9 +17,11 @@ import itertools
 import random
 
 from common.base_game_spec import BaseGameSpec
+from gym import spaces
+import numpy as np
 
 
-def _new_board(board_size):
+def _new_board2(board_size):
     """Return a emprty tic-tac-toe board we can use for simulating a game.
 
     Args:
@@ -29,6 +31,17 @@ def _new_board(board_size):
         board_size x board_size tuple of ints
     """
     return tuple(tuple(0 for _ in range(board_size)) for _ in range(board_size))
+
+def _new_board(board_size):
+    """Return a emprty tic-tac-toe board we can use for simulating a game.
+
+    Args:
+        board_size (int): The size of one side of the board, a board_size * board_size board is created
+
+    Returns:
+        board_size x board_size numpy array of ints
+    """
+    return np.zeros((board_size,board_size))
 
 
 def apply_move(board_state, move, side):
@@ -102,12 +115,12 @@ def has_winner(board_state, winning_length):
     for x in range(board_width):
         winner = _has_winning_line(board_state[x], winning_length)
         if winner != 0:
-            return winner
+            return True
     # check columns
     for y in range(board_height):
         winner = _has_winning_line((i[y] for i in board_state), winning_length)
         if winner != 0:
-            return winner
+            return True
 
     # check diagonals
     diagonals_start = -(board_width - winning_length)
@@ -117,15 +130,15 @@ def has_winner(board_state, winning_length):
             (board_state[i][i + d] for i in range(max(-d, 0), min(board_width, board_height - d))),
             winning_length)
         if winner != 0:
-            return winner
+            return True
     for d in range(diagonals_start, diagonals_end + 1):
         winner = _has_winning_line(
             (board_state[i][board_height - i - d - 1] for i in range(max(-d, 0), min(board_width, board_height - d))),
             winning_length)
         if winner != 0:
-            return winner
+            return True
 
-    return 0  # no one has won, return 0 for a draw
+    return False  # no one has won, return 0 for a draw
 
 
 def _evaluate_line(line, winning_length):
@@ -260,6 +273,7 @@ def random_player(board_state, _):
     return random.choice(moves)
 
 
+
 class TicTacToeXGameSpec(BaseGameSpec):
     def __init__(self, board_size, winning_length):
         """
@@ -275,22 +289,57 @@ class TicTacToeXGameSpec(BaseGameSpec):
             raise TypeError("winning_length must be an int")
         if winning_length > board_size:
             raise ValueError("winning_length must be less than or equal to board_size")
+
         self._winning_length = winning_length
         self._board_size = board_size
         self.available_moves = available_moves
         self.apply_move = apply_move
 
-    def new_board(self):
-        return _new_board(self._board_size)
 
-    def has_winner(self, board_state):
-        return has_winner(board_state, self._winning_length)
+        ##Our code
+        self.observation_space = spaces.Box(low=-1, high=1, shape=(self._board_size, self._board_size, 1))
+        self.action_space = (self._board_size*self._board_size)
+        self.board_state = _new_board(board_size)
+        self.num_envs = 1 #Change for more enviroments
+        self.remotes =[1]
+
+    def new_board(self):
+        self.board_state = _new_board(self._board_size)
+        return self.board_state
+
+    def has_winner(self):
+        return has_winner(self.board_state, self._winning_length)
 
     def board_dimensions(self):
         return self._board_size, self._board_size
 
     def evaluate(self, board_state):
         return evaluate(board_state, self._winning_length)
+
+    def step(self,actions):
+        self.board = apply_move(self.board_state, actions, 1)
+        winner = has_winner(board_state, self._winning_length)
+
+    def move(self, move, side):
+        #Check if the move is illegal
+        if int(self.board_state[move]) != 0:
+            print('Ilegal move')
+        self.board_state[move] = side
+        winner = has_winner(self.board_state, self._winning_length)
+        reward = 0
+        if winner:
+            reward = 1
+        something = 0
+
+        return self.board_state, winner, reward, something
+
+    def reset(self):
+        print('Enviroment has been reset')
+        self.board_state = _new_board(self._board_size)
+        return self.board_state
+
+
+
 
 
 if __name__ == '__main__':
