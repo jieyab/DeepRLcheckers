@@ -41,7 +41,7 @@ def _new_board(board_size):
     Returns:
         board_size x board_size numpy array of ints
     """
-    return np.zeros((board_size,board_size))
+    return np.zeros((1,board_size,board_size,1))
 
 
 def apply_move(board_state, move, side):
@@ -55,18 +55,12 @@ def apply_move(board_state, move, side):
     Returns:
         (2d tuple of int): A copy of the board_state with the given move applied for the given side.
     """
+    print(move)
     move_x, move_y = move
+    print(board_state.shape)
+    board_state[0,move_x,move_y,0] = side
 
-    def get_tuples():
-        for x in range(len(board_state)):
-            if move_x == x:
-                temp = list(board_state[x])
-                temp[move_y] = side
-                yield tuple(temp)
-            else:
-                yield board_state[x]
-
-    return tuple(get_tuples())
+    return board_state
 
 
 def available_moves(board_state):
@@ -316,22 +310,11 @@ class TicTacToeXGameSpec(BaseGameSpec):
     def evaluate(self, board_state):
         return evaluate(board_state, self._winning_length)
 
-    def step(self,actions):
-        self.board = apply_move(self.board_state, actions, 1)
-        winner = has_winner(board_state, self._winning_length)
-
-    def move(self, move, side):
-        #Check if the move is illegal
-        if int(self.board_state[move]) != 0:
-            print('Ilegal move')
-        self.board_state[move] = side
+    def step(self,actions_nn):
+        actions = [int(actions_nn%self._board_size),int(actions_nn/self._board_size)]
+        self.board_state = apply_move(self.board_state, actions, 1)
         winner = has_winner(self.board_state, self._winning_length)
-        reward = 0
-        if winner:
-            reward = 1
-        something = 0
-
-        return self.board_state, winner, reward, something
+        return self.board_state, np.zeros(1), [winner], 0
 
     def reset(self):
         print('Enviroment has been reset')

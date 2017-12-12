@@ -29,18 +29,24 @@ NUMBER_OF_GAMES_TO_RUN = 1000000
 
 # to play a different game change this to another spec, e.g TicTacToeXGameSpec or ConnectXGameSpec, to get these to run
 # well may require tuning the hyper parameters a bit
-env = TicTacToeXGameSpec(15,4)
+env = TicTacToeXGameSpec(3,3)
 
 board = env.new_board()
 
-
-
 print(board)
 
-print(env.board_dimensions())
-print(env.observation_space())
-print(env.action_space())
+print(env.board_dimensions)
+print(env.observation_space)
+print(env.action_space)
+print('Has winner',env.has_winner())
 
+print('Move 1',env.move((0,0), 1))
+print('Move 2',env.move((1,0), 1))
+print('Move 2',env.move((1,0), 1))
+print('Move 3',env.move((2,0), 1))
+
+
+print('Has winner',env.has_winner())
 
 
 
