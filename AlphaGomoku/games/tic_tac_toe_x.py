@@ -16,6 +16,7 @@ copy of a given state with a given move applied. This can be useful for doing mi
 import itertools
 import random
 
+
 from common.base_game_spec import BaseGameSpec
 from gym import spaces
 import numpy as np
@@ -109,12 +110,14 @@ def has_winner(board_state, winning_length):
     for x in range(board_width):
         winner = _has_winning_line(board_state[x], winning_length)
         if winner != 0:
-            return True
+            # return True
+            np.ones((1),dtype=bool)
     # check columns
     for y in range(board_height):
         winner = _has_winning_line((i[y] for i in board_state), winning_length)
         if winner != 0:
-            return True
+            # return True
+            np.ones((1), dtype=bool)
 
     # check diagonals
     diagonals_start = -(board_width - winning_length)
@@ -124,16 +127,18 @@ def has_winner(board_state, winning_length):
             (board_state[i][i + d] for i in range(max(-d, 0), min(board_width, board_height - d))),
             winning_length)
         if winner != 0:
-            return True
+            # return True
+            np.ones((1), dtype=bool)
     for d in range(diagonals_start, diagonals_end + 1):
         winner = _has_winning_line(
             (board_state[i][board_height - i - d - 1] for i in range(max(-d, 0), min(board_width, board_height - d))),
             winning_length)
         if winner != 0:
-            return True
+            # return True
+            np.ones((1), dtype=bool)
 
-    return False  # no one has won, return 0 for a draw
-
+    # return False  # no one has won, return 0 for a draw
+    np.zeros((1), dtype=bool)
 
 def _evaluate_line(line, winning_length):
     count = 0
