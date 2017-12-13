@@ -111,13 +111,13 @@ def has_winner(board_state, winning_length):
         winner = _has_winning_line(board_state[x], winning_length)
         if winner != 0:
             # return True
-            np.ones((1),dtype=bool)
+            return p.ones((1),dtype=bool)
     # check columns
     for y in range(board_height):
         winner = _has_winning_line((i[y] for i in board_state), winning_length)
         if winner != 0:
             # return True
-            np.ones((1), dtype=bool)
+            return np.ones((1), dtype=bool)
 
     # check diagonals
     diagonals_start = -(board_width - winning_length)
@@ -128,17 +128,17 @@ def has_winner(board_state, winning_length):
             winning_length)
         if winner != 0:
             # return True
-            np.ones((1), dtype=bool)
+            return np.ones((1), dtype=bool)
     for d in range(diagonals_start, diagonals_end + 1):
         winner = _has_winning_line(
             (board_state[i][board_height - i - d - 1] for i in range(max(-d, 0), min(board_width, board_height - d))),
             winning_length)
         if winner != 0:
             # return True
-            np.ones((1), dtype=bool)
+            return np.ones((1), dtype=bool)
 
     # return False  # no one has won, return 0 for a draw
-    np.zeros((1), dtype=bool)
+    return np.zeros((1), dtype=bool)
 
 def _evaluate_line(line, winning_length):
     count = 0
