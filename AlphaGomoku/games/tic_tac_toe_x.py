@@ -75,7 +75,7 @@ def available_moves(board_state):
         Generator of (int, int): All the valid moves that can be played in this position.
     """
     for x, y in itertools.product(range(len(board_state)), range(len(board_state[0]))):
-        if board_state[x][y] == 0:
+        if board_state[x][y] is 0:
             yield (x, y)
 
 
@@ -111,7 +111,7 @@ def has_winner(board_state, winning_length):
         winner = _has_winning_line(board_state[x], winning_length)
         if winner != 0:
             # return True
-            return p.ones((1),dtype=bool)
+            return np.ones((1),dtype=bool)
     # check columns
     for y in range(board_height):
         winner = _has_winning_line((i[y] for i in board_state), winning_length)
@@ -332,4 +332,10 @@ class TicTacToeXGameSpec(BaseGameSpec):
 
 if __name__ == '__main__':
     # example of playing a game
-    play_game(random_player, random_player, log=True, board_size=10, winning_length=4)
+     play_game(random_player, random_player, log=True, board_size=10, winning_length=4)
+      # winning_length = 3
+
+      # if(has_winner(((1,1,0),(-1,-1,-1),(0,0,0)), winning_length)):
+      #     print("we have a winner")
+      # else :
+      #     print("no winner yet")
