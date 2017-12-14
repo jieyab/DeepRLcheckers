@@ -42,7 +42,7 @@ def _new_board(board_size):
     Returns:
         board_size x board_size numpy array of ints
     """
-    return np.zeros((1,board_size,board_size,1))
+    return np.zeros((board_size,board_size), dtype= np.int)
 
 
 def apply_move(board_state, move, side):
@@ -59,7 +59,7 @@ def apply_move(board_state, move, side):
     print(move)
     move_x, move_y = move
     print(board_state.shape)
-    board_state[0,move_x,move_y,0] = side
+    board_state[move_x,move_y] = side
 
     return board_state
 
@@ -82,18 +82,27 @@ def available_moves(board_state):
 def _has_winning_line(line, winning_length):
     count = 0
     last_side = 0
-    for x in line:
-        if x == last_side:
-            count += 1
-            if count == winning_length:
-                return last_side
-        else:
+    temp = np.array(line)
+    print("line" , line)
+    print("this is temp", temp)
+    # print("length of temp", len(temp))
+    for x in range (len(line)):
+        print("last_side" , last_side, "::::","temp",temp.item(x))
+        if temp.item(x) != last_side:
             count = 1
-            last_side = x
+            last_side = temp.item(x)
+
+        elif (last_side != 0 ) :
+                count += 1
+                last_side = temp.item(x)
+
+        if count == winning_length:
+            return last_side
     return 0
 
 
 def has_winner(board_state, winning_length):
+    # print("from has_winner",board_state)
     """Determine if a player has won on the given board_state.
 
     Args:
@@ -108,36 +117,34 @@ def has_winner(board_state, winning_length):
 
     # check rows
     for x in range(board_width):
-        winner = _has_winning_line(board_state[x], winning_length)
+        print("rows" , board_state[x,:])
+        winner = _has_winning_line(board_state[x,:], winning_length)
         if winner != 0:
-            # return True
             return np.ones((1),dtype=bool)
     # check columns
     for y in range(board_height):
-        winner = _has_winning_line((i[y] for i in board_state), winning_length)
+        print("collumns" , board_state[:,y])
+        winner =  _has_winning_line(board_state[:,y], winning_length)
         if winner != 0:
-            # return True
             return np.ones((1), dtype=bool)
 
-    # check diagonals
-    diagonals_start = -(board_width - winning_length)
-    diagonals_end = (board_width - winning_length)
-    for d in range(diagonals_start, diagonals_end + 1):
-        winner = _has_winning_line(
-            (board_state[i][i + d] for i in range(max(-d, 0), min(board_width, board_height - d))),
-            winning_length)
+    #Check diagonals
+    for d in range (0, (board_height - winning_length +1)):
+        winner = _has_winning_line(np.diagonal(board_state,d),winning_length)
         if winner != 0:
-            # return True
-            return np.ones((1), dtype=bool)
-    for d in range(diagonals_start, diagonals_end + 1):
-        winner = _has_winning_line(
-            (board_state[i][board_height - i - d - 1] for i in range(max(-d, 0), min(board_width, board_height - d))),
-            winning_length)
+             return np.ones((1), dtype=bool)
+    for d in range (0, (board_height - winning_length +1)):
+        winner = _has_winning_line(np.diagonal(board_state,-d),winning_length)
         if winner != 0:
-            # return True
-            return np.ones((1), dtype=bool)
-
-    # return False  # no one has won, return 0 for a draw
+             return np.ones((1), dtype=bool)
+    for d in range (0, (board_height - winning_length +1)):
+        winner = _has_winning_line(np.diagonal(np.fliplr(board_state),d),winning_length)
+        if winner != 0:
+             return np.ones((1), dtype=bool)
+    for d in range (0, (board_height - winning_length +1)):
+        winner = _has_winning_line(np.diagonal(np.fliplr(board_state),-d),winning_length)
+        if winner != 0:
+             return np.ones((1), dtype=bool)
     return np.zeros((1), dtype=bool)
 
 def _evaluate_line(line, winning_length):
@@ -332,10 +339,29 @@ class TicTacToeXGameSpec(BaseGameSpec):
 
 if __name__ == '__main__':
     # example of playing a game
-     play_game(random_player, random_player, log=True, board_size=10, winning_length=4)
-      # winning_length = 3
+    #  play_game(random_player, random_player, log=True, board_size=10, winning_length=4)
+    # winning_length = 3
 
-      # if(has_winner(((1,1,0),(-1,-1,-1),(0,0,0)), winning_length)):
-      #     print("we have a winner")
-      # else :
-      #     print("no winner yet")
+    # if(has_winner(((1,1,0),(-1,-1,-1),(0,0,0)), winning_length)):
+    #        print("we have a winner")
+    # else :
+    #        print("no winner yet")
+
+
+    env = TicTacToeXGameSpec(8, 5)
+    board_state = env.board_state
+    board_state = env.apply_move(board_state, [0, 0], 1)
+    board_state = env.apply_move(board_state, [1, 0], 0)
+    board_state = env.apply_move(board_state, [2, 0], 1)
+    board_state = env.apply_move(board_state, [0, 0], -1)
+    board_state = env.apply_move(board_state, [0, 1], -1)
+    board_state = env.apply_move(board_state, [0, 2], -1)
+    board_state = env.apply_move(board_state, [3, 7], -1)
+    board_state = env.apply_move(board_state, [4, 6], -1)
+    board_state = env.apply_move(board_state, [5, 5], -1)
+    board_state = env.apply_move(board_state, [6, 4], -1)
+    board_state = env.apply_move(board_state, [7, 3], -1)
+    print("from the main" , board_state)
+    print(env.has_winner())
+
+    # print(_has_winning_line(np.ones((3,3)),3))
