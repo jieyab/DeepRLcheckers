@@ -22,17 +22,6 @@ from gym import spaces
 import numpy as np
 
 
-def _new_board2(board_size):
-    """Return a emprty tic-tac-toe board we can use for simulating a game.
-
-    Args:
-        board_size (int): The size of one side of the board, a board_size * board_size board is created
-
-    Returns:
-        board_size x board_size tuple of ints
-    """
-    return tuple(tuple(0 for _ in range(board_size)) for _ in range(board_size))
-
 def _new_board(board_size):
     """Return a emprty tic-tac-toe board we can use for simulating a game.
 
@@ -42,7 +31,7 @@ def _new_board(board_size):
     Returns:
         board_size x board_size numpy array of ints
     """
-    return np.zeros((board_size,board_size), dtype= np.int)
+    return np.zeros((1,board_size,board_size,1), dtype= np.int)
 
 
 def apply_move(board_state, move, side):
@@ -56,10 +45,8 @@ def apply_move(board_state, move, side):
     Returns:
         (2d tuple of int): A copy of the board_state with the given move applied for the given side.
     """
-    print(move)
     move_x, move_y = move
-    print(board_state.shape)
-    board_state[move_x,move_y] = side
+    board_state[0,move_x,move_y,0] = side
 
     return board_state
 
@@ -83,11 +70,8 @@ def _has_winning_line(line, winning_length):
     count = 0
     last_side = 0
     temp = np.array(line)
-    print("line" , line)
-    print("this is temp", temp)
     # print("length of temp", len(temp))
     for x in range (len(line)):
-        print("last_side" , last_side, "::::","temp",temp.item(x))
         if temp.item(x) != last_side:
             count = 1
             last_side = temp.item(x)
@@ -112,18 +96,17 @@ def has_winner(board_state, winning_length):
     Returns:
         int: 1 if player one has won, -1 if player 2 has won, otherwise 0.
     """
+    board_state = board_state[0,:,:,0]
     board_width = len(board_state)
     board_height = len(board_state[0])
 
     # check rows
     for x in range(board_width):
-        print("rows" , board_state[x,:])
         winner = _has_winning_line(board_state[x,:], winning_length)
         if winner != 0:
             return np.ones((1),dtype=bool)
     # check columns
     for y in range(board_height):
-        print("collumns" , board_state[:,y])
         winner =  _has_winning_line(board_state[:,y], winning_length)
         if winner != 0:
             return np.ones((1), dtype=bool)
@@ -153,8 +136,6 @@ def _evaluate_line(line, winning_length):
     count = 0
     last_side = 0
     temp = np.array(line)
-    print("line" , line)
-    print("this is temp", temp)
     for x in range(len(line)):
         if temp.item(x) == last_side:
             count += 1
@@ -171,10 +152,8 @@ def _evaluate_line(line, winning_length):
         else:
             last_side = temp.item(x)
             count = 1
-    print(neutrals,":::",count)
     if neutrals + count >= winning_length:
         score += (count - 1) * last_side
-        print("scores:::" , score)
     return score
 
 
@@ -196,11 +175,9 @@ def evaluate(board_state, winning_length):
 
     # check rows
     for x in range(board_width):
-        print ("rows:")
         score += _evaluate_line(board_state[x,:], winning_length)
     # check columns
     for y in range(board_height):
-        print("collums:")
         score += _evaluate_line(board_state[:,y], winning_length)
 
     for d in range (0, (board_height - winning_length +1)):
@@ -254,7 +231,6 @@ def play_game(plus_player_func, minus_player_func, board_size=5, winning_length=
             return -player_turn
 
         board_state = apply_move(board_state, move, player_turn)
-        print(board_state)
 
         winner = has_winner(board_state, winning_length)
         if winner != 0:
@@ -308,6 +284,8 @@ class TicTacToeXGameSpec(BaseGameSpec):
         self.board_state = _new_board(board_size)
         self.num_envs = 1 #Change for more enviroments
         self.remotes =[1]
+        self.games_wonAI = 0
+        self.games_wonRandom = 0
 
     def new_board(self):
         self.board_state = _new_board(self._board_size)
@@ -326,42 +304,49 @@ class TicTacToeXGameSpec(BaseGameSpec):
         actions = [int(actions_nn%self._board_size),int(actions_nn/self._board_size)]
         self.board_state = apply_move(self.board_state, actions, 1)
         winner = has_winner(self.board_state, self._winning_length)
-        return self.board_state, np.zeros(1), [winner], 0
+        reward = np.zeros(1)
+        if winner[0] == True:
+            reward[0] = 1
+            self.games_wonAI = self.games_wonAI + 1
+            print(self.games_wonAI,self.games_wonRandom)
+            #print('AI won')
+        action_random = random.randint(0,self._board_size*self._board_size-1)
+        action_random = [int(action_random%self._board_size),int(action_random/self._board_size)]
+        self.board_state = apply_move(self.board_state, action_random, -1)
+        winner = has_winner(self.board_state, self._winning_length)
+        if winner[0] == True:
+            reward[0] = -1
+            self.games_wonRandom = self.games_wonRandom + 1
+            print(self.games_wonAI , self.games_wonRandom)
+            #print('random player won')
+        if reward[0] != 0:
+            self.reset()
+        return self.board_state, reward, winner, 0
 
     def reset(self):
         print('Enviroment has been reset')
         self.board_state = _new_board(self._board_size)
         return self.board_state
 
+    def random_move(self):
+        return random.randint(0,self._board_size*self._board_size)
+
+    def close(self):
+        pass
+
+
 
 
 
 
 if __name__ == '__main__':
-    # example of playing a game
-    #  play_game(random_player, random_player, log=True, board_size=10, winning_length=4)
-    # winning_length = 3
-
-    # if(has_winner(((1,1,0),(-1,-1,-1),(0,0,0)), winning_length)):
-    #        print("we have a winner")
-    # else :
-    #        print("no winner yet")
 
 
-    env = TicTacToeXGameSpec(8, 5)
-    board_state = env.board_state
-    board_state = env.apply_move(board_state, [0, 0], 1)
-    board_state = env.apply_move(board_state, [1, 0], 0)
-    board_state = env.apply_move(board_state, [2, 0], 1)
-    board_state = env.apply_move(board_state, [0, 0], -1)
-    board_state = env.apply_move(board_state, [0, 1], -1)
-    board_state = env.apply_move(board_state, [0, 2], -1)
-    board_state = env.apply_move(board_state, [3, 7], 1)
-    board_state = env.apply_move(board_state, [4, 6], 1)
-    board_state = env.apply_move(board_state, [5, 5], 1)
-    board_state = env.apply_move(board_state, [6, 4], 1)
-    board_state = env.apply_move(board_state, [7, 3], 1)
-    print("from the main" , board_state)
-    print(env.evaluate(board_state))
+    env = TicTacToeXGameSpec(3, 3)
+    env.step(0)
+    env.step(1)
+    env.step(2)
+    print(env.random_move())
 
-    # print(_has_winning_line(np.ones((3,3)),3))
+    print(env.has_winner())
+
