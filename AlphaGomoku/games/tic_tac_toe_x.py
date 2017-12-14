@@ -148,31 +148,33 @@ def has_winner(board_state, winning_length):
     return np.zeros((1), dtype=bool)
 
 def _evaluate_line(line, winning_length):
-    count = 0
-    last_side = 0
     score = 0
     neutrals = 0
-
-    for x in line:
-        if x == last_side:
+    count = 0
+    last_side = 0
+    temp = np.array(line)
+    print("line" , line)
+    print("this is temp", temp)
+    for x in range(len(line)):
+        if temp.item(x) == last_side:
             count += 1
             if count == winning_length and neutrals == 0:
-                return 100000 * x  # a side has already won here
-        elif x == 0:  # we could score here
+                return 100000 * temp.item(x)  # a side has already won here
+        elif temp.item(x) == 0:  # we could score here
             neutrals += 1
-        elif x == -last_side:
+        elif temp.item(x) == -last_side:
             if neutrals + count >= winning_length:
                 score += (count - 1) * last_side
             count = 1
-            last_side = x
+            last_side = temp.item(x)
             neutrals = 0
         else:
-            last_side = x
+            last_side = temp.item(x)
             count = 1
-
+    print(neutrals,":::",count)
     if neutrals + count >= winning_length:
         score += (count - 1) * last_side
-
+        print("scores:::" , score)
     return score
 
 
@@ -194,23 +196,21 @@ def evaluate(board_state, winning_length):
 
     # check rows
     for x in range(board_width):
-        score += _evaluate_line(board_state[x], winning_length)
+        print ("rows:")
+        score += _evaluate_line(board_state[x,:], winning_length)
     # check columns
     for y in range(board_height):
-        score += _evaluate_line((i[y] for i in board_state), winning_length)
+        print("collums:")
+        score += _evaluate_line(board_state[:,y], winning_length)
 
-    # check diagonals
-    diagonals_start = -(board_width - winning_length)
-    diagonals_end = (board_width - winning_length)
-    for d in range(diagonals_start, diagonals_end + 1):
-        score += _evaluate_line(
-            (board_state[i][i + d] for i in range(max(-d, 0), min(board_width, board_height - d))),
-            winning_length)
-    for d in range(diagonals_start, diagonals_end + 1):
-        score += _evaluate_line(
-            (board_state[i][board_height - i - d - 1] for i in range(max(-d, 0), min(board_width, board_height - d))),
-            winning_length)
-
+    for d in range (0, (board_height - winning_length +1)):
+        score = _evaluate_line(np.diagonal(board_state,d),winning_length)
+    for d in range (0, (board_height - winning_length +1)):
+        score = _evaluate_line(np.diagonal(board_state,-d),winning_length)
+    for d in range (0, (board_height - winning_length +1)):
+        score = _evaluate_line(np.diagonal(np.fliplr(board_state),d),winning_length)
+    for d in range (0, (board_height - winning_length +1)):
+        score = _evaluate_line(np.diagonal(np.fliplr(board_state),-d),winning_length)
     return score
 
 
@@ -356,12 +356,12 @@ if __name__ == '__main__':
     board_state = env.apply_move(board_state, [0, 0], -1)
     board_state = env.apply_move(board_state, [0, 1], -1)
     board_state = env.apply_move(board_state, [0, 2], -1)
-    board_state = env.apply_move(board_state, [3, 7], -1)
-    board_state = env.apply_move(board_state, [4, 6], -1)
-    board_state = env.apply_move(board_state, [5, 5], -1)
-    board_state = env.apply_move(board_state, [6, 4], -1)
-    board_state = env.apply_move(board_state, [7, 3], -1)
+    board_state = env.apply_move(board_state, [3, 7], 1)
+    board_state = env.apply_move(board_state, [4, 6], 1)
+    board_state = env.apply_move(board_state, [5, 5], 1)
+    board_state = env.apply_move(board_state, [6, 4], 1)
+    board_state = env.apply_move(board_state, [7, 3], 1)
     print("from the main" , board_state)
-    print(env.has_winner())
+    print(env.evaluate(board_state))
 
     # print(_has_winning_line(np.ones((3,3)),3))
