@@ -286,6 +286,7 @@ class TicTacToeXGameSpec(BaseGameSpec):
         self.remotes =[1]
         self.games_wonAI = 0
         self.games_wonRandom = 0
+        self.flag = False
 
     def new_board(self):
         self.board_state = _new_board(self._board_size)
@@ -308,23 +309,32 @@ class TicTacToeXGameSpec(BaseGameSpec):
         if winner[0] == True:
             reward[0] = 1
             self.games_wonAI = self.games_wonAI + 1
-            print(self.games_wonAI,self.games_wonRandom)
+            #print(self.games_wonAI,self.games_wonRandom)
             #print('AI won')
-        action_random = random.randint(0,self._board_size*self._board_size-1)
-        action_random = [int(action_random%self._board_size),int(action_random/self._board_size)]
-        self.board_state = apply_move(self.board_state, action_random, -1)
-        winner = has_winner(self.board_state, self._winning_length)
-        if winner[0] == True:
-            reward[0] = -1
-            self.games_wonRandom = self.games_wonRandom + 1
-            print(self.games_wonAI , self.games_wonRandom)
-            #print('random player won')
+        #
+        if winner[0] == False:
+            action_random = random.randint(0, self._board_size * self._board_size - 1)
+            action_random = [int(action_random%self._board_size),int(action_random/self._board_size)]
+            self.board_state = apply_move(self.board_state, action_random, -1)
+            winner = has_winner(self.board_state, self._winning_length)
+            if winner[0] == True:
+                reward[0] = -1
+                self.games_wonRandom = self.games_wonRandom + 1
+                #print(self.games_wonAI , self.games_wonRandom)
+                #print('random player won')
         if reward[0] != 0:
-            self.reset()
+            print(self.board_state[0, :, :, 0])
+            self.board_state = _new_board(self._board_size)
+
+        if ((self.games_wonAI+self.games_wonRandom)%1000 == 0):
+            self.games_wonRandom= self.games_wonRandom + 1
+            print('AI wins in',(100*self.games_wonAI)/(self.games_wonAI+self.games_wonRandom))
+            self.games_wonAI = 0
+            self.games_wonRandom = 0
         return self.board_state, reward, winner, 0
 
     def reset(self):
-        print('Enviroment has been reset')
+        #print('Enviroment has been reset')
         self.board_state = _new_board(self._board_size)
         return self.board_state
 
@@ -342,7 +352,7 @@ class TicTacToeXGameSpec(BaseGameSpec):
 if __name__ == '__main__':
 
 
-    env = TicTacToeXGameSpec(3, 3)
+    env = TicTacToeXGameSpec(3,3)
     env.step(0)
     env.step(1)
     env.step(2)

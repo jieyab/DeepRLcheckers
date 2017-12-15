@@ -11,7 +11,7 @@ from AlphaGomoku.games.tic_tac_toe_x import TicTacToeXGameSpec
 
 if __name__ == '__main__':
 
-    policy_fn = LstmPolicy
+    policy_fn = CnnPolicy
     env = TicTacToeXGameSpec(3, 3)
     learn(policy_fn, env, nsteps=20
           ,nstack=1,  seed= 0,total_timesteps=10000000000)
