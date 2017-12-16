@@ -10,16 +10,16 @@ class LnLstmPolicy(object):
         nbatch = nenv*nsteps
         nh, nw, nc = ob_space.shape
         ob_shape = (nbatch, nh, nw, nc*nstack)
-        nact = ac_space.n
+        nact = 9 #ac_space.n
         X = tf.placeholder(tf.uint8, ob_shape) #obs
         M = tf.placeholder(tf.float32, [nbatch]) #mask (done t-1)
         S = tf.placeholder(tf.float32, [nenv, nlstm*2]) #states
         with tf.variable_scope("model", reuse=reuse):
-            h = conv(tf.cast(X, tf.float32)/255., 'c1', nf=32, rf=8, stride=4, init_scale=np.sqrt(2))
-            h2 = conv(h, 'c2', nf=64, rf=4, stride=2, init_scale=np.sqrt(2))
-            h3 = conv(h2, 'c3', nf=64, rf=3, stride=1, init_scale=np.sqrt(2))
-            h3 = conv_to_fc(h3)
-            h4 = fc(h3, 'fc1', nh=512, init_scale=np.sqrt(2))
+            h = conv(tf.cast(X, tf.float32) / 255., 'c1', nf=8, rf=2, stride=1, init_scale=np.sqrt(2))
+            h2 = conv(h, 'c2', nf=16, rf=2, stride=1, init_scale=np.sqrt(2))
+            # h3 = conv(h2, 'c3', nf=64, rf=3, stride=1, init_scale=np.sqrt(2))
+            h3 = conv_to_fc(h2)
+            h4 = fc(h3, 'fc1', nh=128, init_scale=np.sqrt(2))
             xs = batch_to_seq(h4, nenv, nsteps)
             ms = batch_to_seq(M, nenv, nsteps)
             h5, snew = lnlstm(xs, ms, S, 'lstm1', nh=nlstm)
@@ -60,7 +60,7 @@ class LstmPolicy(object):
             h = conv(tf.cast(X, tf.float32)/255., 'c1', nf=8, rf=2, stride=1, init_scale=np.sqrt(2))
             h2 = conv(h, 'c2', nf=16, rf=2, stride=1, init_scale=np.sqrt(2))
             #h3 = conv(h2, 'c3', nf=64, rf=3, stride=1, init_scale=np.sqrt(2))
-            h3 = conv_to_fc(h)
+            h3 = conv_to_fc(h2)
             h4 = fc(h3, 'fc1', nh=128, init_scale=np.sqrt(2))
             xs = batch_to_seq(h4, nenv, nsteps)
             ms = batch_to_seq(M, nenv, nsteps)
@@ -150,6 +150,12 @@ class CnnPolicy(object):
 
         def value(ob, *_args, **_kwargs):
             return sess.run(v0, {X:ob})
+
+        def save_model(path):
+            pass
+
+        def load_model(path):
+            pass
 
         self.X = X
         self.pi = pi
