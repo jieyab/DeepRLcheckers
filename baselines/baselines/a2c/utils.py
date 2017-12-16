@@ -9,6 +9,9 @@ def sample(logits):
     noise = tf.random_uniform(tf.shape(logits))
     return tf.argmax(logits - tf.log(-tf.log(noise)), 1)
 
+def sample_without_exploration(logits):
+    return tf.argmax(logits , 1)
+
 def cat_entropy(logits):
     a0 = logits - tf.reduce_max(logits, 1, keep_dims=True)
     ea0 = tf.exp(a0)

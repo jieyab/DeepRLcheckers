@@ -1,6 +1,6 @@
 import numpy as np
 import tensorflow as tf
-from baselines.a2c.utils import conv, fc, conv_to_fc, batch_to_seq, seq_to_batch, lstm, lnlstm, sample, check_shape
+from baselines.a2c.utils import conv, fc, conv_to_fc, batch_to_seq, seq_to_batch, lstm, lnlstm, sample, sample_without_exploration, check_shape
 from baselines.common.distributions import make_pdtype
 import baselines.common.tf_util as U
 import gym
@@ -48,7 +48,7 @@ class LnLstmPolicy(object):
 
 class LstmPolicy(object):
 
-    def __init__(self, sess, ob_space, ac_space, nenv, nsteps, nstack, nlstm=256, reuse=False):
+    def __init__(self, sess, ob_space, ac_space, nenv, nsteps, nstack, nlstm=64, reuse=False):
         nbatch = nenv*nsteps
         nh, nw, nc = ob_space.shape
         ob_shape = (nbatch, nh, nw, nc*nstack)
@@ -61,7 +61,7 @@ class LstmPolicy(object):
             h2 = conv(h, 'c2', nf=16, rf=2, stride=1, init_scale=np.sqrt(2))
             #h3 = conv(h2, 'c3', nf=64, rf=3, stride=1, init_scale=np.sqrt(2))
             h3 = conv_to_fc(h)
-            h4 = fc(h3, 'fc1', nh=32, init_scale=np.sqrt(2))
+            h4 = fc(h3, 'fc1', nh=128, init_scale=np.sqrt(2))
             xs = batch_to_seq(h4, nenv, nsteps)
             ms = batch_to_seq(M, nenv, nsteps)
             h5, snew = lstm(xs, ms, S, 'lstm1', nh=nlstm)
@@ -130,18 +130,18 @@ class CnnPolicy(object):
         nh, nw, nc = ob_space.shape
         ob_shape = (nbatch, nh, nw, nc*nstack)
         nact = 9 #ac_space.n
-        X = tf.placeholder(tf.uint8, ob_shape) #obs
+        X = tf.placeholder(tf.float32, ob_shape) #obs
         with tf.variable_scope("model", reuse=reuse):
-            h = conv(tf.cast(X, tf.float32)/255., 'c1', nf=16, rf=2, stride=1, init_scale=np.sqrt(2))
-            h2 = conv(h, 'c2', nf=32, rf=2, stride=1, init_scale=np.sqrt(2))
+            h = conv(tf.cast(X, tf.float32), 'c1', nf=32, rf=2, stride=1, init_scale=np.sqrt(2))
+            h2 = conv(h, 'c2', nf=64, rf=2, stride=1, init_scale=np.sqrt(2))
             #h3 = conv(h2, 'c3', nf=64, rf=3, stride=1, init_scale=np.sqrt(2))
             h3 = conv_to_fc(h2)
-            h4 = fc(h3, 'fc1', nh=128, init_scale=np.sqrt(2))
+            h4 = fc(h3, 'fc1', nh=512, init_scale=np.sqrt(2))
             pi = fc(h4, 'pi', nact, act=lambda x:x)
             vf = fc(h4, 'v', 1, act=lambda x:x)
 
         v0 = vf[:, 0]
-        a0 = sample(pi)
+        a0 = sample_without_exploration(pi)
         self.initial_state = [] #not stateful
 
         def step(ob, *_args, **_kwargs):

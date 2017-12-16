@@ -13,6 +13,6 @@ if __name__ == '__main__':
 
     policy_fn = CnnPolicy
     env = TicTacToeXGameSpec(3, 3)
-    learn(policy_fn, env, nsteps=20
+    learn(policy_fn, env, nsteps=10
           ,nstack=1,  seed= 0,total_timesteps=10000000000)
     env.close()
