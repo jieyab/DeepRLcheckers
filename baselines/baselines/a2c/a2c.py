@@ -34,6 +34,7 @@ class Model(object):
         R = tf.placeholder(tf.float32, [nbatch])
         LR = tf.placeholder(tf.float32, [])
 
+
         step_model = policy(sess, ob_space, ac_space, nenvs, 1, nstack, reuse=False)
         train_model = policy(sess, ob_space, ac_space, nenvs, nsteps, nstack, reuse=True)
 
@@ -69,7 +70,7 @@ class Model(object):
 
         def save(save_path):
             ps = sess.run(params)
-            make_path(save_path)
+            #make_path(save_path)
             joblib.dump(ps, save_path)
 
         def load(load_path):
@@ -102,7 +103,7 @@ class Runner(object):
         self.nc = nc
         self.nstack = nstack
         self.batch_ob_shape = (nenv*nsteps, nh, nw, nc*nstack)
-        self.obs = np.zeros((nenv, nh, nw, nc*nstack), dtype=np.uint8)
+        self.obs = np.zeros((nenv, nh, nw, nc*nstack), dtype=np.float32)
         obs = env.reset()
         self.update_obs(obs)
         self.gamma = gamma
@@ -116,20 +117,26 @@ class Runner(object):
         self.obs = np.roll(self.obs, shift=-1, axis=3)
         self.obs[:, :, :, -1] = obs[:, :, :, 0]
 
+
     def run(self):
         mb_obs, mb_rewards, mb_actions, mb_values, mb_dones = [],[],[],[],[]
         mb_states = self.states
         for n in range(self.nsteps):
             counter = n
             actions, values, states = self.model.step(self.obs, self.states, self.dones)
-            #print('actions',actions)
             mb_obs.append(np.copy(self.obs))
             mb_actions.append(actions)
             mb_values.append(values)
             mb_dones.append(self.dones)
-            #print(actions)
-            #print(states)
-            obs, rewards, dones, _ = self.env.step(actions)
+            obs, rewards, dones, _, illegal = self.env.step(actions)
+            if illegal:
+                counter = 0
+                mb_obs, mb_rewards, mb_actions, mb_values, mb_dones = [], [], [], [], []
+                mb_obs.append(np.copy(self.obs))
+                mb_actions.append(actions)
+                mb_values.append(values)
+                mb_dones.append(self.dones)
+                #print(mb_obs, mb_rewards, mb_actions, mb_values, mb_dones)
             self.states = states
             self.dones = dones
             for n, done in enumerate(dones):
@@ -137,11 +144,11 @@ class Runner(object):
                     self.obs[n] = self.obs[n]*0
             self.update_obs(obs)
             mb_rewards.append(rewards)
-            if dones[0]:
+            if dones[0] or illegal:
                 break
         mb_dones.append(self.dones)
         #batch of steps to batch of rollouts
-        mb_obs = np.asarray(mb_obs, dtype=np.uint8).swapaxes(1, 0).reshape((self.nenv*(counter+1), self.nh, self.nw, self.nc*self.nstack))
+        mb_obs = np.asarray(mb_obs, dtype=np.float32).swapaxes(1, 0).reshape((self.nenv*(counter+1), self.nh, self.nw, self.nc*self.nstack))
         mb_rewards = np.asarray(mb_rewards, dtype=np.float32).swapaxes(1, 0)
         mb_actions = np.asarray(mb_actions, dtype=np.int32).swapaxes(1, 0)
         mb_values = np.asarray(mb_values, dtype=np.float32).swapaxes(1, 0)
@@ -164,7 +171,7 @@ class Runner(object):
         mb_masks = mb_masks.flatten()
         return mb_obs, mb_states, mb_rewards, mb_masks, mb_actions, mb_values
 
-def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_coef=0.5, ent_coef=0.01, max_grad_norm=0.5, lr=7e-4, lrschedule='linear', epsilon=1e-5, alpha=0.99, gamma=0.99, log_interval=1000):
+def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_coef=0.5, ent_coef=0.01, max_grad_norm=0.5, lr=7e-4, lrschedule='linear', epsilon=1e-5, alpha=0.99, gamma=0.99, log_interval=1000, load_model=False,model_path=''):
     tf.reset_default_graph()
     set_global_seeds(seed)
 
@@ -172,15 +179,21 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
     ob_space = env.observation_space
     ac_space = env.action_space
     num_procs = len(env.remotes) # HACK
+
     model = Model(policy=policy, ob_space=ob_space, ac_space=ac_space, nenvs=nenvs, nsteps=nsteps, nstack=nstack, num_procs=num_procs, ent_coef=ent_coef, vf_coef=vf_coef,
         max_grad_norm=max_grad_norm, lr=lr, alpha=alpha, epsilon=epsilon, total_timesteps=total_timesteps, lrschedule=lrschedule)
+
+    if load_model:
+        model.load(model_path)
     runner = Runner(env, model, nsteps=nsteps, nstack=nstack, gamma=gamma)
 
     nbatch = nenvs*nsteps
     tstart = time.time()
     for update in range(1, total_timesteps//nbatch+1):
         obs, states, rewards, masks, actions, values = runner.run()
-        #print(rewards)
+        #print('obs',obs,'actions',actions)
+        #print('values',values,'rewards',rewards)
+
         dim_total = nsteps
         dim = obs.shape[0]
         dim_necesaria = dim_total - dim
@@ -189,7 +202,9 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
         masks = np.concatenate((masks,np.full((dim_necesaria), True, dtype=bool)),axis=0)
         actions = np.concatenate((actions,np.zeros(dim_necesaria)),axis=0)
         values = np.concatenate((values,np.zeros(dim_necesaria)),axis=0)
+
         policy_loss, value_loss, policy_entropy = model.train(obs, states, rewards, masks, actions, values)
+
         nseconds = time.time()-tstart
         fps = int((update*nbatch)/nseconds)
         if update % log_interval == 0 or update == 1:
@@ -201,6 +216,9 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
             logger.record_tabular("value_loss", float(value_loss))
             logger.record_tabular("explained_variance", float(ev))
             logger.dump_tabular()
+        if (update % (log_interval*10)) == 0 :
+            model.save('./models/tic_tac_toe.cpkt')
+
     env.close()
 
 if __name__ == '__main__':
