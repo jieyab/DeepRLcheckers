@@ -15,11 +15,11 @@ import random
 from common.base_game_spec import BaseGameSpec
 from techniques.min_max import evaluate
 
-board_size = 15
-pieces_number = 4
+board_size = 3
+pieces_number = 3
 
 
-def _new_board():
+def new_board():
     """Return a emprty tic-tac-toe board we can use for simulating a game.
 
     Returns:
@@ -157,7 +157,7 @@ def play_game(plus_player_func, minus_player_func, log=False):
     Returns:
         int: 1 if the plus_player_func won, -1 if the minus_player_func won and 0 for a draw
     """
-    board_state = _new_board()
+    board_state = new_board()
     player_turn = 1
     length_game = 0
 
@@ -212,14 +212,15 @@ def random_player(board_state, _):
     return random.choice(moves)
 
 
-def lazy_ai(board_state,_):
+def lazy_ai(board_state, _):
     pass
+
 
 class TicTacToeGameSpec(BaseGameSpec):
     def __init__(self):
         self.available_moves = available_moves
         self.has_winner = has_winner
-        self.new_board = _new_board
+        self.new_board = new_board
         self.apply_move = apply_move
         self.evaluate = evaluate
 
