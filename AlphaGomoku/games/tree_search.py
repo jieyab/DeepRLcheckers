@@ -10,7 +10,7 @@ EPSILON = 10e-6  # Prevents division by 0 in calculation of UCT
 
 
 class MonteCarlo:
-    def __init__(self, **kwargs):
+    def __init__(self):
         self.digraph = nx.DiGraph()
         self.node_counter = 0
 
@@ -27,8 +27,6 @@ class MonteCarlo:
         # empty_board_node_id = self.node_counter
         self.node_counter += 1
         self.last_move = None
-
-        # self.max_actions = int(kwargs.get('max_actions', 1000))
 
     def reset_game(self):
         self.last_move = None
@@ -114,10 +112,6 @@ class MonteCarlo:
             self.last_move = None
 
         return move
-
-    def train(self):
-        for i in xrange(1):
-            tt.play_game(self.ai_player, self.ai_player, log=False)
 
     def best(self, root):
         """
@@ -230,7 +224,6 @@ class MonteCarlo:
             return node
 
         # If all legal moves are now children, mark this node as expanded.
-
         length_of_children = 0
         while True:
             try:
@@ -312,8 +305,42 @@ class MonteCarlo:
 
         return value
 
+    def train(self):
+        for i in xrange(1):
+            tt.play_game(self.ai_player, self.ai_player, log=False)
+
+    def visualization(self):
+        # nx.draw(self.digraph, with_labels=True)
+        # plt.show()
+        pd_tree = nx.nx_pydot.to_pydot(self.digraph)
+        pd_tree.write_png('tree.png')
+
+    # def visualize_mcts_tree(self):
+    #     """
+    #     Creates a small subgraph for visualization with a
+    #     number of levels equal to 2 + depth labelled with the
+    #     MCTS values from mcts and saves it as filename.png
+    #     """
+    #     subgraph = nx.DiGraph()
+    #
+    #     # Don't include the empty board (the root) in the graphs
+    #     for first_move in self.digraph.successors(0):
+    #         add_edges(mcts.digraph, subgraph, first_move, depth)
+    #         dot_graph = nx.drawing.nx_pydot.to_pydot(subgraph)
+    #     # dot_graph = nx.to_pydot(subgraph)
+    #     for node in dot_graph.get_nodes():
+    #         attr = node.get_attributes()
+    #         try:
+    #             node.set_label('{}{}/{}\n{:.2f}'.format(attr['state'],
+    #                                                     int(attr['w']),
+    #                                                     int(attr['n']),
+    #                                                     float(attr['uct'])))
+    #         except KeyError:
+    #             pass
+
 
 if __name__ == '__main__':
     print 'start...'
     mc = MonteCarlo()
     mc.train()
+    mc.visualization()
