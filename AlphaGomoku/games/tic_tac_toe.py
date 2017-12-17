@@ -36,6 +36,27 @@ def new_board():
     return tuple(board)
 
 
+def turn(board_state):
+    """
+    Return the turn of a certain board state
+
+    :param board_state:
+    :return:
+        turn
+    """
+    num_plus = 0
+    num_minus = 0
+    for x, y in itertools.product(range(board_size), range(board_size)):
+        if board_state[x][y] == 1:
+            num_plus += 1
+        elif board_state[x][y] == -1:
+            num_minus += 1
+    if num_plus == num_minus:
+        return 1
+    else:
+        return -1
+
+
 def apply_move(board_state, move, side):
     """Returns a copy of the given board_state with the desired move applied.
 
@@ -47,6 +68,9 @@ def apply_move(board_state, move, side):
     Returns:
         (3x3 tuple of int): A copy of the board_state with the given move applied for the given side.
     """
+    if side == 0:
+        side = turn(board_state)
+
     move_x, move_y = move
 
     def get_tuples():
