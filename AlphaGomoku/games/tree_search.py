@@ -1,13 +1,10 @@
+import operator
 import random
-import time
+
+import networkx as nx
+import numpy as np
 
 import tic_tac_toe as tt
-from abc import ABCMeta, abstractmethod
-import random
-import numpy as np
-import operator
-import networkx as nx
-import copy
 
 EPSILON = 10e-6  # Prevents division by 0 in calculation of UCT
 
@@ -21,11 +18,12 @@ class MonteCarlo:
         # Constant parameter to weight exploration vs. exploitation for UCT
         self.uct_c = np.sqrt(2)
 
-        self.digraph.add_node(self.node_counter, attr_dict={'w': 0,
-                                                            'n': 0,
-                                                            'uct': 0,
-                                                            'expanded': False,
-                                                            'state': tt.new_board()})
+        self.digraph.add_node(self.node_counter,
+                              nw=0,
+                              nn=0,
+                              uct=0,
+                              expanded=False,
+                              state=tt.new_board())
         # empty_board_node_id = self.node_counter
         self.node_counter += 1
         self.last_move = None
@@ -34,6 +32,10 @@ class MonteCarlo:
 
     def reset_game(self):
         self.last_move = None
+
+    def random_player(self, board_state, _):
+        moves = list(tt.available_moves(board_state))
+        return random.choice(moves)
 
     def ai_player(self, board_state, side):
         # starting_state = copy.deepcopy(starting_state)
@@ -53,16 +55,17 @@ class MonteCarlo:
             if not exists:
                 # If it wasn't found, then add the starting state and an edge to it from the last move
                 self.digraph.add_node(self.node_counter,
-                                      attr_dict={'w': 0,
-                                                 'n': 0,
-                                                 'uct': 0,
-                                                 'expanded': False,
-                                                 'state': board_state})
+                                      nw=0,
+                                      nn=0,
+                                      uct=0,
+                                      expanded=False,
+                                      state=board_state)
                 self.digraph.add_edge(self.last_move, self.node_counter)
                 starting_node = self.node_counter
                 self.node_counter += 1
         else:
             for node in self.digraph.nodes():
+                print self.digraph.node[node]['state']
                 if self.digraph.node[node]['state'] == board_state:
                     starting_node = node
 
@@ -107,18 +110,13 @@ class MonteCarlo:
         self.last_move = resulting_node
 
         # If we won, reset the last move to None for future games
-        if self.digraph.node[resulting_node]['state'].winner():
+        if tt.has_winner(self.digraph.node[resulting_node]['state']):
             self.last_move = None
 
-        # list(tt.available_moves(board_state))
         return move
 
-    def random_player(self, board_state, _):
-        moves = list(tt.available_moves(board_state))
-        return random.choice(moves)
-
     def train(self):
-        for i in xrange(1000):
+        for i in xrange(1):
             tt.play_game(self.ai_player, self.ai_player, log=False)
 
     def best(self, root):
@@ -130,10 +128,10 @@ class MonteCarlo:
         # Todo: explore various strategies for choosing the best action
         children = self.digraph.successors(root)
 
-        # # Option 1: Choose the child with the highest 'n' value
+        # # Option 1: Choose the child with the highest 'nn' value
         # num_visits = {}
         # for child_node in children:
-        #     num_visits[child_node] = self.digraph.node[child_node]['n']
+        #     num_visits[child_node] = self.digraph.node[child_node]['nn']
         # best_child = max(num_visits.items(), key=operator.itemgetter(1))[0]
 
         # Option 2: Choose the child with the highest UCT value
@@ -162,11 +160,11 @@ class MonteCarlo:
         # In the case that the root node is not in the graph, add it
         if root not in self.digraph.nodes():
             self.digraph.add_node(self.node_counter,
-                                  attr_dict={'w': 0,
-                                             'n': 0,
-                                             'uct': 0,
-                                             'expanded': False,
-                                             'state': root})
+                                  nw=0,
+                                  nn=0,
+                                  uct=0,
+                                  expanded=False,
+                                  state=root)
             self.node_counter += 1
             return root
         elif not self.digraph.node[root]['expanded']:
@@ -188,25 +186,26 @@ class MonteCarlo:
     def expansion(self, node):
         # As long as this node has at least one unvisited child, choose a legal move
         children = self.digraph.successors(node)
-        legal_moves = self.digraph.node[node]['state'].legal_moves()
+        legal_moves = list(tt.available_moves(self.digraph.node[node]['state']))
         print('Legal moves: {}'.format(legal_moves))
 
         # Select the next unvisited child with uniform probability
         unvisited_children = []
         corresponding_actions = []
-        print("legal moves: {}".format(legal_moves))
+
         for move in legal_moves:
             print('adding to expansion analysis with: {}'.format(move))
-            child = self.digraph.node[node]['state'].transition_function(*move)
+            child_state = tt.apply_move(self.digraph.node[node]['state'], move, 0)
 
             in_children = False
             for child_node in children:
-                if self.digraph.node[child_node]['state'] == child:
+                if self.digraph.node[child_node]['state'] == child_state:
                     in_children = True
 
             if not in_children:
-                unvisited_children.append(child)
+                unvisited_children.append(child_state)
                 corresponding_actions.append(move)
+
         # Todo: why is it possible for there to be no unvisited children?
         print('unvisited children: {}'.format(len(unvisited_children)))
         if len(unvisited_children) > 0:
@@ -214,12 +213,12 @@ class MonteCarlo:
             child, move = unvisited_children[idx], corresponding_actions[idx]
 
             self.digraph.add_node(self.node_counter,
-                                  attr_dict={'w': 0,
-                                             'n': 0,
-                                             'uct': 0,
-                                             'expanded': False,
-                                             'state': child})
-            self.digraph.add_edge(node, self.node_counter, attr_dict={'action': move})
+                                  nw=0,
+                                  nn=0,
+                                  uct=0,
+                                  expanded=False,
+                                  state=child)
+            self.digraph.add_edge(node, self.node_counter, action=move)
             child_node_id = self.node_counter
             self.node_counter += 1
         else:
@@ -231,7 +230,16 @@ class MonteCarlo:
             return node
 
         # If all legal moves are now children, mark this node as expanded.
-        if len(children) + 1 == len(legal_moves):
+
+        length_of_children = 0
+        while True:
+            try:
+                children.next()
+                length_of_children += 1
+            except StopIteration:
+                break
+
+        if length_of_children + 1 == len(legal_moves):
             self.digraph.node[node]['expanded'] = True
             print('node is expanded')
 
@@ -242,33 +250,33 @@ class MonteCarlo:
         Conducts a light playout from the specified node
         :return: The reward obtained once a terminal state is reached
         """
-        random_policy = RandomPolicy()
+        # random_policy = RandomPolicy()
         current_state = self.digraph.node[node]['state']
-        while not current_state.winner():
-            move = random_policy.move(current_state)
-            current_state = current_state.transition_function(*move)
+        while not tt.has_winner(current_state):
+            available = list(tt.available_moves(current_state))
+            if len(available) == 0:
+                return 0
+            move = random.choice(available)
+            current_state = tt.apply_move(current_state, move, 0)
 
-        if current_state.winner() == self.player:
-            return 1
-        else:
-            return 0
+        return tt.has_winner(current_state)
 
     def backpropagation(self, last_visited, reward):
         """
         Walk the path upwards to the root, incrementing the
-        'n' and 'w' attributes of the nodes along the way
+        'nn' and 'nw' attributes of the nodes along the way
         """
         current = last_visited
         while True:
-            self.digraph.node[current]['n'] += 1
-            self.digraph.node[current]['w'] += reward
+            self.digraph.node[current]['nn'] += 1
+            self.digraph.node[current]['nw'] += reward
 
-            print('Updating to n={} and w={}:\n{}'.format(self.digraph.node[current]['n'],
-                                                          self.digraph.node[current]['w'],
+            print('Updating to n={} and w={}:\n{}'.format(self.digraph.node[current]['nn'],
+                                                          self.digraph.node[current]['nw'],
                                                           self.digraph.node[current]['state']))
 
             # Terminate when we reach the empty board
-            if self.digraph.node[current]['state'] == GameState():
+            if self.digraph.node[current]['state'] == tt.new_board():
                 break
             # Todo:
             # Does this handle the necessary termination conditions for both 'X' and 'O'?
@@ -277,8 +285,8 @@ class MonteCarlo:
             # Will throw an IndexError when we arrive at a node with no predecessors
             # Todo: see if this additional check is no longer necessary
             try:
-                current = self.digraph.predecessors(current)[0]
-            except IndexError:
+                current = self.digraph.predecessors(current).next()
+            except StopIteration:
                 break
 
     def uct(self, state):
@@ -286,8 +294,8 @@ class MonteCarlo:
         Returns the expected value of a state, calculated as a weighted sum of
         its exploitation value and exploration value
         """
-        n = self.digraph.node[state]['n']  # Number of plays from this node
-        w = self.digraph.node[state]['w']  # Number of wins from this node
+        n = self.digraph.node[state]['nn']  # Number of plays from this node
+        w = self.digraph.node[state]['nw']  # Number of wins from this node
         t = self.num_simulations
         c = self.uct_c
         epsilon = EPSILON
@@ -307,5 +315,5 @@ class MonteCarlo:
 
 if __name__ == '__main__':
     print 'start...'
-    mc = MonteCarlo(time=5)
+    mc = MonteCarlo()
     mc.train()
