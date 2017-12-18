@@ -28,6 +28,8 @@ class MonteCarlo:
         self.node_counter += 1
         self.last_move = None
 
+        self.computational_budget = 5
+
     def reset_game(self):
         self.last_move = None
 
@@ -63,43 +65,38 @@ class MonteCarlo:
                 self.node_counter += 1
         else:
             for node in self.digraph.nodes():
-                print self.digraph.node[node]['state']
                 if self.digraph.node[node]['state'] == board_state:
                     starting_node = node
 
-        computational_budget = 25
-        for i in range(computational_budget):
+        for i in range(self.computational_budget):
             self.num_simulations += 1
 
             print("Running MCTS from this starting state with node id {}:\n{}".format(starting_node,
                                                                                       board_state))
+            # Until computational budget runs out, run simulated trials through the tree:
 
-            # Until computational budget runs out, run simulated trials
-            # through the tree:
-
-            # Selection: Recursively pick the best node that maximizes UCT
-            # until reaching an unvisited node
-            print('================ ( selection ) ================')
+            # Selection: Recursively pick the best node that maximizes UCT until reaching an unvisited node
+            print('-' * 20 + ' selection ' + '-' * 20)
             selected_node = self.selection(starting_node)
+            print str(starting_node) + ' -> select -> ' + str(selected_node)
             print('selected:\n{}'.format(self.digraph.node[selected_node]['state']))
 
-            # Check if the selected node is a terminal state, and if so, this
-            # iteration is finished
+            # Check if the selected node is a terminal state, and if so, this iteration is finished
             if tt.has_winner(self.digraph.node[selected_node]['state']):
                 break
 
             # Expansion: Add a child node where simulation will start
-            print('================ ( expansion ) ================')
+            print('-' * 20 + ' expansion ' + '-' * 20)
             new_child_node = self.expansion(selected_node)
             print('Node chosen for expansion:\n{}'.format(new_child_node))
 
             # Simulation: Conduct a light playout
-            print('================ ( simulation ) ================')
+            print('-' * 20 + ' simulation ' + '-' * 20)
             reward = self.simulation(new_child_node)
             print('Reward obtained: {}\n'.format(reward))
 
             # Backpropagation: Update the nodes on the path with the simulation results
-            print('================ ( backpropagation ) ================')
+            print('-' * 20 + ' backpropagation ' + '-' * 20)
             self.backpropagation(new_child_node, reward)
 
         move, resulting_node = self.best(starting_node)
@@ -122,13 +119,6 @@ class MonteCarlo:
         # Todo: explore various strategies for choosing the best action
         children = self.digraph.successors(root)
 
-        # # Option 1: Choose the child with the highest 'nn' value
-        # num_visits = {}
-        # for child_node in children:
-        #     num_visits[child_node] = self.digraph.node[child_node]['nn']
-        # best_child = max(num_visits.items(), key=operator.itemgetter(1))[0]
-
-        # Option 2: Choose the child with the highest UCT value
         uct_values = {}
         for child_node in children:
             uct_values[child_node] = self.uct(child_node)
@@ -206,6 +196,8 @@ class MonteCarlo:
             idx = np.random.randint(len(unvisited_children))
             child, move = unvisited_children[idx], corresponding_actions[idx]
 
+            print 'Add node %d -> %d' % (node, self.node_counter)
+            print child
             self.digraph.add_node(self.node_counter,
                                   nw=0,
                                   nn=0,
@@ -305,42 +297,42 @@ class MonteCarlo:
 
         return value
 
-    def train(self):
-        for i in xrange(1):
+    def train(self, times):
+        for i in xrange(times):
             tt.play_game(self.ai_player, self.ai_player, log=False)
+
+    def play_against_random(self, play_round=20):
+        win_count = 0
+        record = []
+        for i in xrange(play_round):
+            result = tt.play_game(self.ai_player, self.random_player, log=False)
+            record.append(result)
+            if result == 1:
+                win_count += 1
+        print record
+        print 'Win rate: %f' % (win_count / float(play_round))
 
     def visualization(self):
         # nx.draw(self.digraph, with_labels=True)
         # plt.show()
         pd_tree = nx.nx_pydot.to_pydot(self.digraph)
+        for node in pd_tree.get_nodes():
+            attr = node.get_attributes()
+            try:
+                state = attr['state'].replace('),', '\n').replace('(', '').replace(')', '').replace(' ', '')\
+                    .replace(',', ' | ')
+                w = attr['nw']
+                n = attr['nn']
+                uct = attr['uct'][:4]
+                node.set_label(state + '\n' + w + '/' + n + '\n' + uct)
+            except KeyError:
+                pass
         pd_tree.write_png('tree.png')
-
-    # def visualize_mcts_tree(self):
-    #     """
-    #     Creates a small subgraph for visualization with a
-    #     number of levels equal to 2 + depth labelled with the
-    #     MCTS values from mcts and saves it as filename.png
-    #     """
-    #     subgraph = nx.DiGraph()
-    #
-    #     # Don't include the empty board (the root) in the graphs
-    #     for first_move in self.digraph.successors(0):
-    #         add_edges(mcts.digraph, subgraph, first_move, depth)
-    #         dot_graph = nx.drawing.nx_pydot.to_pydot(subgraph)
-    #     # dot_graph = nx.to_pydot(subgraph)
-    #     for node in dot_graph.get_nodes():
-    #         attr = node.get_attributes()
-    #         try:
-    #             node.set_label('{}{}/{}\n{:.2f}'.format(attr['state'],
-    #                                                     int(attr['w']),
-    #                                                     int(attr['n']),
-    #                                                     float(attr['uct'])))
-    #         except KeyError:
-    #             pass
 
 
 if __name__ == '__main__':
     print 'start...'
     mc = MonteCarlo()
-    mc.train()
+    mc.train(1)
     mc.visualization()
+    # mc.play_against_random()
