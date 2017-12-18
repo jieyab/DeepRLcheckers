@@ -192,7 +192,7 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
     for update in range(1, total_timesteps//nbatch+1):
         obs, states, rewards, masks, actions, values = runner.run()
         #print('obs',obs,'actions',actions)
-        #print('values',values,'rewards',rewards)
+        #print('values',values,'rewards',rewards,)
 
         dim_total = nsteps
         dim = obs.shape[0]
