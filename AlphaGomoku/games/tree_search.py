@@ -4,7 +4,7 @@ import random
 import networkx as nx
 import numpy as np
 
-import tic_tac_toe as tt
+import games.tic_tac_toe as tt
 
 EPSILON = 10e-6  # Prevents division by 0 in calculation of UCT
 
@@ -28,7 +28,7 @@ class MonteCarlo:
         self.node_counter += 1
         self.last_move = None
 
-        self.computational_budget = 5
+        self.computational_budget = 2
 
     def reset_game(self):
         self.last_move = None
@@ -78,7 +78,7 @@ class MonteCarlo:
             # Selection: Recursively pick the best node that maximizes UCT until reaching an unvisited node
             print('-' * 20 + ' selection ' + '-' * 20)
             selected_node = self.selection(starting_node)
-            print str(starting_node) + ' -> select -> ' + str(selected_node)
+            print(str(starting_node) + ' -> select -> ' + str(selected_node))
             print('selected:\n{}'.format(self.digraph.node[selected_node]['state']))
 
             # Check if the selected node is a terminal state, and if so, this iteration is finished
@@ -125,7 +125,7 @@ class MonteCarlo:
 
         # Choose the child node that maximizes the expected value given by UCT
         # If more than one has the same UCT value then break ties randomly
-        best_children = [key for key, val in uct_values.iteritems() if val == max(uct_values.values())]
+        best_children = [key for key, val in uct_values.items() if val == max(uct_values.values())]
         idx = np.random.randint(len(best_children))
         best_child = best_children[idx]
 
@@ -183,6 +183,8 @@ class MonteCarlo:
 
             in_children = False
             for child_node in children:
+                print('comparision')
+                print(child_state)
                 if self.digraph.node[child_node]['state'] == child_state:
                     in_children = True
 
@@ -196,8 +198,8 @@ class MonteCarlo:
             idx = np.random.randint(len(unvisited_children))
             child, move = unvisited_children[idx], corresponding_actions[idx]
 
-            print 'Add node %d -> %d' % (node, self.node_counter)
-            print child
+            print('Add node %d -> %d' % (node, self.node_counter))
+            print(child)
             self.digraph.add_node(self.node_counter,
                                   nw=0,
                                   nn=0,
@@ -217,12 +219,8 @@ class MonteCarlo:
 
         # If all legal moves are now children, mark this node as expanded.
         length_of_children = 0
-        while True:
-            try:
-                children.next()
-                length_of_children += 1
-            except StopIteration:
-                break
+        for _ in children:
+            length_of_children += 1
 
         if length_of_children + 1 == len(legal_moves):
             self.digraph.node[node]['expanded'] = True
@@ -269,8 +267,13 @@ class MonteCarlo:
 
             # Will throw an IndexError when we arrive at a node with no predecessors
             # Todo: see if this additional check is no longer necessary
+            print('predecessors')
+            for key in self.digraph.predecessors(current):
+                print(key)
+                print()
             try:
-                current = self.digraph.predecessors(current).next()
+                print('predecessors')
+                current = next(self.digraph.predecessors(current))
             except StopIteration:
                 break
 
@@ -298,19 +301,19 @@ class MonteCarlo:
         return value
 
     def train(self, times):
-        for i in xrange(times):
+        for i in range(times):
             tt.play_game(self.ai_player, self.ai_player, log=False)
 
     def play_against_random(self, play_round=20):
         win_count = 0
         record = []
-        for i in xrange(play_round):
+        for i in range(play_round):
             result = tt.play_game(self.ai_player, self.random_player, log=False)
             record.append(result)
             if result == 1:
                 win_count += 1
-        print record
-        print 'Win rate: %f' % (win_count / float(play_round))
+        print(record)
+        print('Win rate: %f' % (win_count / float(play_round)))
 
     def visualization(self):
         # nx.draw(self.digraph, with_labels=True)
@@ -324,15 +327,15 @@ class MonteCarlo:
                 w = attr['nw']
                 n = attr['nn']
                 uct = attr['uct'][:4]
-                node.set_label(state + '\n' + w + '/' + n + '\n' + uct)
+                node.set_label(state + '\n' + w + '/' + n + '\n' + attr['expanded'])
             except KeyError:
                 pass
         pd_tree.write_png('tree.png')
 
 
 if __name__ == '__main__':
-    print 'start...'
+    print('start...')
     mc = MonteCarlo()
-    mc.train(1)
+    mc.train(2)
     mc.visualization()
     # mc.play_against_random()
