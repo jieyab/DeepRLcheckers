@@ -28,7 +28,7 @@ class MonteCarlo:
         self.node_counter += 1
         self.last_move = None
 
-        self.computational_budget = 2
+        self.computational_budget = 10
 
     def reset_game(self):
         self.last_move = None
@@ -37,32 +37,24 @@ class MonteCarlo:
         moves = list(tt.available_moves(board_state))
         return random.choice(moves)
 
-    def ai_player(self, board_state, side):
+    def ai_player(self, board_state, _):
         # starting_state = copy.deepcopy(starting_state)
 
         starting_node = None
 
         if self.last_move is not None:
             # Check if the starting state is already in the graph as a child of the last move that we made
-            exists = False
             for child in self.digraph.successors(self.last_move):
                 # Check if the child has the same state attribute as the starting state
                 if self.digraph.node[child]['state'] == board_state:
                     # If it does, then check if there is a link between the last move and this child state
                     if self.digraph.has_edge(self.last_move, child):
-                        exists = True
                         starting_node = child
-            if not exists:
-                # If it wasn't found, then add the starting state and an edge to it from the last move
-                self.digraph.add_node(self.node_counter,
-                                      nw=0,
-                                      nn=0,
-                                      uct=0,
-                                      expanded=False,
-                                      state=board_state)
-                self.digraph.add_edge(self.last_move, self.node_counter)
-                starting_node = self.node_counter
-                self.node_counter += 1
+                        break
+            else:
+                for node in self.digraph.nodes():
+                    if self.digraph.node[node]['state'] == board_state:
+                        starting_node = node
         else:
             for node in self.digraph.nodes():
                 if self.digraph.node[node]['state'] == board_state:
@@ -316,13 +308,15 @@ class MonteCarlo:
         print('Win rate: %f' % (win_count / float(play_round)))
 
     def visualization(self):
-        # nx.draw(self.digraph, with_labels=True)
-        # plt.show()
+        """
+        Draw dot graph of Monte Carlo Tree
+        :return:
+        """
         pd_tree = nx.nx_pydot.to_pydot(self.digraph)
         for node in pd_tree.get_nodes():
             attr = node.get_attributes()
             try:
-                state = attr['state'].replace('),', '\n').replace('(', '').replace(')', '').replace(' ', '')\
+                state = attr['state'].replace('),', '\n').replace('(', '').replace(')', '').replace(' ', '') \
                     .replace(',', ' | ')
                 w = attr['nw']
                 n = attr['nn']
