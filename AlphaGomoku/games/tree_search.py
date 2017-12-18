@@ -28,7 +28,7 @@ class MonteCarlo:
         self.node_counter += 1
         self.last_move = None
 
-        self.computational_budget = 10
+        self.computational_budget = 3
 
     def reset_game(self):
         self.last_move = None
@@ -36,6 +36,51 @@ class MonteCarlo:
     def random_player(self, board_state, _):
         moves = list(tt.available_moves(board_state))
         return random.choice(moves)
+
+    def pure_ai_player(self, board_state, _):
+        starting_node = None
+
+        if self.last_move is not None:
+            # Check if the starting state is already in the graph as a child of the last move that we made
+            for child in self.digraph.successors(self.last_move):
+                # Check if the child has the same state attribute as the starting state
+                if self.digraph.node[child]['state'] == board_state:
+                    # If it does, then check if there is a link between the last move and this child state
+                    if self.digraph.has_edge(self.last_move, child):
+                        starting_node = child
+                        break
+            else:
+                for node in self.digraph.nodes():
+                    if self.digraph.node[node]['state'] == board_state:
+                        starting_node = node
+        else:
+            for node in self.digraph.nodes():
+                if self.digraph.node[node]['state'] == board_state:
+                    starting_node = node
+
+        selected_node = self.selection(starting_node)
+        print(str(starting_node) + ' -> select -> ' + str(selected_node))
+        print('selected:\n{}'.format(self.digraph.node[selected_node]['state']))
+
+        new_child_node = self.expansion(selected_node)
+        print('Node chosen for expansion:\n{}'.format(new_child_node))
+
+        reward = self.simulation(new_child_node)
+        print('Reward obtained: {}\n'.format(reward))
+
+        self.backpropagation(new_child_node, reward)
+
+        move, resulting_node = self.best(starting_node)
+        print('MCTS complete. Suggesting move: {}\n'.format(move))
+
+        self.last_move = resulting_node
+
+        # If we won, reset the last move to None for future games
+        if tt.has_winner(self.digraph.node[resulting_node]['state']):
+            print(self.digraph.node[resulting_node]['state'])
+            self.last_move = None
+
+        return move
 
     def ai_player(self, board_state, _):
         # starting_state = copy.deepcopy(starting_state)
@@ -98,6 +143,7 @@ class MonteCarlo:
 
         # If we won, reset the last move to None for future games
         if tt.has_winner(self.digraph.node[resulting_node]['state']):
+            print(self.digraph.node[resulting_node]['state'])
             self.last_move = None
 
         return move
@@ -108,7 +154,6 @@ class MonteCarlo:
         (An alternative strategy could also be used, where the action leading to
         the child with the most number of visits is chosen
         """
-        # Todo: explore various strategies for choosing the best action
         children = self.digraph.successors(root)
 
         uct_values = {}
@@ -161,7 +206,6 @@ class MonteCarlo:
 
     def expansion(self, node):
         # As long as this node has at least one unvisited child, choose a legal move
-        children = self.digraph.successors(node)
         legal_moves = list(tt.available_moves(self.digraph.node[node]['state']))
         print('Legal moves: {}'.format(legal_moves))
 
@@ -174,9 +218,7 @@ class MonteCarlo:
             child_state = tt.apply_move(self.digraph.node[node]['state'], move, 0)
 
             in_children = False
-            for child_node in children:
-                print('comparision')
-                print(child_state)
+            for child_node in self.digraph.successors(node):
                 if self.digraph.node[child_node]['state'] == child_state:
                     in_children = True
 
@@ -184,7 +226,6 @@ class MonteCarlo:
                 unvisited_children.append(child_state)
                 corresponding_actions.append(move)
 
-        # Todo: why is it possible for there to be no unvisited children?
         print('unvisited children: {}'.format(len(unvisited_children)))
         if len(unvisited_children) > 0:
             idx = np.random.randint(len(unvisited_children))
@@ -202,19 +243,14 @@ class MonteCarlo:
             child_node_id = self.node_counter
             self.node_counter += 1
         else:
-            # Todo:
-            # Is this the correct behavior? The issue is, it was getting to the expansion
-            # expansion method with nodes that were already expanded for an unknown reason,
-            # so here we return the node that was passed. Maybe there is a case where a
-            # node had been expanded but not yet marked as expanded until it got here.
             return node
 
         # If all legal moves are now children, mark this node as expanded.
-        length_of_children = 0
-        for _ in children:
-            length_of_children += 1
+        num_children = 0
+        for _ in self.digraph.successors(node):
+            num_children += 1
 
-        if length_of_children + 1 == len(legal_moves):
+        if num_children == len(legal_moves):
             self.digraph.node[node]['expanded'] = True
             print('node is expanded')
 
@@ -330,6 +366,6 @@ class MonteCarlo:
 if __name__ == '__main__':
     print('start...')
     mc = MonteCarlo()
-    mc.train(2)
+    mc.train(10)
     mc.visualization()
-    # mc.play_against_random()
+    mc.play_against_random()
