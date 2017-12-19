@@ -59,26 +59,16 @@ class MonteCarlo:
                     starting_node = node
 
         selected_node = self.selection(starting_node)
-        print(str(starting_node) + ' -> select -> ' + str(selected_node))
-        print('selected:\n{}'.format(self.digraph.node[selected_node]['state']))
+        if selected_node is None:
+            self.last_move = None
+            move = random.choice(list(tt.available_moves(board_state)))
+            return move
 
         new_child_node = self.expansion(selected_node)
-        print('Node chosen for expansion:\n{}'.format(new_child_node))
-
         reward = self.simulation(new_child_node)
-        print('Reward obtained: {}\n'.format(reward))
-
         self.backpropagation(new_child_node, reward)
-
         move, resulting_node = self.best(starting_node)
-        print('MCTS complete. Suggesting move: {}\n'.format(move))
-
         self.last_move = resulting_node
-
-        # If we won, reset the last move to None for future games
-        if tt.has_winner(self.digraph.node[resulting_node]['state']):
-            print(self.digraph.node[resulting_node]['state'])
-            self.last_move = None
 
         return move
 
@@ -336,7 +326,7 @@ class MonteCarlo:
         win_count = 0
         record = []
         for i in range(play_round):
-            result = tt.play_game(self.ai_player, self.random_player, log=False)
+            result = tt.play_game(self.pure_ai_player, self.random_player, log=False)
             record.append(result)
             if result == 1:
                 win_count += 1
@@ -366,6 +356,6 @@ class MonteCarlo:
 if __name__ == '__main__':
     print('start...')
     mc = MonteCarlo()
-    mc.train(10)
+    mc.train(50)
     mc.visualization()
-    mc.play_against_random()
+    mc.play_against_random(50)
