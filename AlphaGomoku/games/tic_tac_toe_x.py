@@ -64,10 +64,10 @@ def turn(board_state):
     """
     num_plus = 0
     num_minus = 0
-    for x, y in itertools.product(range(board_size), range(board_size)):
-        if board_state[x][y] == 1:
+    for x, y in itertools.product(range(len(board_state[0])), range(len(board_state[0]))):
+        if board_state[0, x, y, 0] == 1:
             num_plus += 1
-        elif board_state[x][y] == -1:
+        elif board_state[0, x, y, 0] == -1:
             num_minus += 1
     if num_plus == num_minus:
         return 1
@@ -105,12 +105,13 @@ def _has_winning_line(line, winning_length):
             last_side = temp.item(x)
 
         if count == winning_length:
+            # print(last_side)
             return last_side
     return 0
 
 
 def has_winner(board_state, winning_length):
-    # print("from has_winner",board_state)
+    print("from has_winner", board_state.tolist())
     """Determine if a player has won on the given board_state.
 
     Args:
@@ -350,7 +351,6 @@ class TicTacToeXGameSpec(BaseGameSpec):
         if self.board_state[0, move_x, move_y, 0] != 0:
             # print(self.board_state[0, :, :, 0], move)
             return True
-
         return False
 
     def available_moves_1(self):
@@ -367,7 +367,7 @@ class TicTacToeXGameSpec(BaseGameSpec):
         action_random = [int(action_random % self._board_size), int(action_random / self._board_size)]
         self.board_state = apply_move(self.board_state, action_random, -1)
 
-    def print_stadistics(self):
+    def print_statistic(self):
         self.print = False
         print('AI wins in', (100 * self.games_wonAI) / (
                 1 + self.games_wonAI + self.games_wonRandom + self.games_finish_in_draw + self.illegal_games))
@@ -403,7 +403,6 @@ class TicTacToeXGameSpec(BaseGameSpec):
             self.games_wonAI += 1
             # print('AI won')
 
-
         else:  # If there is no winner check for draw and make random move
             if len(self.available_moves_1()) == 0:
                 # print('Draw')
@@ -426,7 +425,7 @@ class TicTacToeXGameSpec(BaseGameSpec):
 
         if (((self.games_wonAI + self.games_wonRandom + self.games_finish_in_draw + self.illegal_games) % 1000
              == 0) and self.print):
-            self.print_stadistics()
+            self.print_statistic()
 
         return self.board_state, reward, winner, 0, False
 
@@ -464,7 +463,7 @@ class TicTacToeXGameSpec(BaseGameSpec):
 
         if (((self.games_wonAI + self.games_wonRandom + self.games_finish_in_draw + self.illegal_games) % 1000 == 0)
                 and self.print):
-            self.print_stadistics()
+            self.print_statistic()
 
         return self.board_state, reward, winner, 0, False
 
@@ -486,7 +485,11 @@ if __name__ == '__main__':
             print('Find!!!')
     b = new_board(3)
     c = apply_move(b, [1, 1], 1)
+    d = apply_move(c, [1, 2], -1)
+    e = apply_move(d, [0, 2], -1)
     # print(random_player(c, 1))
     # print(list(available_moves(c)))
-    play_game(random_player, random_player, 3, 3, log=True)
+    # play_game(random_player, random_player, 3, 3, log=True)
     print(new_board(3).tolist())
+    print(has_winner(e, 2)[0])
+
