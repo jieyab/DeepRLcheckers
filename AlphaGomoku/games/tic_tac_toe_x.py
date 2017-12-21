@@ -45,10 +45,34 @@ def apply_move(board_state, move, side):
     Returns:
         (2d tuple of int): A copy of the board_state with the given move applied for the given side.
     """
+    if side == 0:
+        side = turn(board_state)
+
     move_x, move_y = move
     board_state[0, move_x, move_y, 0] = side
 
     return board_state
+
+
+def turn(board_state):
+    """
+    Return the turn of a certain board state
+
+    :param board_state:
+    :return:
+        turn
+    """
+    num_plus = 0
+    num_minus = 0
+    for x, y in itertools.product(range(board_size), range(board_size)):
+        if board_state[x][y] == 1:
+            num_plus += 1
+        elif board_state[x][y] == -1:
+            num_minus += 1
+    if num_plus == num_minus:
+        return 1
+    else:
+        return -1
 
 
 def available_moves(board_state):
@@ -215,6 +239,8 @@ def play_game(plus_player_func, minus_player_func, board_size=5, winning_length=
 
     while True:
         _available_moves = list(available_moves(board_state))
+        if log:
+            print(board_state.tolist())
         if len(_available_moves) == 0:
             # draw
             if log:
@@ -460,8 +486,7 @@ if __name__ == '__main__':
             print('Find!!!')
     b = new_board(3)
     c = apply_move(b, [1, 1], 1)
-    # print(c)
     # print(random_player(c, 1))
-    print(list(available_moves(c)))
-    # play_game(random_player, random_player)
-    # print(new_board(3))
+    # print(list(available_moves(c)))
+    play_game(random_player, random_player, 3, 3, log=True)
+    print(new_board(3).tolist())
