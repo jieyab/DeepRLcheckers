@@ -6,6 +6,7 @@ import numpy as np
 import tensorflow as tf
 
 from baselines import logger
+from baselines.a2c.tree_search import MonteCarlo
 from baselines.a2c.utils import Scheduler, find_trainable_variables
 from baselines.a2c.utils import cat_entropy, mse
 from baselines.a2c.utils import discount_with_dones
@@ -107,7 +108,7 @@ class Runner(object):
         self.states = model.initial_state
         self.dones = [False for _ in range(nenv)]
 
-        # self.
+        self.mcts = MonteCarlo()
 
     def update_obs(self, obs):
         # Do frame-stacking here instead of the FrameStack wrapper to reduce

@@ -324,7 +324,7 @@ class MonteCarlo:
 
     def train(self, times):
         for i in range(times):
-            tt.play_game(self.ai_player, self.ai_player, self.board_size, self.winning_length, log=False)
+            tt.play_game(self.ai_player, self.pure_ai_player, self.board_size, self.winning_length, log=False)
 
     def play_against_random(self, play_round=20):
         win_count = 0
