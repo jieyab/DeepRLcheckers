@@ -111,9 +111,8 @@ def _has_winning_line(line, winning_length):
 
 
 def has_winner(board_state, winning_length):
-    print("from has_winner", board_state.tolist())
+    # print("from has_winner", board_state.tolist())
     """Determine if a player has won on the given board_state.
-
     Args:
         board_state (2d tuple of int): The current board_state we want to evaluate.
         winning_length (int): The number of moves in a row needed for a win.
@@ -392,7 +391,7 @@ class TicTacToeXGameSpec(BaseGameSpec):
             self.board_state = self.new_board()
             self.print = True
             reward[0] = self.reward_illegal_move
-            winner = np.ones((1), dtype=bool)
+            winner = np.ones(1, dtype=bool)
             return self.board_state, reward, winner, 0, True
 
         self.board_state = apply_move(self.board_state, actions_nn, 1)  # Apply move to the board
@@ -485,8 +484,8 @@ if __name__ == '__main__':
             print('Find!!!')
     b = new_board(3)
     c = apply_move(b, [1, 1], 1)
-    d = apply_move(c, [1, 2], -1)
-    e = apply_move(d, [0, 2], -1)
+    d = apply_move(c, [1, 2], 1)
+    e = apply_move(d, [0, 2], 1)
     # print(random_player(c, 1))
     # print(list(available_moves(c)))
     # play_game(random_player, random_player, 3, 3, log=True)

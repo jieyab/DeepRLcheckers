@@ -4,7 +4,7 @@ import random
 import networkx as nx
 import numpy as np
 
-import games.tic_tac_toe as tt
+import games.tic_tac_toe_x as tt
 
 EPSILON = 10e-6  # Prevents division by 0 in calculation of UCT
 
@@ -13,8 +13,12 @@ class MonteCarlo:
     def __init__(self):
         self.digraph = nx.DiGraph()
         self.node_counter = 0
+        self.computational_budget = 3
 
         self.num_simulations = 0
+        self.board_size = 3
+        self.winning_length = 3
+
         # Constant parameter to weight exploration vs. exploitation for UCT
         self.uct_c = np.sqrt(2)
 
@@ -23,12 +27,10 @@ class MonteCarlo:
                               nn=0,
                               uct=0,
                               expanded=False,
-                              state=tt.new_board())
+                              state=tt.new_board(self.board_size))
         # empty_board_node_id = self.node_counter
         self.node_counter += 1
         self.last_move = None
-
-        self.computational_budget = 3
 
     def reset_game(self):
         self.last_move = None
@@ -44,18 +46,18 @@ class MonteCarlo:
             # Check if the starting state is already in the graph as a child of the last move that we made
             for child in self.digraph.successors(self.last_move):
                 # Check if the child has the same state attribute as the starting state
-                if self.digraph.node[child]['state'] == board_state:
+                if np.array_equal(self.digraph.node[child]['state'], board_state):
                     # If it does, then check if there is a link between the last move and this child state
                     if self.digraph.has_edge(self.last_move, child):
                         starting_node = child
                         break
             else:
                 for node in self.digraph.nodes():
-                    if self.digraph.node[node]['state'] == board_state:
+                    if np.array_equal(self.digraph.node[node]['state'], board_state):
                         starting_node = node
         else:
             for node in self.digraph.nodes():
-                if self.digraph.node[node]['state'] == board_state:
+                if np.array_equal(self.digraph.node[node]['state'], board_state):
                     starting_node = node
 
         selected_node = self.selection(starting_node)
@@ -73,43 +75,41 @@ class MonteCarlo:
         return move
 
     def ai_player(self, board_state, _):
-        # starting_state = copy.deepcopy(starting_state)
-
         starting_node = None
 
         if self.last_move is not None:
             # Check if the starting state is already in the graph as a child of the last move that we made
             for child in self.digraph.successors(self.last_move):
                 # Check if the child has the same state attribute as the starting state
-                if self.digraph.node[child]['state'] == board_state:
+                if np.array_equal(self.digraph.node[child]['state'], board_state):
                     # If it does, then check if there is a link between the last move and this child state
                     if self.digraph.has_edge(self.last_move, child):
                         starting_node = child
                         break
             else:
                 for node in self.digraph.nodes():
-                    if self.digraph.node[node]['state'] == board_state:
+                    if np.array_equal(self.digraph.node[node]['state'], board_state):
                         starting_node = node
         else:
             for node in self.digraph.nodes():
-                if self.digraph.node[node]['state'] == board_state:
+                if np.array_equal(self.digraph.node[node]['state'], board_state):
                     starting_node = node
 
         for i in range(self.computational_budget):
             self.num_simulations += 1
 
             print("Running MCTS from this starting state with node id {}:\n{}".format(starting_node,
-                                                                                      board_state))
+                                                                                      board_state.tolist()))
             # Until computational budget runs out, run simulated trials through the tree:
 
             # Selection: Recursively pick the best node that maximizes UCT until reaching an unvisited node
             print('-' * 20 + ' selection ' + '-' * 20)
             selected_node = self.selection(starting_node)
             print(str(starting_node) + ' -> select -> ' + str(selected_node))
-            print('selected:\n{}'.format(self.digraph.node[selected_node]['state']))
+            print('selected:\n{}'.format(self.digraph.node[selected_node]['state'].tolist()))
 
             # Check if the selected node is a terminal state, and if so, this iteration is finished
-            if tt.has_winner(self.digraph.node[selected_node]['state']):
+            if tt.has_winner(self.digraph.node[selected_node]['state'], self.winning_length):
                 break
 
             # Expansion: Add a child node where simulation will start
@@ -209,7 +209,7 @@ class MonteCarlo:
 
             in_children = False
             for child_node in self.digraph.successors(node):
-                if self.digraph.node[child_node]['state'] == child_state:
+                if np.array_equal(self.digraph.node[child_node]['state'], child_state):
                     in_children = True
 
             if not in_children:
@@ -253,14 +253,14 @@ class MonteCarlo:
         """
         # random_policy = RandomPolicy()
         current_state = self.digraph.node[node]['state']
-        while not tt.has_winner(current_state):
+        while not tt.has_winner(current_state, self.winning_length):
             available = list(tt.available_moves(current_state))
             if len(available) == 0:
                 return 0
             move = random.choice(available)
             current_state = tt.apply_move(current_state, move, 0)
 
-        return tt.has_winner(current_state)
+        return tt.has_winner(current_state, self.winning_length)
 
     def backpropagation(self, last_visited, reward):
         """
@@ -277,7 +277,7 @@ class MonteCarlo:
                                                           self.digraph.node[current]['state']))
 
             # Terminate when we reach the empty board
-            if self.digraph.node[current]['state'] == tt.new_board():
+            if np.array_equal(self.digraph.node[current]['state'], tt.new_board(self.board_size)):
                 break
             # Todo:
             # Does this handle the necessary termination conditions for both 'X' and 'O'?
@@ -312,7 +312,11 @@ class MonteCarlo:
 
         value = exploitation_value + exploration_value
 
-        print('UCT value {:.3f} for state:\n{}'.format(value, state))
+        print(exploitation_value)
+        print(exploration_value)
+        print(value[0])
+        print('UCT value {:.3f} for state:\n'.format(value))
+        print(state.tolist())
 
         self.digraph.node[state]['uct'] = value
 
@@ -320,7 +324,7 @@ class MonteCarlo:
 
     def train(self, times):
         for i in range(times):
-            tt.play_game(self.ai_player, self.ai_player, log=False)
+            tt.play_game(self.ai_player, self.ai_player, self.board_size, self.winning_length, log=False)
 
     def play_against_random(self, play_round=20):
         win_count = 0
@@ -357,5 +361,5 @@ if __name__ == '__main__':
     print('start...')
     mc = MonteCarlo()
     mc.train(5)
-    mc.visualization()
+    # mc.visualization()
     # mc.play_against_random(5)
