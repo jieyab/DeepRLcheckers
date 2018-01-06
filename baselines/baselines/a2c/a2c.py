@@ -222,4 +222,4 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
     env.close()
 
 if __name__ == '__main__':
-    main()
+    pass

@@ -111,7 +111,7 @@ def _has_winning_line(line, winning_length):
 
 
 def has_winner(board_state, winning_length):
-    print("from has_winner", board_state.tolist())
+    # print("from has_winner", board_state.tolist())
     """Determine if a player has won on the given board_state.
 
     Args:
