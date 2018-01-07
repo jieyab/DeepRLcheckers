@@ -1,5 +1,4 @@
 import time
-import time
 
 import joblib
 import numpy as np
@@ -219,8 +218,8 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
 
     for update in range(1, total_timesteps // nbatch + 1):
         obs, states, rewards, masks, actions, values = runner.run()
-        # print('obs',obs,'actions',actions)
-        # print('values',values,'rewards',rewards,)
+        # print('obs', obs, 'actions', actions)
+        # print('values', values, 'rewards', rewards, )
 
         dim_total = nsteps
         dim = obs.shape[0]
@@ -231,6 +230,9 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
         actions = np.concatenate((actions, np.zeros(dim_necesaria)), axis=0)
         values = np.concatenate((values, np.zeros(dim_necesaria)), axis=0)
 
+        # print('obs', obs, 'actions', actions)
+        # print('values', values, 'rewards', rewards, )
+        # print('states', states, 'masks', masks, )
         policy_loss, value_loss, policy_entropy = model.train(obs, states, rewards, masks, actions, values)
 
         nseconds = time.time() - tstart

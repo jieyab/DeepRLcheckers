@@ -396,6 +396,7 @@ class TicTacToeXGameSpec(BaseGameSpec):
 
         self.board_state = apply_move(self.board_state, actions_nn, 1)  # Apply move to the board
         winner = has_winner(self.board_state, self._winning_length)  # Check for winner
+        # print(winner)
 
         if winner[0]:
             reward[0] = self.reward_winning
