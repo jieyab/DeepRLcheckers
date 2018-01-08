@@ -118,9 +118,19 @@ class Runner(object):
     def run(self):
         mb_obs, mb_rewards, mb_actions, mb_values, mb_dones = [], [], [], [], []
         mb_states = self.states
+        print('- ' * 20 + 'run' + ' -' * 20)
+        # print(mb_states)
         for n in range(self.nsteps):
             counter = n
+            for ob in self.obs:
+                print(ob.tolist())
+            print(self.dones)
+            print(self.states)
             actions, values, states = self.model.step(self.obs, self.states, self.dones)
+            print('actions', actions)
+            print('values', values)
+            print('states', states)
+            print()
             mb_obs.append(np.copy(self.obs))
             mb_actions.append(actions)
             mb_values.append(values)
@@ -143,6 +153,7 @@ class Runner(object):
                 if done:
                     # print(self.obs[n])
                     # print('*'*20)
+                    # clear obs
                     self.obs[n] = self.obs[n] * 0
                     # print(self.obs[n])
                     # print('-'*20)
@@ -190,6 +201,7 @@ class Runner(object):
         mb_masks = mb_masks.flatten()
         # print(mb_masks)
         # print('%'*20)
+        print('* ' * 20 + 'run' + ' *' * 20)
         return mb_obs, mb_states, mb_rewards, mb_masks, mb_actions, mb_values
 
 
@@ -218,8 +230,14 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
 
     for update in range(1, total_timesteps // nbatch + 1):
         obs, states, rewards, masks, actions, values = runner.run()
-        # print('obs', obs, 'actions', actions)
-        # print('values', values, 'rewards', rewards, )
+        print('- ' * 20 + 'lea' + ' -' * 20)
+        for ob in obs:
+            print(ob.tolist())
+        print('actions', actions)
+        print('values', values)
+        print('rewards', rewards)
+        print('masks', masks)
+        print('status', states)
 
         dim_total = nsteps
         dim = obs.shape[0]
@@ -248,6 +266,7 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
             logger.dump_tabular()
         if (update % (log_interval * 10)) == 0:
             model.save('./models/tic_tac_toe.cpkt')
+        print('* ' * 20 + 'lea' + ' *' * 20)
 
     env.close()
 
