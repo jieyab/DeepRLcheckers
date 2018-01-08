@@ -476,8 +476,10 @@ class MonteCarlo:
         for node in pd_tree.get_nodes():
             attr = node.get_attributes()
             try:
-                state = attr['state'].replace(']]', ']').replace(']]', '') \
-                    .replace('[', '').replace('\n', '').replace(' ', '').replace(']', ' | ')
+                state = attr['state'].replace(']]', ']').replace(']]', '').replace('[[[[', '').replace('\n', '') \
+                    .replace('[[', '\n').replace('[', '').replace(' ', '').replace(']', ' | ').replace(' | \n', '\n')
+                print(state)
+
                 # state = attr['state'].replace('),', '\n').replace('(', '').replace(')', '').replace(' ', '') \
                 #     .replace(',', ' | ')
                 w = attr['nw']
