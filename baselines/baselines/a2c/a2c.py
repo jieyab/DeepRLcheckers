@@ -136,10 +136,14 @@ class Runner(object):
             mb_values.append(values)
             mb_dones.append(self.dones)
 
-            obs, rewards, dones, _, illegal, old_obs = self.env.step(actions)
+            obs, rewards, dones, _, illegal, old_obs, mid_obs = self.env.step(actions)
             if not illegal:
-                # print(obs.tolist())
-                self.mcts.az_expansion(old_obs, obs)
+                print('obs status:')
+                print(old_obs.tolist())
+                print(mid_obs.tolist())
+                print(obs.tolist())
+                self.mcts.az_expansion(old_obs, mid_obs)
+                self.mcts.az_expansion(mid_obs, obs)
 
             print('r2')
             for ob in obs:

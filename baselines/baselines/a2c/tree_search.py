@@ -250,6 +250,9 @@ class MonteCarlo:
         print(parent.tolist())
         print(child.tolist())
 
+        if np.array_equal(self.digraph.node[0]['state'], child):
+            return
+
         parent_node = -1
         for node in self.digraph.nodes():
             print(node)
