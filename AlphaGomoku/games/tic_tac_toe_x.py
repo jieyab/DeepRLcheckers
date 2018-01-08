@@ -123,7 +123,8 @@ def has_winner(board_state, winning_length):
     board_state = board_state[0, :, :, 0]
     board_width = len(board_state)
     board_height = len(board_state[0])
-
+    print(board_state)
+    print()
     # check rows
     for x in range(board_width):
         winner = _has_winning_line(board_state[x, :], winning_length)
@@ -216,7 +217,7 @@ def evaluate(board_state, winning_length):
     return score
 
 
-def play_game(plus_player_func, minus_player_func, board_size=5, winning_length=4, log=False):
+def play_game(plus_player_func, minus_player_func, board_size=3, winning_length=3, log=False):
     """Run a single game of tic-tac-toe until the end, using the provided function args to determine the moves for each
     player.
 
@@ -387,6 +388,7 @@ class TicTacToeXGameSpec(BaseGameSpec):
                       int(actions_nn / self._board_size)]  # Convert move from number to X,Y
         # Is that correct?
         print('action', actions_nn)
+        old_state = np.copy(self.board_state)
 
         if self.illegal_move(actions_nn):  # Check if the move was illegal
             self.illegal_games += 1
@@ -394,7 +396,7 @@ class TicTacToeXGameSpec(BaseGameSpec):
             self.print = True
             reward[0] = self.reward_illegal_move
             winner = np.ones(1, dtype=bool)
-            return self.board_state, reward, winner, 0, True
+            return self.board_state, reward, winner, 0, True, None
 
         self.board_state = apply_move(self.board_state, actions_nn, 1)  # Apply move to the board
         winner = has_winner(self.board_state, self._winning_length)  # Check for winner
@@ -429,7 +431,7 @@ class TicTacToeXGameSpec(BaseGameSpec):
              == 0) and self.print):
             self.print_statistic()
 
-        return self.board_state, reward, winner, 0, False
+        return self.board_state, reward, winner, 0, False, old_state
 
     def step_vs(self, actions_nn, side):
         reward = np.zeros(1)

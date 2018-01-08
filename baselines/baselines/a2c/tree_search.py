@@ -75,28 +75,29 @@ class MonteCarlo:
         return move
 
     def get_next_move(self, board_state, _):
-        starting_node = None
-
-        if self.last_move is not None:
-            # Check if the starting state is already in the graph as a child of the last move that we made
-            for child in self.digraph.successors(self.last_move):
-                # Check if the child has the same state attribute as the starting state
-                if np.array_equal(self.digraph.node[child]['state'], board_state):
-                    # If it does, then check if there is a link between the last move and this child state
-                    if self.digraph.has_edge(self.last_move, child):
-                        starting_node = child
-                        break
-            else:
-                for node in self.digraph.nodes():
-                    if np.array_equal(self.digraph.node[node]['state'], board_state):
-                        starting_node = node
+        # starting_node = None
+        # if self.last_move is not None:
+        #     # Check if the starting state is already in the graph as a child of the last move that we made
+        #     for child in self.digraph.successors(self.last_move):
+        #         # Check if the child has the same state attribute as the starting state
+        #         if np.array_equal(self.digraph.node[child]['state'], board_state):
+        #             # If it does, then check if there is a link between the last move and this child state
+        #             if self.digraph.has_edge(self.last_move, child):
+        #                 starting_node = child
+        #                 break
+        #     else:
+        #         for node in self.digraph.nodes():
+        #             print(board_state.tolist())
+        #             print(self.digraph.node[node])
+        #             if np.array_equal(self.digraph.node[node]['state'], board_state):
+        #                 starting_node = node
+        # else:
+        for node in self.digraph.nodes():
+            if np.array_equal(self.digraph.node[node]['state'], board_state):
+                starting_node = node
+                break
         else:
-            for node in self.digraph.nodes():
-                if np.array_equal(self.digraph.node[node]['state'], board_state):
-                    starting_node = node
-                    break
-            else:
-                starting_node = 0
+            starting_node = 0
 
         print('-' * 20 + ' selection ' + '-' * 20)
         print("Running MCTS from this starting state with node id {}:\n{}".format(starting_node,
@@ -105,7 +106,7 @@ class MonteCarlo:
         print(str(starting_node) + ' -> select -> ' + str(selected_node) + ': ' + str(to_be_expanded))
         print('selected:\n{}'.format(self.digraph.node[selected_node]['state'].tolist()))
 
-        self.last_move = selected_node
+        # self.last_move = selected_node
         return to_be_expanded, selected_node
 
     def ai_player(self, board_state, _):
@@ -244,6 +245,48 @@ class MonteCarlo:
 
             return self.selection(best_child_node)
 
+    def az_expansion(self, parent, child):
+        print('az_exp')
+        print(parent.tolist())
+        print(child.tolist())
+
+        parent_node = -1
+        for node in self.digraph.nodes():
+            print(node)
+            print(self.digraph.node[node]['state'].tolist())
+            if np.array_equal(self.digraph.node[node]['state'], parent):
+                parent_node = node
+                break
+
+        if parent_node < 0:
+            print('Cannot find parent node!')
+            return
+
+        child_node = -1
+        for node in self.digraph.nodes():
+            print(node)
+            print(self.digraph.node[node]['state'].tolist())
+            if np.array_equal(self.digraph.node[node]['state'], child):
+                child_node = node
+                break
+
+        if child_node < 0:
+            self.digraph.add_node(self.node_counter,
+                                  nw=0,
+                                  nn=0,
+                                  uct=0,
+                                  expanded=False,
+                                  state=child)
+            self.digraph.add_edge(parent_node, self.node_counter)
+            print(self.node_counter)
+            print('node', self.digraph.node[self.node_counter]['state'].tolist())
+            self.node_counter += 1
+        else:
+            print('Find child node!')
+            self.digraph.add_edge(parent_node, child_node)
+
+        return child
+
     def expansion(self, node):
         # As long as this node has at least one unvisited child, choose a legal move
         legal_moves = list(tt.available_moves(self.digraph.node[node]['state']))
@@ -364,13 +407,13 @@ class MonteCarlo:
 
         print(exploitation_value)
         print(exploration_value)
-        print(value[0])
-        print('UCT value {:.3f} for state:\n'.format(value[0]))
+        print(value)
+        print('UCT value {:.3f} for state:\n'.format(value))
         print(state)
 
-        self.digraph.node[state]['uct'] = value[0]
+        self.digraph.node[state]['uct'] = value
 
-        return value[0]
+        return value
 
     def train(self, times):
         for i in range(times):
@@ -378,7 +421,10 @@ class MonteCarlo:
 
     def play_game(self, board):
         while True:
-            if tt.has_winner(board, self.winning_length)[0]:
+            win = tt.has_winner(board, self.winning_length)
+            print(board.tolist())
+            print('win', win)
+            if win[0]:
                 break
             if len(list(tt.available_moves(board))) == 0:
                 break
@@ -386,6 +432,13 @@ class MonteCarlo:
             to_be_expanded, selected_node = self.get_next_move(board, None)
             if not to_be_expanded:
                 board = self.digraph.node[selected_node]['state']
+                win = tt.has_winner(board, self.winning_length)
+                if win[0]:
+                    break
+                if len(list(tt.available_moves(board))) == 0:
+                    break
+                print(len(list(tt.available_moves(board))))
+
                 moves = list(tt.available_moves(board))
                 move = random.choice(moves)
                 board = tt.apply_move(board, move, -1)

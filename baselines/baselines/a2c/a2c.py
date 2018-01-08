@@ -136,8 +136,10 @@ class Runner(object):
             mb_values.append(values)
             mb_dones.append(self.dones)
 
-            obs, rewards, dones, _, illegal = self.env.step(actions)
-
+            obs, rewards, dones, _, illegal, old_obs = self.env.step(actions)
+            if not illegal:
+                # print(obs.tolist())
+                self.mcts.az_expansion(old_obs, obs)
 
             print('r2')
             for ob in obs:
@@ -171,6 +173,7 @@ class Runner(object):
             mb_rewards.append(rewards)
             if dones[0] or illegal:
                 break
+
         mb_dones.append(self.dones)
         # print(mb_dones)
         # print('*'*20)
@@ -239,7 +242,7 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
     tstart = time.time()
 
     for update in range(1, total_timesteps // nbatch + 1):
-        print(runner.mcts.play_game(runner.obs))
+        runner.mcts.play_game(runner.obs)
 
         obs, states, rewards, masks, actions, values = runner.run()
         print('- ' * 20 + 'lea' + ' -' * 20)
