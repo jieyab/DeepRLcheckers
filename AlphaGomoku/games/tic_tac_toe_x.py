@@ -385,6 +385,8 @@ class TicTacToeXGameSpec(BaseGameSpec):
         reward = np.zeros(1)
         actions_nn = [int(actions_nn % self._board_size),
                       int(actions_nn / self._board_size)]  # Convert move from number to X,Y
+        # Is that correct?
+        print('action', actions_nn)
 
         if self.illegal_move(actions_nn):  # Check if the move was illegal
             self.illegal_games += 1

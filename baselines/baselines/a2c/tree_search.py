@@ -13,7 +13,7 @@ class MonteCarlo:
     def __init__(self):
         self.digraph = nx.DiGraph()
         self.node_counter = 0
-        self.computational_budget = 3
+        self.computational_budget = 1
 
         self.num_simulations = 0
         self.board_size = 3
@@ -74,6 +74,40 @@ class MonteCarlo:
 
         return move
 
+    def get_next_move(self, board_state, _):
+        starting_node = None
+
+        if self.last_move is not None:
+            # Check if the starting state is already in the graph as a child of the last move that we made
+            for child in self.digraph.successors(self.last_move):
+                # Check if the child has the same state attribute as the starting state
+                if np.array_equal(self.digraph.node[child]['state'], board_state):
+                    # If it does, then check if there is a link between the last move and this child state
+                    if self.digraph.has_edge(self.last_move, child):
+                        starting_node = child
+                        break
+            else:
+                for node in self.digraph.nodes():
+                    if np.array_equal(self.digraph.node[node]['state'], board_state):
+                        starting_node = node
+        else:
+            for node in self.digraph.nodes():
+                if np.array_equal(self.digraph.node[node]['state'], board_state):
+                    starting_node = node
+                    break
+            else:
+                starting_node = 0
+
+        print('-' * 20 + ' selection ' + '-' * 20)
+        print("Running MCTS from this starting state with node id {}:\n{}".format(starting_node,
+                                                                                  board_state.tolist()))
+        to_be_expanded, selected_node = self.az_selection(starting_node)
+        print(str(starting_node) + ' -> select -> ' + str(selected_node) + ': ' + str(to_be_expanded))
+        print('selected:\n{}'.format(self.digraph.node[selected_node]['state'].tolist()))
+
+        self.last_move = selected_node
+        return to_be_expanded, selected_node
+
     def ai_player(self, board_state, _):
         starting_node = None
 
@@ -132,7 +166,7 @@ class MonteCarlo:
         self.last_move = resulting_node
 
         # If we won, reset the last move to None for future games
-        if tt.has_winner(self.digraph.node[resulting_node]['state']):
+        if tt.has_winner(self.digraph.node[resulting_node]['state'], 3):
             print(self.digraph.node[resulting_node]['state'])
             self.last_move = None
 
@@ -148,7 +182,7 @@ class MonteCarlo:
 
         uct_values = {}
         for child_node in children:
-            uct_values[child_node] = self.uct(child_node)
+            uct_values[child_node] = self.uct(state=child_node)
 
         # Choose the child node that maximizes the expected value given by UCT
         # If more than one has the same UCT value then break ties randomly
@@ -159,6 +193,22 @@ class MonteCarlo:
         # Determine which action leads to this child
         action = self.digraph.get_edge_data(root, best_child)['action']
         return action, best_child
+
+    def az_selection(self, root):
+        children = self.digraph.successors(root)
+
+        uct_values = {}
+        has_children = False
+        for child_node in children:
+            has_children = True
+            uct_values[child_node] = self.uct(state=child_node)
+
+        if not has_children:
+            return True, root
+
+        # Choose the child node that maximizes the expected value given by UCT
+        best_child_node = max(uct_values.items(), key=operator.itemgetter(1))[0]
+        return False, best_child_node
 
     def selection(self, root):
         """
@@ -315,22 +365,38 @@ class MonteCarlo:
         print(exploitation_value)
         print(exploration_value)
         print(value[0])
-        print('UCT value {:.3f} for state:\n'.format(value))
-        print(state.tolist())
+        print('UCT value {:.3f} for state:\n'.format(value[0]))
+        print(state)
 
-        self.digraph.node[state]['uct'] = value
+        self.digraph.node[state]['uct'] = value[0]
 
-        return value
+        return value[0]
 
     def train(self, times):
         for i in range(times):
-            tt.play_game(self.ai_player, self.pure_ai_player, self.board_size, self.winning_length, log=False)
+            tt.play_game(self.ai_player, self.random_player, self.board_size, self.winning_length, log=False)
+
+    def play_game(self, board):
+        while True:
+            if tt.has_winner(board, self.winning_length)[0]:
+                break
+            if len(list(tt.available_moves(board))) == 0:
+                break
+
+            to_be_expanded, selected_node = self.get_next_move(board, None)
+            if not to_be_expanded:
+                board = self.digraph.node[selected_node]['state']
+                moves = list(tt.available_moves(board))
+                move = random.choice(moves)
+                board = tt.apply_move(board, move, -1)
+            else:
+                return board
 
     def play_against_random(self, play_round=20):
         win_count = 0
         record = []
         for i in range(play_round):
-            result = tt.play_game(self.pure_ai_player, self.random_player, log=False)
+            result = tt.play_game(self.ai_player, self.random_player, log=False)
             record.append(result)
             if result == 1:
                 win_count += 1

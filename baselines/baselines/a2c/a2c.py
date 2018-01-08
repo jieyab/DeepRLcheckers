@@ -3,6 +3,7 @@ import time
 import joblib
 import numpy as np
 import tensorflow as tf
+import games.tic_tac_toe_x as tt
 
 from baselines import logger
 from baselines.a2c.tree_search import MonteCarlo
@@ -116,26 +117,35 @@ class Runner(object):
         self.obs[:, :, :, -1] = obs[:, :, :, 0]
 
     def run(self):
+        print('- ' * 20 + 'run' + ' -' * 20)
         mb_obs, mb_rewards, mb_actions, mb_values, mb_dones = [], [], [], [], []
         mb_states = self.states
-        print('- ' * 20 + 'run' + ' -' * 20)
-        # print(mb_states)
+
         for n in range(self.nsteps):
             counter = n
             for ob in self.obs:
                 print(ob.tolist())
-            print(self.dones)
-            print(self.states)
             actions, values, states = self.model.step(self.obs, self.states, self.dones)
+            print('r1')
             print('actions', actions)
             print('values', values)
-            print('states', states)
-            print()
+            # print('states', states)
+
             mb_obs.append(np.copy(self.obs))
             mb_actions.append(actions)
             mb_values.append(values)
             mb_dones.append(self.dones)
+
             obs, rewards, dones, _, illegal = self.env.step(actions)
+
+
+            print('r2')
+            for ob in obs:
+                print(ob.tolist())
+            print('rewards', rewards)
+            print('dones', dones)
+            print('illegal', illegal)
+
             # print(dones)
             if illegal:
                 counter = 0
@@ -229,6 +239,8 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
     tstart = time.time()
 
     for update in range(1, total_timesteps // nbatch + 1):
+        print(runner.mcts.play_game(runner.obs))
+
         obs, states, rewards, masks, actions, values = runner.run()
         print('- ' * 20 + 'lea' + ' -' * 20)
         for ob in obs:
@@ -242,6 +254,7 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
         dim_total = nsteps
         dim = obs.shape[0]
         dim_necesaria = dim_total - dim
+
         obs = np.concatenate((obs, np.zeros((dim_necesaria, 3, 3, 1))), axis=0)
         rewards = np.concatenate((rewards, np.zeros((dim_necesaria))), axis=0)
         masks = np.concatenate((masks, np.full((dim_necesaria), True, dtype=bool)), axis=0)
