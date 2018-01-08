@@ -282,7 +282,7 @@ class MonteCarlo:
                                   nn=0,
                                   uct=0,
                                   expanded=False,
-                                  state=child)
+                                  state=np.copy(child))
             self.digraph.add_edge(parent_node, self.node_counter)
             print('Add node %d -> %d' % (parent_node, self.node_counter))
             print(self.node_counter)
@@ -332,7 +332,7 @@ class MonteCarlo:
                                   nn=0,
                                   uct=0,
                                   expanded=False,
-                                  state=child)
+                                  state=np.copy(child))
             self.digraph.add_edge(node, self.node_counter, action=move)
             child_node_id = self.node_counter
             self.node_counter += 1
