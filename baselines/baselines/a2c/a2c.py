@@ -288,6 +288,7 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
             model.save('./models/tic_tac_toe.cpkt')
         print('* ' * 20 + 'lea' + ' *' * 20)
 
+    runner.mcts.visualization()
     env.close()
 
 

@@ -23,6 +23,7 @@ class MonteCarlo:
         self.uct_c = np.sqrt(2)
 
         self.digraph.add_node(self.node_counter,
+                              num=self.node_counter,
                               nw=0,
                               nn=0,
                               uct=0,
@@ -222,6 +223,7 @@ class MonteCarlo:
         # In the case that the root node is not in the graph, add it
         if root not in self.digraph.nodes():
             self.digraph.add_node(self.node_counter,
+                                  num=self.node_counter,
                                   nw=0,
                                   nn=0,
                                   uct=0,
@@ -255,8 +257,8 @@ class MonteCarlo:
 
         parent_node = -1
         for node in self.digraph.nodes():
-            print(node)
-            print(self.digraph.node[node]['state'].tolist())
+            # print(node)
+            # print(self.digraph.node[node]['state'].tolist())
             if np.array_equal(self.digraph.node[node]['state'], parent):
                 parent_node = node
                 break
@@ -267,27 +269,32 @@ class MonteCarlo:
 
         child_node = -1
         for node in self.digraph.nodes():
-            print(node)
-            print(self.digraph.node[node]['state'].tolist())
+            # print(node)
+            # print(self.digraph.node[node]['state'].tolist())
             if np.array_equal(self.digraph.node[node]['state'], child):
                 child_node = node
                 break
 
         if child_node < 0:
             self.digraph.add_node(self.node_counter,
+                                  num=self.node_counter,
                                   nw=0,
                                   nn=0,
                                   uct=0,
                                   expanded=False,
                                   state=child)
             self.digraph.add_edge(parent_node, self.node_counter)
+            print('Add node %d -> %d' % (parent_node, self.node_counter))
             print(self.node_counter)
             print('node', self.digraph.node[self.node_counter]['state'].tolist())
             self.node_counter += 1
         else:
             print('Find child node!')
             self.digraph.add_edge(parent_node, child_node)
+            print('Add node %d -> %d' % (parent_node, child_node))
 
+        for edge in self.digraph.edges:
+            print(edge)
         return child
 
     def expansion(self, node):
@@ -320,6 +327,7 @@ class MonteCarlo:
             print('Add node %d -> %d' % (node, self.node_counter))
             print(child)
             self.digraph.add_node(self.node_counter,
+                                  num=self.node_counter,
                                   nw=0,
                                   nn=0,
                                   uct=0,
@@ -468,12 +476,15 @@ class MonteCarlo:
         for node in pd_tree.get_nodes():
             attr = node.get_attributes()
             try:
-                state = attr['state'].replace('),', '\n').replace('(', '').replace(')', '').replace(' ', '') \
-                    .replace(',', ' | ')
+                state = attr['state'].replace(']]', ']').replace(']]', '') \
+                    .replace('[', '').replace('\n', '').replace(' ', '').replace(']', ' | ')
+                # state = attr['state'].replace('),', '\n').replace('(', '').replace(')', '').replace(' ', '') \
+                #     .replace(',', ' | ')
                 w = attr['nw']
                 n = attr['nn']
+                num = attr['num']
                 uct = attr['uct'][:4]
-                node.set_label(state + '\n' + w + '/' + n + '\n' + attr['expanded'])
+                node.set_label(state + '\n' + w + '/' + n + '\n' + uct + '\n' + num)
             except KeyError:
                 pass
         pd_tree.write_png('tree.png')
