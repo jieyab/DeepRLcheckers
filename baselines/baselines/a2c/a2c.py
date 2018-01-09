@@ -109,12 +109,18 @@ class Runner(object):
         self.dones = [False for _ in range(nenv)]
 
         self.mcts = MonteCarlo()
+        self.list_board = []
+        self.list_ai_board = []
 
     def update_obs(self, obs):
         # Do frame-stacking here instead of the FrameStack wrapper to reduce
         # IPC overhead
         self.obs = np.roll(self.obs, shift=-1, axis=3)
         self.obs[:, :, :, -1] = obs[:, :, :, 0]
+
+    def clear_history_list(self):
+        self.list_ai_board.clear()
+        self.list_board.clear()
 
     def run(self):
         print('- ' * 20 + 'run' + ' -' * 20)
@@ -136,14 +142,19 @@ class Runner(object):
             mb_values.append(values)
             mb_dones.append(self.dones)
 
-            obs, rewards, dones, _, illegal, old_obs, mid_obs = self.env.step(actions)
+            obs, rewards, dones, _, illegal, old_obs, mid_obs, fin_obs = self.env.step(actions)
             if not illegal:
                 print('obs status:')
                 print(old_obs.tolist())
                 print(mid_obs.tolist())
-                print(obs.tolist())
-                self.mcts.az_expansion(old_obs, mid_obs)
-                self.mcts.az_expansion(mid_obs, obs)
+                print(fin_obs.tolist())
+                # self.mcts.az_expansion(old_obs, mid_obs)
+                # self.mcts.az_expansion(mid_obs, fin_obs)
+                self.list_ai_board.append(mid_obs)
+                self.list_board.append(mid_obs)
+                self.list_board.append(fin_obs)
+            else:
+                self.clear_history_list()
 
             print('r2')
             for ob in obs:
@@ -161,6 +172,7 @@ class Runner(object):
                 mb_values.append(values)
                 mb_dones.append(self.dones)
                 # print(mb_obs, mb_rewards, mb_actions, mb_values, mb_dones)
+
             self.states = states
             self.dones = dones
             for n, done in enumerate(dones):
@@ -171,8 +183,22 @@ class Runner(object):
                     # print('*'*20)
                     # clear obs
                     self.obs[n] = self.obs[n] * 0
+                    print('done! list board')
+                    for i in self.list_board:
+                        print(i.tolist())
+                    print('done! list ai board')
+                    for i in self.list_ai_board:
+                        print(i.tolist())
+                    # print('irewards', rewards)
                     # print(self.obs[n])
                     # print('-'*20)
+
+                    for i in range(len(self.list_board) - 1):
+                        print('expansion', self.list_board[i], self.list_board[i + 1])
+                        self.mcts.az_expansion(self.list_board[i], self.list_board[i + 1])
+                    self.mcts.az_backup(self.list_ai_board, rewards[0])
+                    self.clear_history_list()
+
             self.update_obs(obs)
             mb_rewards.append(rewards)
             if dones[0] or illegal:
@@ -246,7 +272,11 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
     tstart = time.time()
 
     for update in range(1, total_timesteps // nbatch + 1):
-        runner.mcts.play_game(runner.obs)
+        runner.clear_history_list()
+        board, list_board, list_ai_board = runner.mcts.play_game(runner.obs)
+        runner.obs = board
+        runner.list_board = list_board
+        runner.list_ai_board = list_ai_board
 
         obs, states, rewards, masks, actions, values = runner.run()
         print('- ' * 20 + 'lea' + ' -' * 20)

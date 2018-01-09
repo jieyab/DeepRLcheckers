@@ -389,7 +389,6 @@ class TicTacToeXGameSpec(BaseGameSpec):
         # Is that correct?
         print('action', actions_nn)
         old_state = np.copy(self.board_state)
-        mid_state = None
 
         if self.illegal_move(actions_nn):  # Check if the move was illegal
             self.illegal_games += 1
@@ -397,7 +396,7 @@ class TicTacToeXGameSpec(BaseGameSpec):
             self.print = True
             reward[0] = self.reward_illegal_move
             winner = np.ones(1, dtype=bool)
-            return self.board_state, reward, winner, 0, True, None, None
+            return self.board_state, reward, winner, 0, True, None, None, None
 
         self.board_state = apply_move(self.board_state, actions_nn, 1)  # Apply move to the board
         mid_state = np.copy(self.board_state)
@@ -424,6 +423,7 @@ class TicTacToeXGameSpec(BaseGameSpec):
                     # print('random player won')
                     # print(self.board_state[0, :, :, 0])
 
+        fin_state = np.copy(self.board_state)
         if reward[0] != 0:
             # print(self.board_state[0, :, :, 0])
             self.board_state = new_board(self._board_size)
@@ -433,7 +433,7 @@ class TicTacToeXGameSpec(BaseGameSpec):
              == 0) and self.print):
             self.print_statistic()
 
-        return self.board_state, reward, winner, 0, False, old_state, mid_state
+        return self.board_state, reward, winner, 0, False, old_state, mid_state, fin_state
 
     def step_vs(self, actions_nn, side):
         reward = np.zeros(1)

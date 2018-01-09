@@ -293,8 +293,8 @@ class MonteCarlo:
             self.digraph.add_edge(parent_node, child_node)
             print('Add node %d -> %d' % (parent_node, child_node))
 
-        for edge in self.digraph.edges:
-            print(edge)
+        # for edge in self.digraph.edges:
+        #     print(edge)
         return child
 
     def expansion(self, node):
@@ -366,6 +366,14 @@ class MonteCarlo:
 
         return tt.has_winner(current_state, self.winning_length)
 
+    def az_backup(self, list_ai_node, reward):
+        for state in list_ai_node:
+            for node in self.digraph.nodes():
+                if np.array_equal(self.digraph.node[node]['state'], state):
+                    self.digraph.node[node]['nn'] += 1
+                    self.digraph.node[node]['nw'] += reward
+                    break
+
     def backpropagation(self, last_visited, reward):
         """
         Walk the path upwards to the root, incrementing the
@@ -418,7 +426,6 @@ class MonteCarlo:
 
         print(exploitation_value)
         print(exploration_value)
-        print(value)
         print('UCT value {:.3f} for state:\n'.format(value))
         print(state)
 
@@ -431,30 +438,39 @@ class MonteCarlo:
             tt.play_game(self.ai_player, self.random_player, self.board_size, self.winning_length, log=False)
 
     def play_game(self, board):
+        print('Start play', board.tolist())
+        self.num_simulations += 1
+        list_board = [board]
+        list_ai_board = []
+
         while True:
             win = tt.has_winner(board, self.winning_length)
             print(board.tolist())
             print('win', win)
             if win[0]:
-                break
+                return board, list_board, list_ai_board
             if len(list(tt.available_moves(board))) == 0:
-                break
+                return board, list_board, list_ai_board
 
             to_be_expanded, selected_node = self.get_next_move(board, None)
+
             if not to_be_expanded:
-                board = self.digraph.node[selected_node]['state']
+                list_board.append(self.digraph.node[selected_node]['state'])
+                list_ai_board.append(self.digraph.node[selected_node]['state'])
+
+                board = np.copy(self.digraph.node[selected_node]['state'])
                 win = tt.has_winner(board, self.winning_length)
                 if win[0]:
-                    break
+                    return board, list_board, list_ai_board
                 if len(list(tt.available_moves(board))) == 0:
-                    break
+                    return board, list_board, list_ai_board
                 print(len(list(tt.available_moves(board))))
 
                 moves = list(tt.available_moves(board))
                 move = random.choice(moves)
                 board = tt.apply_move(board, move, -1)
             else:
-                return board
+                return board, list_board, list_ai_board
 
     def play_against_random(self, play_round=20):
         win_count = 0
@@ -478,8 +494,6 @@ class MonteCarlo:
             try:
                 state = attr['state'].replace(']]', ']').replace(']]', '').replace('[[[[', '').replace('\n', '') \
                     .replace('[[', '\n').replace('[', '').replace(' ', '').replace(']', ' | ').replace(' | \n', '\n')
-                print(state)
-
                 # state = attr['state'].replace('),', '\n').replace('(', '').replace(')', '').replace(' ', '') \
                 #     .replace(',', ' | ')
                 w = attr['nw']
