@@ -161,9 +161,12 @@ class Runner(object):
                 print(fin_obs.tolist())
                 # self.mcts.az_expansion(old_obs, mid_obs)
                 # self.mcts.az_expansion(mid_obs, fin_obs)
+
                 self.list_ai_board.append(mid_obs)
                 self.list_board.append(mid_obs)
-                self.list_board.append(fin_obs)
+                if not np.array_equal(mid_obs, fin_obs):
+                    self.list_board.append(fin_obs)
+
                 # sys.stdout = open(os.devnull, 'w')
             else:
                 self.clear_history_list()
@@ -215,6 +218,7 @@ class Runner(object):
                         print('expansion')
                         print(self.list_board[i].tolist())
                         print(self.list_board[i + 1].tolist())
+
                         self.mcts.az_expansion(self.list_board[i], self.list_board[i + 1])
                     self.mcts.az_backup(self.list_ai_board, rewards[0])
                     self.clear_history_list()
