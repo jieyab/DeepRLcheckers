@@ -220,6 +220,9 @@ class Runner(object):
                         print(self.list_board[i + 1].tolist())
 
                         self.mcts.az_expansion(self.list_board[i], self.list_board[i + 1])
+
+                    if rewards[0] == -0.8:
+                        rewards[0] = -1
                     self.mcts.az_backup(self.list_ai_board, rewards[0])
                     self.clear_history_list()
                     # sys.stdout = open(os.devnull, 'w')
