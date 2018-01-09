@@ -382,6 +382,9 @@ class TicTacToeXGameSpec(BaseGameSpec):
         self.games_wonRandom = 0
         self.illegal_games = 0
 
+    def set_board(self, board):
+        self.board_state = board
+
     def step(self, actions_nn):
         reward = np.zeros(1)
         actions_nn = [int(actions_nn % self._board_size),
@@ -498,4 +501,3 @@ if __name__ == '__main__':
     # play_game(random_player, random_player, 3, 3, log=True)
     print(new_board(3).tolist())
     print(has_winner(e, 2)[0])
-

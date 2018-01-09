@@ -279,7 +279,6 @@ class MonteCarlo:
 
         # for edge in self.digraph.edges:
         #     print(edge)
-        return child
 
     def expansion(self, node):
         # As long as this node has at least one unvisited child, choose a legal move
@@ -421,10 +420,11 @@ class MonteCarlo:
         for i in range(times):
             tt.play_game(self.ai_player, self.random_player, self.board_size, self.winning_length, log=False)
 
-    def play_game(self, board):
+    def play_game(self):
+        board = tt.new_board(self.board_size)
         print('Start play', board.tolist())
         self.num_simulations += 1
-        list_board = [board]
+        list_board = [np.copy(board)]
         list_ai_board = []
 
         while True:
@@ -444,8 +444,9 @@ class MonteCarlo:
                     print(i.tolist())
 
                 print('state_node', self.digraph.node[selected_node]['state'].tolist())
-                list_board.append(self.digraph.node[selected_node]['state'])
-                list_ai_board.append(self.digraph.node[selected_node]['state'])
+                s_node = np.copy(self.digraph.node[selected_node]['state'])
+                list_board.append(s_node)
+                list_ai_board.append(s_node)
 
                 board = np.copy(self.digraph.node[selected_node]['state'])
                 win = tt.has_winner(board, self.winning_length)
@@ -458,6 +459,8 @@ class MonteCarlo:
                 moves = list(tt.available_moves(board))
                 move = random.choice(moves)
                 board = tt.apply_move(board, move, -1)
+
+                list_board.append(np.copy(board))
 
                 for node in self.digraph.nodes():
                     if np.array_equal(self.digraph.node[node]['state'], board):

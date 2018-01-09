@@ -1,3 +1,5 @@
+import os
+import sys
 import time
 
 import joblib
@@ -125,13 +127,14 @@ class Runner(object):
 
     def run(self):
         print('- ' * 20 + 'run' + ' -' * 20)
+        for i in self.list_board:
+            print(i.tolist())
         mb_obs, mb_rewards, mb_actions, mb_values, mb_dones = [], [], [], [], []
         mb_states = self.states
 
         for n in range(self.nsteps):
             counter = n
-            for ob in self.obs:
-                print(ob.tolist())
+            print('Original state: ', self.obs.tolist())
             actions, values, states = self.model.step(self.obs, self.states, self.dones)
             print('r1')
             print('actions', actions)
@@ -143,8 +146,11 @@ class Runner(object):
             mb_values.append(values)
             mb_dones.append(self.dones)
 
+            self.env.set_board(self.obs)
+
             obs, rewards, dones, _, illegal, old_obs, mid_obs, fin_obs = self.env.step(actions)
             if not illegal:
+                # sys.stdout = sys.__stdout__
                 print('list_board')
                 for i in self.list_board:
                     print(i.tolist())
@@ -158,6 +164,7 @@ class Runner(object):
                 self.list_ai_board.append(mid_obs)
                 self.list_board.append(mid_obs)
                 self.list_board.append(fin_obs)
+                # sys.stdout = open(os.devnull, 'w')
             else:
                 self.clear_history_list()
 
@@ -188,6 +195,8 @@ class Runner(object):
                     # print('*'*20)
                     # clear obs
                     self.obs[n] = self.obs[n] * 0
+                    if len(self.list_board):
+                        print('Update state')
                     print('done! list board')
                     for i in self.list_board:
                         print(i.tolist())
@@ -198,11 +207,18 @@ class Runner(object):
                     # print(self.obs[n])
                     # print('-'*20)
 
+                    # sys.stdout = sys.__stdout__
+                    for i in self.list_board:
+                        print(i.tolist())
+
                     for i in range(len(self.list_board) - 1):
-                        print('expansion', self.list_board[i], self.list_board[i + 1])
+                        print('expansion')
+                        print(self.list_board[i].tolist())
+                        print(self.list_board[i + 1].tolist())
                         self.mcts.az_expansion(self.list_board[i], self.list_board[i + 1])
                     self.mcts.az_backup(self.list_ai_board, rewards[0])
                     self.clear_history_list()
+                    # sys.stdout = open(os.devnull, 'w')
 
             self.update_obs(obs)
             mb_rewards.append(rewards)
@@ -278,7 +294,7 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
 
     for update in range(1, total_timesteps // nbatch + 1):
         runner.clear_history_list()
-        board, list_board, list_ai_board = runner.mcts.play_game(runner.obs)
+        board, list_board, list_ai_board = runner.mcts.play_game()
         runner.obs = board
         runner.list_board = list_board
         runner.list_ai_board = list_ai_board
