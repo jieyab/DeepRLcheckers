@@ -3,7 +3,6 @@ import time
 import joblib
 import numpy as np
 import tensorflow as tf
-import games.tic_tac_toe_x as tt
 
 from baselines import logger
 from baselines.a2c.tree_search import MonteCarlo
@@ -119,8 +118,10 @@ class Runner(object):
         self.obs[:, :, :, -1] = obs[:, :, :, 0]
 
     def clear_history_list(self):
-        self.list_ai_board.clear()
-        self.list_board.clear()
+        del self.list_board[:]
+        del self.list_ai_board[:]
+        # self.list_ai_board.clear()
+        # self.list_board.clear()
 
     def run(self):
         print('- ' * 20 + 'run' + ' -' * 20)
@@ -144,6 +145,10 @@ class Runner(object):
 
             obs, rewards, dones, _, illegal, old_obs, mid_obs, fin_obs = self.env.step(actions)
             if not illegal:
+                print('list_board')
+                for i in self.list_board:
+                    print(i.tolist())
+                print('list-board')
                 print('obs status:')
                 print(old_obs.tolist())
                 print(mid_obs.tolist())

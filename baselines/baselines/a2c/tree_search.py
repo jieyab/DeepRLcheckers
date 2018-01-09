@@ -76,28 +76,12 @@ class MonteCarlo:
         return move
 
     def get_next_move(self, board_state, _):
-        # starting_node = None
-        # if self.last_move is not None:
-        #     # Check if the starting state is already in the graph as a child of the last move that we made
-        #     for child in self.digraph.successors(self.last_move):
-        #         # Check if the child has the same state attribute as the starting state
-        #         if np.array_equal(self.digraph.node[child]['state'], board_state):
-        #             # If it does, then check if there is a link between the last move and this child state
-        #             if self.digraph.has_edge(self.last_move, child):
-        #                 starting_node = child
-        #                 break
-        #     else:
-        #         for node in self.digraph.nodes():
-        #             print(board_state.tolist())
-        #             print(self.digraph.node[node])
-        #             if np.array_equal(self.digraph.node[node]['state'], board_state):
-        #                 starting_node = node
-        # else:
         for node in self.digraph.nodes():
             if np.array_equal(self.digraph.node[node]['state'], board_state):
                 starting_node = node
                 break
         else:
+            print('Cannot find the node!')
             starting_node = 0
 
         print('-' * 20 + ' selection ' + '-' * 20)
@@ -455,6 +439,11 @@ class MonteCarlo:
             to_be_expanded, selected_node = self.get_next_move(board, None)
 
             if not to_be_expanded:
+                print('lb', to_be_expanded)
+                for i in list_board:
+                    print(i.tolist())
+
+                print('state_node', self.digraph.node[selected_node]['state'].tolist())
                 list_board.append(self.digraph.node[selected_node]['state'])
                 list_ai_board.append(self.digraph.node[selected_node]['state'])
 
@@ -469,6 +458,24 @@ class MonteCarlo:
                 moves = list(tt.available_moves(board))
                 move = random.choice(moves)
                 board = tt.apply_move(board, move, -1)
+
+                for node in self.digraph.nodes():
+                    if np.array_equal(self.digraph.node[node]['state'], board):
+                        break
+                else:
+                    print('Create random player state!')
+                    self.digraph.add_node(self.node_counter,
+                                          num=self.node_counter,
+                                          nw=0,
+                                          nn=0,
+                                          uct=0,
+                                          expanded=False,
+                                          state=np.copy(board))
+                    self.digraph.add_edge(selected_node, self.node_counter)
+                    print('Add random player node %d -> %d' % (selected_node, self.node_counter))
+                    print('node', self.digraph.node[self.node_counter]['state'].tolist())
+                    self.node_counter += 1
+
             else:
                 return board, list_board, list_ai_board
 
