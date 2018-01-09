@@ -75,7 +75,9 @@ class MonteCarlo:
 
         return move
 
-    def get_next_move(self, board_state, _):
+    def get_next_move(self, board_state, list_board, list_ai_board):
+        selected_node = -1
+
         for node in self.digraph.nodes():
             if np.array_equal(self.digraph.node[node]['state'], board_state):
                 starting_node = node
@@ -87,11 +89,112 @@ class MonteCarlo:
         print('-' * 20 + ' selection ' + '-' * 20)
         print("Running MCTS from this starting state with node id {}:\n{}".format(starting_node,
                                                                                   board_state.tolist()))
-        to_be_expanded, selected_node = self.az_selection(starting_node)
-        print(str(starting_node) + ' -> select -> ' + str(selected_node) + ': ' + str(to_be_expanded))
-        print('selected:\n{}'.format(self.digraph.node[selected_node]['state'].tolist()))
+        children_node = []
+        for child_node in self.digraph.successors(starting_node):
+            children_node.append(self.digraph.node[child_node]['state'])
+        print(children_node)
 
-        # self.last_move = selected_node
+        if not self.digraph.node[starting_node]['expanded']:
+            moves = list(tt.available_moves(board_state))
+            list_index_delete = []
+            for i, m in enumerate(moves):
+                print('i', i, m)
+                new_board = tt.apply_move(np.copy(board_state), m, 1)
+                for cn in children_node:
+                    print('cc')
+                    print(cn.tolist()[0])
+                    if np.array_equal(new_board, cn):
+                        list_index_delete.append(i)
+
+            moves = [i for j, i in enumerate(moves) if j not in list_index_delete]
+
+            # move minus one player
+            if len(list(tt.available_moves(board_state))) == 0:
+                return True, selected_node
+            win = tt.has_winner(board_state, self.winning_length)
+            if win[0]:
+                return True, selected_node
+
+            if len(moves) == 1:
+                self.digraph.node[starting_node]['expanded'] = True
+
+            if not moves:
+                self.digraph.node[starting_node]['expanded'] = True
+                return True, selected_node
+
+            move = random.choice(moves)
+            board_state = tt.apply_move(board_state, move, 1)
+            print('List to delete', list_index_delete)
+            print(moves)
+
+            for node in self.digraph.nodes():
+                if np.array_equal(self.digraph.node[node]['state'], board_state):
+                    print(board_state.tolist())
+                    self.digraph.add_edge(starting_node, node)
+                    selected_node = node
+                    break
+            else:
+                print('Expand main player state!')
+                self.digraph.add_node(self.node_counter,
+                                      num=self.node_counter,
+                                      nw=0,
+                                      nn=0,
+                                      uct=0,
+                                      expanded=False,
+                                      state=np.copy(board_state))
+                self.digraph.add_edge(starting_node, self.node_counter)
+                print('Add main player node %d -> %d' % (starting_node, self.node_counter))
+                print('node', self.digraph.node[self.node_counter]['state'].tolist())
+                selected_node = self.node_counter
+                self.node_counter += 1
+
+            list_board.append(np.copy(board_state))
+            list_ai_board.append(np.copy(board_state))
+
+            if selected_node == -1:
+                raise Exception('Cannot successfully expand node!')
+
+            # move minus one player
+            if len(list(tt.available_moves(board_state))) == 0:
+                return True, selected_node
+            win = tt.has_winner(board_state, self.winning_length)
+            if win[0]:
+                return True, selected_node
+
+            moves = list(tt.available_moves(board_state))
+            move = random.choice(moves)
+            board_state = tt.apply_move(board_state, move, -1)
+
+            for node in self.digraph.nodes():
+                if np.array_equal(self.digraph.node[node]['state'], board_state):
+                    self.digraph.add_edge(selected_node, node)
+                    selected_node = node
+                    break
+            else:
+                print('Create random player state!')
+                self.digraph.add_node(self.node_counter,
+                                      num=self.node_counter,
+                                      nw=0,
+                                      nn=0,
+                                      uct=0,
+                                      expanded=False,
+                                      state=np.copy(board_state))
+                self.digraph.add_edge(selected_node, self.node_counter)
+                print('Add random player node %d -> %d' % (selected_node, self.node_counter))
+                print('node', self.digraph.node[self.node_counter]['state'].tolist())
+                selected_node = self.node_counter
+                self.node_counter += 1
+
+            list_board.append(np.copy(board_state))
+            to_be_expanded = True
+
+        else:
+            to_be_expanded, selected_node = self.az_selection(starting_node)
+            print(str(starting_node) + ' -> select -> ' + str(selected_node) + ': ' + str(to_be_expanded))
+            print('selected:\n{}'.format(self.digraph.node[selected_node]['state'].tolist()))
+
+        if selected_node == -1:
+            raise Exception('Cannot successfully expand node!')
         return to_be_expanded, selected_node
 
     def ai_player(self, board_state, _):
@@ -255,6 +358,7 @@ class MonteCarlo:
         for node in self.digraph.nodes():
             # print(node)
             # print(self.digraph.node[node]['state'].tolist())
+            # print(self.digraph.nodes())
             if np.array_equal(self.digraph.node[node]['state'], child):
                 child_node = node
                 break
@@ -428,15 +532,14 @@ class MonteCarlo:
         list_ai_board = []
 
         while True:
-            win = tt.has_winner(board, self.winning_length)
             print(board.tolist())
-            print('win', win)
-            if win[0]:
-                return board, list_board, list_ai_board
             if len(list(tt.available_moves(board))) == 0:
                 return board, list_board, list_ai_board
+            win = tt.has_winner(board, self.winning_length)
+            if win[0]:
+                return board, list_board, list_ai_board
 
-            to_be_expanded, selected_node = self.get_next_move(board, None)
+            to_be_expanded, selected_node = self.get_next_move(board, list_board, list_ai_board)
 
             if not to_be_expanded:
                 print('lb', to_be_expanded)
@@ -449,10 +552,10 @@ class MonteCarlo:
                 list_ai_board.append(s_node)
 
                 board = np.copy(self.digraph.node[selected_node]['state'])
+                if len(list(tt.available_moves(board))) == 0:
+                    return board, list_board, list_ai_board
                 win = tt.has_winner(board, self.winning_length)
                 if win[0]:
-                    return board, list_board, list_ai_board
-                if len(list(tt.available_moves(board))) == 0:
                     return board, list_board, list_ai_board
                 print(len(list(tt.available_moves(board))))
 
