@@ -6,7 +6,7 @@ from baselines.a2c.a2c import learn
 from baselines.a2c.policies import CnnPolicy
 from games.tic_tac_toe_x import TicTacToeXGameSpec
 
-is_mute = 0
+is_mute = 1
 
 if __name__ == '__main__':
     if is_mute:

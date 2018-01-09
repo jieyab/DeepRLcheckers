@@ -14,7 +14,9 @@ player one has played there, -1 means the seconds player has played there. The a
 copy of a given state with a given move applied. This can be useful for doing min-max or monte carlo sampling.
 """
 import itertools
+import os
 import random
+import sys
 
 import numpy as np
 from gym import spaces
@@ -368,6 +370,7 @@ class TicTacToeXGameSpec(BaseGameSpec):
         self.board_state = apply_move(self.board_state, action_random, -1)
 
     def print_statistic(self):
+        sys.stdout = sys.__stdout__
         self.print = False
         print('AI wins in', (100 * self.games_wonAI) / (
                 1 + self.games_wonAI + self.games_wonRandom + self.games_finish_in_draw + self.illegal_games))
@@ -378,6 +381,7 @@ class TicTacToeXGameSpec(BaseGameSpec):
         print('AI made', (100 * self.illegal_games / (
                 1 + self.games_wonAI + self.games_wonRandom + self.games_finish_in_draw + self.illegal_games)),
               'illegal moves')
+        sys.stdout = open(os.devnull, 'w')
         self.games_wonAI = 0
         self.games_wonRandom = 0
         self.illegal_games = 0
