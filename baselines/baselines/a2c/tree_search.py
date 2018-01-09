@@ -108,8 +108,19 @@ class MonteCarlo:
 
             moves = [i for j, i in enumerate(moves) if j not in list_index_delete]
 
+            # move minus one player
+            if len(list(tt.available_moves(board_state))) == 0:
+                return True, selected_node
+            win = tt.has_winner(board_state, self.winning_length)
+            if win[0]:
+                return True, selected_node
+
             if len(moves) == 1:
                 self.digraph.node[starting_node]['expanded'] = True
+
+            if not moves:
+                self.digraph.node[starting_node]['expanded'] = True
+                return True, selected_node
 
             move = random.choice(moves)
             board_state = tt.apply_move(board_state, move, 1)
@@ -144,10 +155,10 @@ class MonteCarlo:
                 raise Exception('Cannot successfully expand node!')
 
             # move minus one player
+            if len(list(tt.available_moves(board_state))) == 0:
+                return True, selected_node
             win = tt.has_winner(board_state, self.winning_length)
             if win[0]:
-                return True, selected_node
-            if len(list(tt.available_moves(board_state))) == 0:
                 return True, selected_node
 
             moves = list(tt.available_moves(board_state))
@@ -521,12 +532,11 @@ class MonteCarlo:
         list_ai_board = []
 
         while True:
-            win = tt.has_winner(board, self.winning_length)
             print(board.tolist())
-            print('win', win)
-            if win[0]:
-                return board, list_board, list_ai_board
             if len(list(tt.available_moves(board))) == 0:
+                return board, list_board, list_ai_board
+            win = tt.has_winner(board, self.winning_length)
+            if win[0]:
                 return board, list_board, list_ai_board
 
             to_be_expanded, selected_node = self.get_next_move(board, list_board, list_ai_board)
@@ -542,10 +552,10 @@ class MonteCarlo:
                 list_ai_board.append(s_node)
 
                 board = np.copy(self.digraph.node[selected_node]['state'])
+                if len(list(tt.available_moves(board))) == 0:
+                    return board, list_board, list_ai_board
                 win = tt.has_winner(board, self.winning_length)
                 if win[0]:
-                    return board, list_board, list_ai_board
-                if len(list(tt.available_moves(board))) == 0:
                     return board, list_board, list_ai_board
                 print(len(list(tt.available_moves(board))))
 

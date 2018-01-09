@@ -372,6 +372,7 @@ class TicTacToeXGameSpec(BaseGameSpec):
     def print_statistic(self):
         sys.stdout = sys.__stdout__
         self.print = False
+        print('- ' * 40)
         print('AI wins in', (100 * self.games_wonAI) / (
                 1 + self.games_wonAI + self.games_wonRandom + self.games_finish_in_draw + self.illegal_games))
         print('Random player wins ', (100 * self.games_wonRandom) / (
@@ -436,7 +437,7 @@ class TicTacToeXGameSpec(BaseGameSpec):
             self.board_state = new_board(self._board_size)
             self.print = True
 
-        if (((self.games_wonAI + self.games_wonRandom + self.games_finish_in_draw + self.illegal_games) % 1000
+        if (((self.games_wonAI + self.games_wonRandom + self.games_finish_in_draw + self.illegal_games) % 100
              == 0) and self.print):
             self.print_statistic()
 
