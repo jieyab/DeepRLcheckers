@@ -385,6 +385,7 @@ class TicTacToeXGameSpec(BaseGameSpec):
         sys.stdout = open(os.devnull, 'w')
         self.games_wonAI = 0
         self.games_wonRandom = 0
+        self.games_finish_in_draw = 0
         self.illegal_games = 0
 
     def set_board(self, board):
@@ -420,7 +421,7 @@ class TicTacToeXGameSpec(BaseGameSpec):
             if len(self.available_moves_1()) == 0:
                 # print('Draw')
                 self.games_finish_in_draw += 1
-                reward[0] = -0.3
+                reward[0] = -0.5
 
             else:
                 self.opponent_move()
