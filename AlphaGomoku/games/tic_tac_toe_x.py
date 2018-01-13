@@ -345,17 +345,14 @@ class TicTacToeXGameSpec(BaseGameSpec):
 
     def print_stadistics(self):
         self.print = False
-        print('AI wins in', (100 * self.games_wonAI) / (
-                1 + self.games_wonAI + self.games_wonRandom + self.games_finish_in_draw + self.illegal_games))
-        print('Random player wins ', (100 * self.games_wonRandom) / (
-                1 + self.games_wonAI + self.games_wonRandom + self.games_finish_in_draw + self.illegal_games))
-        print('Draws', (100 * self.games_finish_in_draw) / (
-                1 + self.games_wonAI + self.games_wonRandom + self.games_finish_in_draw + self.illegal_games))
-        print('AI made', (100 * self.illegal_games / (
-                1 + self.games_wonAI + self.games_wonRandom + self.games_finish_in_draw + self.illegal_games)),
-              'illegal moves')
+        total = 1 + self.games_wonAI + self.games_wonRandom + self.games_finish_in_draw + self.illegal_games
+        print('AI wins in', (100 * self.games_wonAI) / total)
+        print('Random player wins ', (100 * self.games_wonRandom) / total)
+        print('Draws', (100 * self.games_finish_in_draw) / total)
+        print('AI made', (100 * self.illegal_games / total), 'illegal moves')
         self.games_wonAI = 0
         self.games_wonRandom = 0
+        self.games_finish_in_draw = 0
         self.illegal_games = 0
 
     def step(self, actions_nn):
@@ -381,9 +378,9 @@ class TicTacToeXGameSpec(BaseGameSpec):
 
         else:  # If there is no winner check for draw and make random move
             if (len(self.available_moves_1()) == 0):
-                print('Draw')
+                # print('Draw')
                 self.games_finish_in_draw += 1
-                reward[0] = -1
+                reward[0] = -0.5
 
             else:
                 self.opponent_move()
@@ -399,8 +396,8 @@ class TicTacToeXGameSpec(BaseGameSpec):
             self.board_state = _new_board(self._board_size)
             self.print = True
 
-        if (((
-                     self.games_wonAI + self.games_wonRandom + self.games_finish_in_draw + self.illegal_games) % 1000 == 0) and self.print):
+        if (((self.games_wonAI + self.games_wonRandom + self.games_finish_in_draw + self.illegal_games) % 1000 == 0)
+                and self.print):
             self.print_stadistics()
 
         return self.board_state, reward, winner, 0, False
