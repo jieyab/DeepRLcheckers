@@ -4,10 +4,10 @@ import joblib
 import numpy as np
 import tensorflow as tf
 
-from AlphaGomoku.a2c.tree_search import MonteCarlo
-from AlphaGomoku.common.utils import Scheduler, find_trainable_variables
-from AlphaGomoku.common.utils import cat_entropy, mse
-from AlphaGomoku.common.utils import discount_with_dones
+from AlphaGomoku.core.tree_search import MonteCarlo
+from AlphaGomoku.core.utils import Scheduler, find_trainable_variables
+from AlphaGomoku.core.utils import cat_entropy, mse
+from AlphaGomoku.core.utils import discount_with_dones
 from AlphaGomoku.common.math_util import explained_variance
 from AlphaGomoku.common.misc_util import set_global_seeds
 from AlphaGomoku.common import logger
@@ -342,7 +342,7 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
             logger.record_tabular("explained_variance", float(ev))
             logger.dump_tabular()
         if (update % (log_interval * 10)) == 0:
-            model.save('./models/tic_tac_toe.cpkt')
+            model.save('../models/gomoku.cpkt')
         print('* ' * 20 + 'lea' + ' *' * 20)
 
     runner.mcts.visualization()
