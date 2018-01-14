@@ -21,7 +21,7 @@ import sys
 import numpy as np
 from gym import spaces
 
-from games.base_game_spec import BaseGameSpec
+from AlphaGomoku.games.base_game_spec import BaseGameSpec
 
 
 def new_board(board_size):

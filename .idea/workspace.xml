@@ -2,19 +2,43 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="2b45f840-e5a8-4871-a26e-e7b2f09a8f18" name="Default" comment="">
+      <change beforePath="" afterPath="$PROJECT_DIR$/AlphaGomoku/__init__.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/AlphaGomoku/common/__init__.py" />
+      <change beforePath="$PROJECT_DIR$/.idea/DeepRLcheckers.iml" afterPath="$PROJECT_DIR$/.idea/DeepRLcheckers.iml" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/baselines/a2c/README.md" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/baselines/a2c/run_atari.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/common/__init__.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/common/base_game_spec.py" afterPath="$PROJECT_DIR$/AlphaGomoku/games/base_game_spec.py" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/common/benchmark.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/common/network_helpers.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/games/board.py" afterPath="$PROJECT_DIR$/AlphaGomoku/games/board.py" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/games/connect_4.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/games/tic_tac_toe.py" afterPath="" />
+      <change beforePath="$PROJECT_DIR$/AlphaGomoku/baselines/__init__.py" afterPath="" />
+      <change beforePath="$PROJECT_DIR$/AlphaGomoku/baselines/a2c/__init__.py" afterPath="" />
+      <change beforePath="$PROJECT_DIR$/AlphaGomoku/baselines/a2c/a2c.py" afterPath="" />
+      <change beforePath="$PROJECT_DIR$/AlphaGomoku/baselines/a2c/models/tic_tac_toe.cpkt" afterPath="" />
+      <change beforePath="$PROJECT_DIR$/AlphaGomoku/baselines/a2c/policies.py" afterPath="" />
+      <change beforePath="$PROJECT_DIR$/AlphaGomoku/baselines/a2c/run_gomoku.py" afterPath="" />
+      <change beforePath="$PROJECT_DIR$/AlphaGomoku/baselines/a2c/tree_search.py" afterPath="" />
+      <change beforePath="$PROJECT_DIR$/AlphaGomoku/baselines/a2c/utils.py" afterPath="$PROJECT_DIR$/AlphaGomoku/common/utils.py" />
+      <change beforePath="$PROJECT_DIR$/AlphaGomoku/baselines/common/__init__.py" afterPath="" />
+      <change beforePath="$PROJECT_DIR$/AlphaGomoku/baselines/common/atari_wrappers.py" afterPath="" />
+      <change beforePath="$PROJECT_DIR$/AlphaGomoku/baselines/common/atari_wrappers_deprecated.py" afterPath="" />
+      <change beforePath="$PROJECT_DIR$/AlphaGomoku/baselines/common/azure_utils.py" afterPath="" />
+      <change beforePath="$PROJECT_DIR$/AlphaGomoku/baselines/common/cg.py" afterPath="" />
+      <change beforePath="$PROJECT_DIR$/AlphaGomoku/baselines/common/console_util.py" afterPath="" />
+      <change beforePath="$PROJECT_DIR$/AlphaGomoku/baselines/common/dataset.py" afterPath="" />
+      <change beforePath="$PROJECT_DIR$/AlphaGomoku/baselines/common/distributions.py" afterPath="" />
+      <change beforePath="$PROJECT_DIR$/AlphaGomoku/baselines/common/math_util.py" afterPath="$PROJECT_DIR$/AlphaGomoku/common/math_util.py" />
+      <change beforePath="$PROJECT_DIR$/AlphaGomoku/baselines/common/misc_util.py" afterPath="$PROJECT_DIR$/AlphaGomoku/common/misc_util.py" />
+      <change beforePath="$PROJECT_DIR$/AlphaGomoku/baselines/common/mpi_adam.py" afterPath="" />
+      <change beforePath="$PROJECT_DIR$/AlphaGomoku/baselines/common/mpi_fork.py" afterPath="" />
+      <change beforePath="$PROJECT_DIR$/AlphaGomoku/baselines/common/mpi_moments.py" afterPath="" />
+      <change beforePath="$PROJECT_DIR$/AlphaGomoku/baselines/common/mpi_running_mean_std.py" afterPath="" />
+      <change beforePath="$PROJECT_DIR$/AlphaGomoku/baselines/common/schedules.py" afterPath="" />
+      <change beforePath="$PROJECT_DIR$/AlphaGomoku/baselines/common/segment_tree.py" afterPath="" />
+      <change beforePath="$PROJECT_DIR$/AlphaGomoku/baselines/common/tests/__init__.py" afterPath="" />
+      <change beforePath="$PROJECT_DIR$/AlphaGomoku/baselines/common/tests/test_schedules.py" afterPath="" />
+      <change beforePath="$PROJECT_DIR$/AlphaGomoku/baselines/common/tests/test_segment_tree.py" afterPath="" />
+      <change beforePath="$PROJECT_DIR$/AlphaGomoku/baselines/common/tests/test_tf_util.py" afterPath="" />
+      <change beforePath="$PROJECT_DIR$/AlphaGomoku/baselines/common/tf_util.py" afterPath="" />
+      <change beforePath="$PROJECT_DIR$/AlphaGomoku/baselines/common/vec_env/__init__.py" afterPath="" />
+      <change beforePath="$PROJECT_DIR$/AlphaGomoku/baselines/common/vec_env/subproc_vec_env.py" afterPath="" />
+      <change beforePath="$PROJECT_DIR$/AlphaGomoku/baselines/logger.py" afterPath="$PROJECT_DIR$/AlphaGomoku/common/logger.py" />
       <change beforePath="$PROJECT_DIR$/AlphaGomoku/games/tic_tac_toe_x.py" afterPath="$PROJECT_DIR$/AlphaGomoku/games/tic_tac_toe_x.py" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/games/tree.png" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/games/tree_search.py" afterPath="" />
     </list>
     <ignored path="$PROJECT_DIR$/.idea/" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -25,27 +49,28 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="CoverageDataManager">
+    <SUITE FILE_PATH="coverage/DeepRLcheckers$run_gomoku__2_.coverage" NAME="run_gomoku Coverage Results" MODIFIED="1515968323887" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/AlphaGomoku/a2c" />
     <SUITE FILE_PATH="coverage/DeepRLcheckers$run_gomoku.coverage" NAME="run_gomoku Coverage Results" MODIFIED="1515965373890" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/baselines/baselines/a2c" />
     <SUITE FILE_PATH="coverage/DeepRLcheckers$tree_search.coverage" NAME="tree_search Coverage Results" MODIFIED="1513642825063" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/AlphaGomoku/games" />
-    <SUITE FILE_PATH="coverage/DeepRLcheckers$run_gomoku__1_.coverage" NAME="run_gomoku (1) Coverage Results" MODIFIED="1515967444849" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/AlphaGomoku/baselines/a2c" />
+    <SUITE FILE_PATH="coverage/DeepRLcheckers$run_gomoku__1_.coverage" NAME="run_gomoku Coverage Results" MODIFIED="1515972456875" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/AlphaGomoku/a2c" />
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
       <file leaf-file-name="a2c.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/AlphaGomoku/baselines/a2c/a2c.py">
+        <entry file="file://$PROJECT_DIR$/AlphaGomoku/a2c/a2c.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="171">
-              <caret line="9" column="0" lean-forward="false" selection-start-line="9" selection-start-column="0" selection-end-line="9" selection-end-column="0" />
+            <state relative-caret-position="133">
+              <caret line="7" column="16" lean-forward="false" selection-start-line="7" selection-start-column="16" selection-end-line="7" selection-end-column="16" />
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="policies.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/AlphaGomoku/baselines/a2c/policies.py">
+      <file leaf-file-name="math_util.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/AlphaGomoku/common/math_util.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="665">
-              <caret line="39" column="0" lean-forward="false" selection-start-line="39" selection-start-column="0" selection-end-line="39" selection-end-column="0" />
+            <state relative-caret-position="437">
+              <caret line="24" column="4" lean-forward="false" selection-start-line="24" selection-start-column="4" selection-end-line="24" selection-end-column="4" />
               <folding>
                 <element signature="e#0#18#0" expanded="true" />
               </folding>
@@ -53,8 +78,50 @@
           </provider>
         </entry>
       </file>
+      <file leaf-file-name="misc_util.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/AlphaGomoku/common/misc_util.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="1178">
+              <caret line="69" column="4" lean-forward="false" selection-start-line="69" selection-start-column="4" selection-end-line="69" selection-end-column="4" />
+              <folding>
+                <element signature="e#0#10#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="policies.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/AlphaGomoku/a2c/policies.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="76">
+              <caret line="4" column="16" lean-forward="false" selection-start-line="4" selection-start-column="16" selection-end-line="4" selection-end-column="16" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="tic_tac_toe_x.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/AlphaGomoku/games/tic_tac_toe_x.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="378">
+              <caret line="23" column="16" lean-forward="false" selection-start-line="23" selection-start-column="16" selection-end-line="23" selection-end-column="16" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="__init__.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/AlphaGomoku/common/__init__.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="19">
+              <caret line="1" column="16" lean-forward="false" selection-start-line="1" selection-start-column="16" selection-end-line="1" selection-end-column="16" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
       <file leaf-file-name="utils.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/AlphaGomoku/baselines/a2c/utils.py">
+        <entry file="file://$PROJECT_DIR$/AlphaGomoku/common/utils.py">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="532">
               <caret line="32" column="25" lean-forward="false" selection-start-line="32" selection-start-column="25" selection-end-line="32" selection-end-column="25" />
@@ -66,32 +133,30 @@
         </entry>
       </file>
       <file leaf-file-name="run_gomoku.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/AlphaGomoku/baselines/a2c/run_gomoku.py">
+        <entry file="file://$PROJECT_DIR$/AlphaGomoku/a2c/run_gomoku.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="342">
-              <caret line="18" column="14" lean-forward="false" selection-start-line="18" selection-start-column="14" selection-end-line="18" selection-end-column="14" />
-              <folding>
-                <element signature="e#22#31#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="__init__.py" pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/AlphaGomoku/baselines/common/__init__.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="0">
-              <caret line="0" column="5" lean-forward="false" selection-start-line="0" selection-start-column="5" selection-end-line="0" selection-end-column="5" />
+            <state relative-caret-position="114">
+              <caret line="6" column="16" lean-forward="false" selection-start-line="6" selection-start-column="16" selection-end-line="6" selection-end-column="16" />
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="tree_search.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/AlphaGomoku/baselines/a2c/tree_search.py">
+      <file leaf-file-name="tree_search.py" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/AlphaGomoku/a2c/tree_search.py">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="114">
-              <caret line="6" column="0" lean-forward="false" selection-start-line="6" selection-start-column="0" selection-end-line="6" selection-end-column="0" />
+              <caret line="6" column="18" lean-forward="false" selection-start-line="6" selection-start-column="18" selection-end-line="6" selection-end-column="18" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="__init__.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/AlphaGomoku/__init__.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="19">
+              <caret line="1" column="0" lean-forward="false" selection-start-line="1" selection-start-column="0" selection-end-line="1" selection-end-column="0" />
               <folding />
             </state>
           </provider>
@@ -106,6 +171,11 @@
       </list>
     </option>
   </component>
+  <component name="FindInProjectRecents">
+    <findStrings>
+      <find>logger</find>
+    </findStrings>
+  </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
     <option name="RECENT_BRANCH_BY_REPOSITORY">
@@ -119,8 +189,16 @@
       <list>
         <option value="$PROJECT_DIR$/games/tic_tac_toe.py" />
         <option value="$PROJECT_DIR$/policy_gradient.py" />
-        <option value="$PROJECT_DIR$/AlphaGomoku/games/tic_tac_toe_x.py" />
         <option value="$PROJECT_DIR$/AlphaGomoku/games/board.py" />
+        <option value="$PROJECT_DIR$/AlphaGomoku/baselines/common/__init__.py" />
+        <option value="$PROJECT_DIR$/AlphaGomoku/baselines/a2c/policies.py" />
+        <option value="$PROJECT_DIR$/AlphaGomoku/a2c/__init__.py" />
+        <option value="$PROJECT_DIR$/AlphaGomoku/a2c/run_gomoku.py" />
+        <option value="$PROJECT_DIR$/AlphaGomoku/common/__init__.py" />
+        <option value="$PROJECT_DIR$/AlphaGomoku/a2c/policies.py" />
+        <option value="$PROJECT_DIR$/AlphaGomoku/games/tic_tac_toe_x.py" />
+        <option value="$PROJECT_DIR$/AlphaGomoku/a2c/a2c.py" />
+        <option value="$PROJECT_DIR$/AlphaGomoku/a2c/tree_search.py" />
       </list>
     </option>
   </component>
@@ -150,7 +228,6 @@
     </navigator>
     <panes>
       <pane id="Scratches" />
-      <pane id="Scope" />
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -167,20 +244,12 @@
               <item name="DeepRLcheckers" type="b2602c69:ProjectViewProjectNode" />
               <item name="DeepRLcheckers" type="462c0819:PsiDirectoryNode" />
               <item name="AlphaGomoku" type="462c0819:PsiDirectoryNode" />
-              <item name="baselines" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="DeepRLcheckers" type="b2602c69:ProjectViewProjectNode" />
-              <item name="DeepRLcheckers" type="462c0819:PsiDirectoryNode" />
-              <item name="AlphaGomoku" type="462c0819:PsiDirectoryNode" />
-              <item name="baselines" type="462c0819:PsiDirectoryNode" />
               <item name="a2c" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
               <item name="DeepRLcheckers" type="b2602c69:ProjectViewProjectNode" />
               <item name="DeepRLcheckers" type="462c0819:PsiDirectoryNode" />
               <item name="AlphaGomoku" type="462c0819:PsiDirectoryNode" />
-              <item name="baselines" type="462c0819:PsiDirectoryNode" />
               <item name="common" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
@@ -193,6 +262,7 @@
           <select />
         </subPane>
       </pane>
+      <pane id="Scope" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -201,9 +271,13 @@
     <property name="last_opened_file_path" value="$PROJECT_DIR$" />
   </component>
   <component name="RecentsManager">
-    <key name="MoveFile.RECENT_KEYS">
-      <recent name="$PROJECT_DIR$/AlphaGomoku/games" />
+    <key name="CopyFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/AlphaGomoku" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/AlphaGomoku" />
+      <recent name="$PROJECT_DIR$/AlphaGomoku/baselines/common" />
+      <recent name="$PROJECT_DIR$/AlphaGomoku/games" />
     </key>
   </component>
   <component name="RunDashboard">
@@ -218,45 +292,7 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Python.run_gomoku (1)">
-    <configuration name="policy_gradient" type="PythonConfigurationType" factoryName="Python" temporary="true">
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <module name="AlphaToe-master" />
-      <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/policy_gradient.py" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <option name="EMULATE_TERMINAL" value="false" />
-      <option name="MODULE_MODE" value="false" />
-    </configuration>
-    <configuration name="run_gomoku (1)" type="PythonConfigurationType" factoryName="Python" temporary="true">
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/AlphaGomoku/baselines/a2c" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <module name="DeepRLcheckers" />
-      <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/AlphaGomoku/baselines/a2c/run_gomoku.py" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <option name="EMULATE_TERMINAL" value="false" />
-      <option name="MODULE_MODE" value="false" />
-    </configuration>
+  <component name="RunManager">
     <configuration name="run_gomoku" type="PythonConfigurationType" factoryName="Python" temporary="true">
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
@@ -276,37 +312,49 @@
       <option name="EMULATE_TERMINAL" value="false" />
       <option name="MODULE_MODE" value="false" />
     </configuration>
-    <configuration name="tic_tac_toe" type="PythonConfigurationType" factoryName="Python" temporary="true">
+    <configuration name="run_gomoku" type="PythonConfigurationType" factoryName="Python" temporary="true">
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
       <envs>
         <env name="PYTHONUNBUFFERED" value="1" />
       </envs>
       <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/games" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/AlphaGomoku/a2c" />
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <module name="AlphaToe-master" />
+      <module name="DeepRLcheckers" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/games/tic_tac_toe.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/AlphaGomoku/a2c/run_gomoku.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
       <option name="MODULE_MODE" value="false" />
     </configuration>
-    <list size="4">
-      <item index="0" class="java.lang.String" itemvalue="Python.tic_tac_toe" />
-      <item index="1" class="java.lang.String" itemvalue="Python.policy_gradient" />
-      <item index="2" class="java.lang.String" itemvalue="Python.run_gomoku" />
-      <item index="3" class="java.lang.String" itemvalue="Python.run_gomoku (1)" />
-    </list>
+    <configuration name="run_gomoku" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/AlphaGomoku/a2c" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="DeepRLcheckers" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/AlphaGomoku/a2c/run_gomoku.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+    </configuration>
     <recent_temporary>
-      <list size="4">
-        <item index="0" class="java.lang.String" itemvalue="Python.run_gomoku (1)" />
+      <list size="3">
+        <item index="0" class="java.lang.String" itemvalue="Python.run_gomoku" />
         <item index="1" class="java.lang.String" itemvalue="Python.run_gomoku" />
-        <item index="2" class="java.lang.String" itemvalue="Python.policy_gradient" />
-        <item index="3" class="java.lang.String" itemvalue="Python.tic_tac_toe" />
+        <item index="2" class="java.lang.String" itemvalue="Python.run_gomoku" />
       </list>
     </recent_temporary>
   </component>
@@ -345,7 +393,14 @@
       <option name="project" value="LOCAL" />
       <updated>1515966146624</updated>
     </task>
-    <option name="localTasksCounter" value="4" />
+    <task id="LOCAL-00004" summary="Remove useless files">
+      <created>1515967510006</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1515967510006</updated>
+    </task>
+    <option name="localTasksCounter" value="5" />
     <servers />
   </component>
   <component name="ToolWindowManager">
@@ -358,11 +413,10 @@
       <window_info id="Python Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32857144" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32809225" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32914045" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.16300367" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.16483517" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
       <window_info id="Statistic" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32914045" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Docker" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="false" weight="0.33" sideWeight="0.5" order="8" side_tool="false" content_ui="tabs" />
       <window_info id="Database" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
-      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32914045" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="SciView" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="true" content_ui="tabs" />
@@ -376,7 +430,9 @@
       <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Data View" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Salesforce" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32914045" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
+      <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
+      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32914045" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
     </layout>
     <layout-to-restore>
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
@@ -444,7 +500,8 @@
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Fix draw bug" />
     <MESSAGE value="Remove useless code" />
-    <option name="LAST_COMMIT_MESSAGE" value="Remove useless code" />
+    <MESSAGE value="Remove useless files" />
+    <option name="LAST_COMMIT_MESSAGE" value="Remove useless files" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -453,12 +510,6 @@
     <watches-manager />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file:///usr/local/Cellar/python3/3.5.2_3/Frameworks/Python.framework/Versions/3.5/lib/python3.5/contextlib.py" />
-    <entry file="file:///usr/local/lib/python3.5/site-packages/tensorflow/python/framework/op_def_library.py" />
-    <entry file="file:///usr/local/lib/python3.5/site-packages/tensorflow/python/ops/gen_array_ops.py" />
-    <entry file="file:///usr/local/lib/python3.5/site-packages/tensorflow/python/framework/ops.py" />
-    <entry file="file:///usr/local/lib/python3.5/site-packages/tensorflow/python/ops/array_ops.py" />
-    <entry file="file://$PROJECT_DIR$/../gym/gym/spaces/box.py" />
     <entry file="file://$PROJECT_DIR$/../gym/gym/__init__.py" />
     <entry file="file://$PROJECT_DIR$/AlphaGomoku/baselines/baselines/common/vec_env/subproc_vec_env.py" />
     <entry file="file:///usr/local/lib/python3.5/site-packages/tensorflow/python/framework/common_shapes.py" />
@@ -470,17 +521,7 @@
     <entry file="file:///usr/local/Cellar/python3/3.5.2_3/Frameworks/Python.framework/Versions/3.5/lib/python3.5/codecs.py" />
     <entry file="file://$PROJECT_DIR$/../gym/gym/core.py" />
     <entry file="file://$PROJECT_DIR$/AlphaGomoku/baselines/baselines/a2c/a2c.py" />
-    <entry file="file://$PROJECT_DIR$/AlphaGomoku/baselines/a2c/README.md">
-      <provider selected="true" editor-type-id="split-provider[text-editor;markdown-preview-editor]">
-        <state split_layout="SPLIT">
-          <first_editor relative-caret-position="0">
-            <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-            <folding />
-          </first_editor>
-          <second_editor />
-        </state>
-      </provider>
-    </entry>
+    <entry file="file://$PROJECT_DIR$/AlphaGomoku/baselines/a2c/README.md" />
     <entry file="file://$PROJECT_DIR$/games/tic_tac_toe.py" />
     <entry file="file://$PROJECT_DIR$/games/tic_tac_toe.py" />
     <entry file="file://$PROJECT_DIR$/games/tic_tac_toe.py" />
@@ -494,20 +535,56 @@
     <entry file="file://$PROJECT_DIR$/techniques/min_max.py" />
     <entry file="file://$PROJECT_DIR$/policy_gradient.py" />
     <entry file="file://$PROJECT_DIR$/games/tic_tac_toe.py" />
-    <entry file="file://$PROJECT_DIR$/AlphaGomoku/baselines/a2c/run_atari.py">
+    <entry file="file://$PROJECT_DIR$/AlphaGomoku/baselines/a2c/run_atari.py" />
+    <entry file="file://$PROJECT_DIR$/AlphaGomoku/baselines/a2c/tree_t.png" />
+    <entry file="file://$PROJECT_DIR$/AlphaGomoku/value_network.py" />
+    <entry file="file://$PROJECT_DIR$/AlphaGomoku/requirements.txt" />
+    <entry file="file://$PROJECT_DIR$/baselines/data/logo.jpg" />
+    <entry file="file://$PROJECT_DIR$/.gitignore">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="469">
-          <caret line="41" column="0" lean-forward="true" selection-start-line="41" selection-start-column="0" selection-end-line="41" selection-end-column="0" />
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/AlphaGomoku/games/tree.png" />
+    <entry file="file://$PROJECT_DIR$/AlphaGomoku/games/tree_search.py" />
+    <entry file="file://$PROJECT_DIR$/AlphaGomoku/games/connect_4.py" />
+    <entry file="file://$PROJECT_DIR$/AlphaGomoku/games/tic_tac_toe.py" />
+    <entry file="file://$PROJECT_DIR$/AlphaGomoku/games/base_game_spec.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="57">
+          <caret line="5" column="6" lean-forward="false" selection-start-line="5" selection-start-column="6" selection-end-line="5" selection-end-column="6" />
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/AlphaGomoku/baselines/a2c/tree_t.png">
-      <provider selected="true" editor-type-id="images">
-        <state />
+    <entry file="file://$PROJECT_DIR$/AlphaGomoku/common/network_helpers.py" />
+    <entry file="file://$PROJECT_DIR$/AlphaGomoku/games/board.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="209">
+          <caret line="11" column="0" lean-forward="false" selection-start-line="11" selection-start-column="0" selection-end-line="11" selection-end-column="0" />
+        </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/AlphaGomoku/baselines/a2c/utils.py">
+    <entry file="file://$PROJECT_DIR$/AlphaGomoku/common/logger.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding>
+            <element signature="e#0#9#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/AlphaGomoku/baselines/__init__.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/AlphaGomoku/common/utils.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="532">
           <caret line="32" column="25" lean-forward="false" selection-start-line="32" selection-start-column="25" selection-end-line="32" selection-end-column="25" />
@@ -517,136 +594,86 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/AlphaGomoku/baselines/a2c/policies.py">
+    <entry file="file://$PROJECT_DIR$/AlphaGomoku/common/misc_util.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="665">
-          <caret line="39" column="0" lean-forward="false" selection-start-line="39" selection-start-column="0" selection-end-line="39" selection-end-column="0" />
+        <state relative-caret-position="1178">
+          <caret line="69" column="4" lean-forward="false" selection-start-line="69" selection-start-column="4" selection-end-line="69" selection-end-column="4" />
+          <folding>
+            <element signature="e#0#10#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/AlphaGomoku/common/math_util.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="437">
+          <caret line="24" column="4" lean-forward="false" selection-start-line="24" selection-start-column="4" selection-end-line="24" selection-end-column="4" />
           <folding>
             <element signature="e#0#18#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/AlphaGomoku/value_network.py">
+    <entry file="file://$PROJECT_DIR$/AlphaGomoku/a2c/__init__.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-1800">
+        <state relative-caret-position="0">
           <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/AlphaGomoku/requirements.txt">
+    <entry file="file://$PROJECT_DIR$/AlphaGomoku/__init__.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="19">
-          <caret line="1" column="0" lean-forward="true" selection-start-line="1" selection-start-column="0" selection-end-line="1" selection-end-column="0" />
+          <caret line="1" column="0" lean-forward="false" selection-start-line="1" selection-start-column="0" selection-end-line="1" selection-end-column="0" />
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/baselines/data/logo.jpg">
-      <provider selected="true" editor-type-id="images">
-        <state />
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/AlphaGomoku/baselines/a2c/a2c.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="171">
-          <caret line="9" column="0" lean-forward="false" selection-start-line="9" selection-start-column="0" selection-end-line="9" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/.gitignore">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/AlphaGomoku/games/tree.png">
-      <provider selected="true" editor-type-id="images">
-        <state />
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/AlphaGomoku/games/tree_search.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/AlphaGomoku/games/connect_4.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/AlphaGomoku/games/tic_tac_toe.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-2832">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/AlphaGomoku/games/base_game_spec.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="57">
-          <caret line="5" column="6" lean-forward="false" selection-start-line="5" selection-start-column="6" selection-end-line="5" selection-end-column="6" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/AlphaGomoku/common/network_helpers.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-2789">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/AlphaGomoku/baselines/a2c/tree_search.py">
+    <entry file="file://$PROJECT_DIR$/AlphaGomoku/a2c/run_gomoku.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="114">
-          <caret line="6" column="0" lean-forward="false" selection-start-line="6" selection-start-column="0" selection-end-line="6" selection-end-column="0" />
+          <caret line="6" column="16" lean-forward="false" selection-start-line="6" selection-start-column="16" selection-end-line="6" selection-end-column="16" />
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/AlphaGomoku/games/board.py">
+    <entry file="file://$PROJECT_DIR$/AlphaGomoku/common/__init__.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="209">
-          <caret line="11" column="0" lean-forward="false" selection-start-line="11" selection-start-column="0" selection-end-line="11" selection-end-column="0" />
+        <state relative-caret-position="19">
+          <caret line="1" column="16" lean-forward="false" selection-start-line="1" selection-start-column="16" selection-end-line="1" selection-end-column="16" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/AlphaGomoku/a2c/policies.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="76">
+          <caret line="4" column="16" lean-forward="false" selection-start-line="4" selection-start-column="16" selection-end-line="4" selection-end-column="16" />
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/AlphaGomoku/games/tic_tac_toe_x.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="226">
-          <caret line="15" column="15" lean-forward="false" selection-start-line="15" selection-start-column="15" selection-end-line="15" selection-end-column="15" />
+        <state relative-caret-position="378">
+          <caret line="23" column="16" lean-forward="false" selection-start-line="23" selection-start-column="16" selection-end-line="23" selection-end-column="16" />
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/AlphaGomoku/baselines/a2c/run_gomoku.py">
+    <entry file="file://$PROJECT_DIR$/AlphaGomoku/a2c/a2c.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="342">
-          <caret line="18" column="14" lean-forward="false" selection-start-line="18" selection-start-column="14" selection-end-line="18" selection-end-column="14" />
-          <folding>
-            <element signature="e#22#31#0" expanded="true" />
-          </folding>
+        <state relative-caret-position="133">
+          <caret line="7" column="16" lean-forward="false" selection-start-line="7" selection-start-column="16" selection-end-line="7" selection-end-column="16" />
+          <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/AlphaGomoku/baselines/common/__init__.py">
+    <entry file="file://$PROJECT_DIR$/AlphaGomoku/a2c/tree_search.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="5" lean-forward="false" selection-start-line="0" selection-start-column="5" selection-end-line="0" selection-end-column="5" />
+        <state relative-caret-position="114">
+          <caret line="6" column="18" lean-forward="false" selection-start-line="6" selection-start-column="18" selection-end-line="6" selection-end-column="18" />
           <folding />
         </state>
       </provider>

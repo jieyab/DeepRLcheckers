@@ -4,7 +4,7 @@ import random
 import networkx as nx
 import numpy as np
 
-import games.tic_tac_toe_x as tt
+import AlphaGomoku.games.tic_tac_toe_x as tt
 
 EPSILON = 10e-6  # Prevents division by 0 in calculation of UCT
 

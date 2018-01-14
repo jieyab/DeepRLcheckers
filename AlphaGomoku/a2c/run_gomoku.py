@@ -2,9 +2,9 @@
 import os
 import sys
 
-from baselines.a2c.a2c import learn
-from baselines.a2c.policies import CnnPolicy
-from games.tic_tac_toe_x import TicTacToeXGameSpec
+from AlphaGomoku.a2c.a2c import learn
+from AlphaGomoku.a2c.policies import CnnPolicy
+from AlphaGomoku.games.tic_tac_toe_x import TicTacToeXGameSpec
 
 is_mute = 1
 
