@@ -1,4 +1,3 @@
-
 # !/usr/bin/python
 
 # Tic-Tac-Toe
@@ -6,11 +5,11 @@
 # Nathan R. Yergler
 # 13 May 2002
 
+import numpy as np
 # import necessary modules
 import pygame
 from pygame.locals import *
-from common.base_game_spec import BaseGameSpec
-import numpy as np
+from games.base_game_spec import BaseGameSpec
 
 # declare our global variables for the game
 XO = "X"  # track whose turn it is; X goes first
@@ -36,12 +35,12 @@ def initBoard(ttt, board_size):
     # draw the grid lines
     # vertical lines...
     for i in range(board_size):
-        pygame.draw.line(background, (0, 0, 0), (i*50, 0), (i*50, 50*board_size), 2)
+        pygame.draw.line(background, (0, 0, 0), (i * 50, 0), (i * 50, 50 * board_size), 2)
         # pygame.draw.line(background, (0, 0, 0), (200, 0), (200, 300), 2)
 
     # horizontal lines...
     for i in range(board_size):
-        pygame.draw.line(background, (0, 0, 0), (0, i*50), (50*board_size, i*50), 2)
+        pygame.draw.line(background, (0, 0, 0), (0, i * 50), (50 * board_size, i * 50), 2)
         # pygame.draw.line(background, (0, 0, 0), (0, 200), (300, 200), 2)
 
     # return the board
@@ -61,7 +60,7 @@ def drawStatus(board):
     if (winner is None):
         message = XO + "'s turn"
     else:
-         message = winner + " won!"
+        message = winner + " won!"
 
     # render the status message
     font = pygame.font.Font(None, 24)
@@ -83,7 +82,7 @@ def showBoard(ttt, board):
     pygame.display.flip()
 
 
-def boardPos(mouseX,mouseY):
+def boardPos(mouseX, mouseY):
     # given a set of coordinates from the mouse, determine which board space
     # (row, column) the user clicked in.
     # ---------------------------------------------------------------
@@ -134,7 +133,7 @@ def drawMove(board, boardRow, boardCol, Piece):
     # grid[boardRow][boardCol] = Piece
 
 
-def clickBoard(board,board_state):
+def clickBoard(board, board_state):
     # determine where the user clicked and if the space is not already
     # occupied, draw the appropriate piece there (X or O)
     # ---------------------------------------------------------------
@@ -147,12 +146,12 @@ def clickBoard(board,board_state):
     # check for -1,1 or 0
 
     temp = np.argwhere(board_state == 1)
-    temp = np.delete(temp,2,1)
+    temp = np.delete(temp, 2, 1)
     i = 0
     while (i < len(temp)):
         pos = temp[i]
         drawMove(board, pos[0], pos[1], 1)
-        i+=1
+        i += 1
 
     temp2 = np.argwhere(board_state == -1)
     temp2 = np.delete(temp2, 2, 1)
@@ -160,7 +159,7 @@ def clickBoard(board,board_state):
     while (i < len(temp2)):
         pos = temp2[i]
         drawMove(board, pos[0], pos[1], -1)
-        i+=1
+        i += 1
         # (row, col) = boardPos(temp[i])
     # (row, col) = boardPos(mouseX, mouseY)
 
@@ -170,7 +169,6 @@ def clickBoard(board,board_state):
     #     return
 
     # draw an X or O
-
 
     # toggle XO to the other player's move
     # if (XO == "X"):
@@ -189,7 +187,7 @@ def gameWon(board):
     # check for winning rows
     for row in range(0, 3):
         if ((grid[row][0] == grid[row][1] == grid[row][2]) and \
-                    (grid[row][0] is not None)):
+                (grid[row][0] is not None)):
             # this row won
             winner = grid[row][0]
             pygame.draw.line(board, (250, 0, 0), (0, (row + 1) * 100 - 50), \
@@ -239,15 +237,16 @@ class boardDisp(BaseGameSpec):
             clickBoard(board, board_state)
             showBoard(ttt, board)
 
+
 if __name__ == '__main__':
     pygame.init()
     board_size = 3
-    ttt = pygame.display.set_mode((50*board_size, 50*board_size))
-    board_state = np.array([[[0],[0],[-1]],[[1],[0],[-1]],[[1],[1],[-1]]])
+    ttt = pygame.display.set_mode((50 * board_size, 50 * board_size))
+    board_state = np.array([[[0], [0], [-1]], [[1], [0], [-1]], [[1], [1], [-1]]])
     pygame.display.set_caption('Tic-Tac-Toe')
 
     board = initBoard(ttt, board_size)
-    running  = 1
+    running = 1
     start_ticks = pygame.time.get_ticks()
     while (running == 1):
         # for event in pygame.event.get():
@@ -258,17 +257,12 @@ if __name__ == '__main__':
 
         clickBoard(board, board_state)
         showBoard(ttt, board)
-            # elif event.type is MOUSEBUTTONDOWN:
-                    # the user clicked; place an X or O
+        # elif event.type is MOUSEBUTTONDOWN:
+        # the user clicked; place an X or O
 
-
-
-                # check for a winner
+        # check for a winner
         # gameWon(board)
 
-           # update the display
+        # update the display
 
-
-     # starter tick
-
-
+    # starter tick
