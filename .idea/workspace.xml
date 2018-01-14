@@ -1,12 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="2b45f840-e5a8-4871-a26e-e7b2f09a8f18" name="Default" comment="Fix draw bug">
-      <change beforePath="$PROJECT_DIR$/.idea/DeepRLcheckers.iml" afterPath="$PROJECT_DIR$/.idea/DeepRLcheckers.iml" />
+    <list default="true" id="2b45f840-e5a8-4871-a26e-e7b2f09a8f18" name="Default" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/baselines/a2c/tree_t.png" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/tests/__init__.py" afterPath="$PROJECT_DIR$/AlphaGomoku/baselines/common/tests/__init__.py" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/tests/common/__init__.py" afterPath="$PROJECT_DIR$/AlphaGomoku/games/tree.png" />
     </list>
     <ignored path="$PROJECT_DIR$/.idea/" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -60,8 +56,8 @@
       <file leaf-file-name="run_gomoku.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/AlphaGomoku/baselines/a2c/run_gomoku.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="285">
-              <caret line="15" column="16" lean-forward="false" selection-start-line="15" selection-start-column="16" selection-end-line="15" selection-end-column="16" />
+            <state relative-caret-position="342">
+              <caret line="18" column="14" lean-forward="false" selection-start-line="18" selection-start-column="14" selection-end-line="18" selection-end-column="14" />
               <folding>
                 <element signature="e#22#31#0" expanded="true" />
               </folding>
@@ -337,16 +333,24 @@
       <option name="project" value="LOCAL" />
       <updated>1515965807372</updated>
     </task>
-    <option name="localTasksCounter" value="3" />
+    <task id="LOCAL-00003" summary="Remove useless code">
+      <created>1515966146624</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1515966146624</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
     <servers />
   </component>
   <component name="ToolWindowManager">
     <frame x="0" y="0" width="1680" height="1050" extended-state="0" />
+    <editor active="true" />
     <layout>
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="true" content_ui="tabs" />
       <window_info id="Documentation" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32967034" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" x="0" y="0" width="370" height="850" />
-      <window_info id="Version Control" active="true" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.32914045" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
+      <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32914045" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Python Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32857144" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32809225" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32914045" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
@@ -435,7 +439,8 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Fix draw bug" />
-    <option name="LAST_COMMIT_MESSAGE" value="Fix draw bug" />
+    <MESSAGE value="Remove useless code" />
+    <option name="LAST_COMMIT_MESSAGE" value="Remove useless code" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -612,8 +617,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/AlphaGomoku/baselines/a2c/run_gomoku.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="285">
-          <caret line="15" column="16" lean-forward="false" selection-start-line="15" selection-start-column="16" selection-end-line="15" selection-end-column="16" />
+        <state relative-caret-position="342">
+          <caret line="18" column="14" lean-forward="false" selection-start-line="18" selection-start-column="14" selection-end-line="18" selection-end-column="14" />
           <folding>
             <element signature="e#22#31#0" expanded="true" />
           </folding>
