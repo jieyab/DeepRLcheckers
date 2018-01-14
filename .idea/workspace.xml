@@ -4,160 +4,9 @@
     <list default="true" id="2b45f840-e5a8-4871-a26e-e7b2f09a8f18" name="Default" comment="Fix draw bug">
       <change beforePath="$PROJECT_DIR$/.idea/DeepRLcheckers.iml" afterPath="$PROJECT_DIR$/.idea/DeepRLcheckers.iml" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/.gitignore" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/.idea/AlphaToe-master.iml" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/.idea/misc.xml" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/.idea/modules.xml" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/.idea/preferred-vcs.xml" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/.idea/workspace.xml" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/Alpha Toe.pdf" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/First_try.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/LICENSE" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/README.md" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/common/__init__.py" afterPath="$PROJECT_DIR$/AlphaGomoku/common/__init__.py" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/common/base_game_spec.py" afterPath="$PROJECT_DIR$/AlphaGomoku/common/base_game_spec.py" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/common/benchmark.py" afterPath="$PROJECT_DIR$/AlphaGomoku/common/benchmark.py" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/common/network_helpers.py" afterPath="$PROJECT_DIR$/AlphaGomoku/common/network_helpers.py" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/connect_4/__init__.py" afterPath="$PROJECT_DIR$/AlphaGomoku/baselines/common/tests/__init__.py" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/connect_4/network.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/connect_4/position_connect_4_min_max_depth_6" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/connect_4/supervised.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/connect_4/train_historical.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/connect_4/train_vs_min_max.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/games/__init__.py" afterPath="$PROJECT_DIR$/AlphaGomoku/games/__init__.py" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/games/connect_4.py" afterPath="$PROJECT_DIR$/AlphaGomoku/games/connect_4.py" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/games/tic_tac_toe.py" afterPath="$PROJECT_DIR$/AlphaGomoku/games/tic_tac_toe.py" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/games/tic_tac_toe_x.py" afterPath="$PROJECT_DIR$/AlphaGomoku/games/tic_tac_toe_x.py" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/policy_gradient.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/policy_gradient_historical_competition.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/requirements.txt" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/techniques/AC.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/techniques/__init__.py" afterPath="$PROJECT_DIR$/AlphaGomoku/games/tree.png" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/techniques/create_positions_set.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/techniques/min_max.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/techniques/monte_carlo.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/techniques/monte_carlo_uct_with_value.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/techniques/train_policy_gradient.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/techniques/train_policy_gradient_historic.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/techniques/train_supervised.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/techniques/train_value_network.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/tests/__init__.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/tests/common/__init__.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/tests/common/test_network_helpers.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/tests/games/__init__.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/tests/games/test_connect_4.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/tests/games/test_tic_tac_toe_x.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/tests/techniques/__init__.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/tests/techniques/test_create_positions_set.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/tests/techniques/test_min_max.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/tests/techniques/test_train_policy_gradient.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/tests/techniques/test_train_policy_gradient_historic.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/tic_tac_toe_5_4/__init__.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/tic_tac_toe_5_4/network.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/tic_tac_toe_5_4/position_tic_tac_toe_5_4_min_max_depth_6" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/tic_tac_toe_5_4/supervised.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/tic_tac_toe_5_4/train_historical.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/tic_tac_toe_5_4/train_vs_min_max.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/AlphaGomoku/value_network.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/Literatures/D Silver, J Schrittwieser (2017) - Mastering the game of Go without human knowledge.pdf" afterPath="$PROJECT_DIR$/Literatures/D Silver, J Schrittwieser (2017) - Mastering the game of Go without human knowledge.pdf" />
-      <change beforePath="$PROJECT_DIR$/baselines/.gitignore" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/LICENSE" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/README.md" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/__init__.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/a2c/README.md" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/a2c/__init__.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/a2c/a2c.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/a2c/models/tic_tac_toe.cpkt" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/a2c/policies.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/a2c/run_atari.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/a2c/run_gomoku.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/a2c/tree_search.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/a2c/tree_t.png" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/a2c/utils.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/acktr/README.md" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/acktr/__init__.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/acktr/acktr_cont.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/acktr/acktr_disc.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/acktr/filters.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/acktr/kfac.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/acktr/kfac_utils.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/acktr/policies.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/acktr/run_atari.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/acktr/run_mujoco.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/acktr/running_stat.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/acktr/utils.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/acktr/value_functions.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/bench/__init__.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/bench/benchmarks.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/bench/monitor.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/common/__init__.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/common/atari_wrappers.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/common/atari_wrappers_deprecated.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/common/azure_utils.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/common/cg.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/common/console_util.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/common/dataset.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/common/distributions.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/common/math_util.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/common/misc_util.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/common/mpi_adam.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/common/mpi_fork.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/common/mpi_moments.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/common/mpi_running_mean_std.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/common/schedules.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/common/segment_tree.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/common/tests/test_schedules.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/common/tests/test_segment_tree.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/common/tests/test_tf_util.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/common/tf_util.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/common/vec_env/__init__.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/common/vec_env/subproc_vec_env.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/ddpg/README.md" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/ddpg/__init__.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/ddpg/ddpg.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/ddpg/main.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/ddpg/memory.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/ddpg/models.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/ddpg/noise.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/ddpg/training.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/ddpg/util.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/deepq/README.md" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/deepq/__init__.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/deepq/build_graph.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/deepq/experiments/__init__.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/deepq/experiments/atari/__init__.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/deepq/experiments/atari/download_model.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/deepq/experiments/atari/enjoy.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/deepq/experiments/atari/model.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/deepq/experiments/atari/train.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/deepq/experiments/atari/wang2015_eval.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/deepq/experiments/custom_cartpole.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/deepq/experiments/enjoy_cartpole.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/deepq/experiments/enjoy_mountaincar.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/deepq/experiments/enjoy_pong.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/deepq/experiments/train_cartpole.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/deepq/experiments/train_mountaincar.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/deepq/experiments/train_pong.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/deepq/models.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/deepq/replay_buffer.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/deepq/simple.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/logger.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/ppo1/README.md" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/ppo1/__init__.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/ppo1/cnn_policy.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/ppo1/mlp_policy.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/ppo1/pposgd_simple.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/ppo1/run_atari.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/ppo1/run_mujoco.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/trpo_mpi/README.md" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/trpo_mpi/__init__.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/trpo_mpi/nosharing_cnn_policy.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/trpo_mpi/run_atari.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/trpo_mpi/run_mujoco.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/baselines/trpo_mpi/trpo_mpi.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/data/cartpole.gif" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/data/logo.jpg" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/baselines/setup.py" afterPath="" />
+      <change beforePath="$PROJECT_DIR$/AlphaGomoku/baselines/a2c/tree_t.png" afterPath="" />
+      <change beforePath="$PROJECT_DIR$/AlphaGomoku/tests/__init__.py" afterPath="$PROJECT_DIR$/AlphaGomoku/baselines/common/tests/__init__.py" />
+      <change beforePath="$PROJECT_DIR$/AlphaGomoku/tests/common/__init__.py" afterPath="$PROJECT_DIR$/AlphaGomoku/games/tree.png" />
     </list>
     <ignored path="$PROJECT_DIR$/.idea/" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -212,7 +61,7 @@
         <entry file="file://$PROJECT_DIR$/AlphaGomoku/baselines/a2c/run_gomoku.py">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="285">
-              <caret line="15" column="16" lean-forward="true" selection-start-line="15" selection-start-column="16" selection-end-line="15" selection-end-column="16" />
+              <caret line="15" column="16" lean-forward="false" selection-start-line="15" selection-start-column="16" selection-end-line="15" selection-end-column="16" />
               <folding>
                 <element signature="e#22#31#0" expanded="true" />
               </folding>
@@ -481,7 +330,14 @@
       <option name="project" value="LOCAL" />
       <updated>1515827091098</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="Fix draw bug">
+      <created>1515965807372</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1515965807372</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="ToolWindowManager">
@@ -741,11 +597,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/AlphaGomoku/games/tree.png">
-      <provider selected="true" editor-type-id="images">
-        <state />
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/.gitignore">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="0">
@@ -754,10 +605,15 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/AlphaGomoku/games/tree.png">
+      <provider selected="true" editor-type-id="images">
+        <state />
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/AlphaGomoku/baselines/a2c/run_gomoku.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="285">
-          <caret line="15" column="16" lean-forward="true" selection-start-line="15" selection-start-column="16" selection-end-line="15" selection-end-column="16" />
+          <caret line="15" column="16" lean-forward="false" selection-start-line="15" selection-start-column="16" selection-end-line="15" selection-end-column="16" />
           <folding>
             <element signature="e#22#31#0" expanded="true" />
           </folding>
