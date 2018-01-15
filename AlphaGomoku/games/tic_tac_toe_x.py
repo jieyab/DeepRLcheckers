@@ -392,6 +392,8 @@ class TicTacToeXGameSpec(BaseGameSpec):
         self.board_state = board
 
     def step(self, actions_nn):
+        print(actions_nn)
+        actions_nn = actions_nn[0]
         reward = np.zeros(1)
         actions_nn = [int(actions_nn % self._board_size),
                       int(actions_nn / self._board_size)]  # Convert move from number to X,Y
@@ -400,6 +402,7 @@ class TicTacToeXGameSpec(BaseGameSpec):
         old_state = np.copy(self.board_state)
 
         if self.illegal_move(actions_nn):  # Check if the move was illegal
+            print('is illegal move')
             self.illegal_games += 1
             self.board_state = self.new_board()
             self.print = True
@@ -482,28 +485,38 @@ class TicTacToeXGameSpec(BaseGameSpec):
 
         return self.board_state, reward, winner, 0, False
 
+    def get_illegal_moves(self):
+        illegal_moves = list(range(self._board_size * self._board_size))
+        legal_moves = self.available_moves_1()
+        for i in legal_moves:
+            illegal_moves.remove(i)
+        return illegal_moves
+
 
 if __name__ == '__main__':
-    # env = TicTacToeXGameSpec(3, 3)
-    # print(env.step(8))
-    import networkx as nx
+    # import networkx as nx
+    #
+    # digraph = nx.DiGraph()
+    # digraph.add_node(0,
+    #                  nw=0,
+    #                  nn=0,
+    #                  uct=0,
+    #                  expanded=False,
+    #                  state=new_board(3))
+    # for node in digraph.nodes():
+    #     if np.array_equal(digraph.node[node]['state'], new_board(3)):
+    #         print('Find!!!')
+    # b = new_board(3)
+    # c = apply_move(b, [1, 1], 1)
+    # d = apply_move(c, [1, 2], 1)
+    # e = apply_move(d, [0, 2], 1)
+    # # print(random_player(c, 1))
+    # # print(list(available_moves(c)))
+    # # play_game(random_player, random_player, 3, 3, log=True)
+    # print(new_board(3).tolist())
+    # print(has_winner(e, 2)[0])
 
-    digraph = nx.DiGraph()
-    digraph.add_node(0,
-                     nw=0,
-                     nn=0,
-                     uct=0,
-                     expanded=False,
-                     state=new_board(3))
-    for node in digraph.nodes():
-        if np.array_equal(digraph.node[node]['state'], new_board(3)):
-            print('Find!!!')
-    b = new_board(3)
-    c = apply_move(b, [1, 1], 1)
-    d = apply_move(c, [1, 2], 1)
-    e = apply_move(d, [0, 2], 1)
-    # print(random_player(c, 1))
-    # print(list(available_moves(c)))
-    # play_game(random_player, random_player, 3, 3, log=True)
-    print(new_board(3).tolist())
-    print(has_winner(e, 2)[0])
+    env = TicTacToeXGameSpec(3, 3)
+    print(env.step(8))
+    print(env.available_moves_1())
+    print(env.get_illegal_moves())

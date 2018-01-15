@@ -4,13 +4,13 @@ import joblib
 import numpy as np
 import tensorflow as tf
 
+from AlphaGomoku.common import logger
+from AlphaGomoku.common.math_util import explained_variance
+from AlphaGomoku.common.misc_util import set_global_seeds
 from AlphaGomoku.core.tree_search import MonteCarlo
 from AlphaGomoku.core.utils import Scheduler, find_trainable_variables
 from AlphaGomoku.core.utils import cat_entropy, mse
 from AlphaGomoku.core.utils import discount_with_dones
-from AlphaGomoku.common.math_util import explained_variance
-from AlphaGomoku.common.misc_util import set_global_seeds
-from AlphaGomoku.common import logger
 
 
 class Model(object):
@@ -132,9 +132,26 @@ class Runner(object):
         mb_states = self.states
 
         for n in range(self.nsteps):
+            self.env.set_board(self.obs)
+
             counter = n
             print('Original state: ', self.obs.tolist())
-            actions, values, states = self.model.step(self.obs, self.states, self.dones)
+
+            actions, values, states, prob = self.model.step(self.obs, self.states, self.dones)
+            # print(prob)
+            print('list_action', actions)
+            actions = [actions[0]]
+            illegal_moves = self.env.get_illegal_moves()
+            # print(actions[0])
+            # print(self.obs)
+            moves_nn = actions[0].tolist()
+            # print('moves_nn',moves_nn)
+            for i in illegal_moves:
+                if i in moves_nn:
+                    moves_nn.remove(i)
+            print('remove_illegal', moves_nn)
+            actions = [np.asarray(moves_nn[0])]
+
             print('r1')
             print('actions', actions)
             print('values', values)
@@ -144,8 +161,6 @@ class Runner(object):
             mb_actions.append(actions)
             mb_values.append(values)
             mb_dones.append(self.dones)
-
-            self.env.set_board(self.obs)
 
             obs, rewards, dones, _, illegal, old_obs, mid_obs, fin_obs = self.env.step(actions)
             if not illegal:

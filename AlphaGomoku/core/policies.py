@@ -2,7 +2,7 @@ import numpy as np
 import tensorflow as tf
 
 from AlphaGomoku.core.utils import conv, fc, conv_to_fc, batch_to_seq, seq_to_batch, lstm, lnlstm, sample, \
-    sample_without_exploration
+    sample_without_exploration, sample_legalmoves
 
 
 class LnLstmPolicy(object):
@@ -28,7 +28,7 @@ class LnLstmPolicy(object):
             vf = fc(h5, 'v', 1, act=lambda x: x)
 
         v0 = vf[:, 0]
-        a0 = sample_without_exploration(pi)
+        a0 = pi
         self.initial_state = np.zeros((nenv, nlstm * 2), dtype=np.float32)
 
         def step(ob, state, mask):
@@ -145,20 +145,15 @@ class CnnPolicy(object):
 
         v0 = vf[:, 0]
         a0 = sample_without_exploration(pi)
+        p0 = pi
         self.initial_state = []  # not stateful
 
         def step(ob, *_args, **_kwargs):
-            a, v = sess.run([a0, v0], {X: ob})
-            return a, v, []  # dummy state
+            a, v, prob = sess.run([a0, v0, p0], {X: ob})
+            return a, v, [], prob  # dummy stat
 
         def value(ob, *_args, **_kwargs):
             return sess.run(v0, {X: ob})
-
-        def save_model(path):
-            pass
-
-        def load_model(path):
-            pass
 
         self.X = X
         self.pi = pi

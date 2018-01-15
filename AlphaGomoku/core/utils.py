@@ -11,7 +11,17 @@ def sample(logits):
 
 
 def sample_without_exploration(logits):
-    return tf.argmax(logits, 1)
+    return tf.nn.top_k(logits, 9).indices
+
+
+def sample_legalmoves(logits, obs):
+    # Choose legal move
+    print(logits, obs)
+    board_flatten = (obs.flatten() == 0)
+    actions = abs(board_flatten - np.zeros(obs.size))
+    actions = tf.argmax(logits, 1)
+    print(logits)
+    return logits
 
 
 def cat_entropy(logits):
