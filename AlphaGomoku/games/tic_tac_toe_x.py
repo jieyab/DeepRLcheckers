@@ -336,6 +336,8 @@ class TicTacToeXGameSpec(BaseGameSpec):
                 list_avaible_moves.append(x * self._board_size + y)
         return list_avaible_moves
 
+
+
     def opponent_move(self):
         action_random_move = random.randint(0, len(self.available_moves_1()) - 1)
         action_random = self.available_moves_1()
@@ -356,6 +358,8 @@ class TicTacToeXGameSpec(BaseGameSpec):
         self.illegal_games = 0
 
     def step(self, actions_nn):
+        #print(actions_nn)
+        actions_nn = actions_nn[0]
         reward = np.zeros(1)
         actions_nn = [int(actions_nn % self._board_size),
                       int(actions_nn / self._board_size)]  # Convert move from number to X,Y
@@ -441,8 +445,17 @@ class TicTacToeXGameSpec(BaseGameSpec):
 
         return self.board_state, reward, winner, 0, False
 
+    def get_illegal_moves(self):
+        illegal_moves = list(range(self._board_size*self._board_size))
+        legal_moves  = self.available_moves_1()
+        for i in legal_moves:
+            illegal_moves.remove(i)
+        return illegal_moves
+
 
 if __name__ == '__main__':
     env = TicTacToeXGameSpec(3, 3)
 
     print(env.step(8))
+    print(env.available_moves_1())
+    print(env.get_illegal_moves())

@@ -118,7 +118,20 @@ class Runner(object):
         mb_states = self.states
         for n in range(self.nsteps):
             counter = n
-            actions, values, states = self.model.step(self.obs, self.states, self.dones)
+            actions, values, states, prob = self.model.step(self.obs, self.states, self.dones)
+            #print(prob)
+            #print(actions)
+            actions = [actions[0]]
+            illegal_moves = self.env.get_illegal_moves()
+            #print(actions[0])
+            #print(self.obs)
+            moves_nn = actions[0].tolist()
+            #print('moves_nn',moves_nn)
+            for i in illegal_moves:
+                if i in moves_nn:
+                    moves_nn.remove(i)
+            #print('Aqui estamos,',moves_nn[0])
+            actions= [np.asarray(moves_nn[0])]
             mb_obs.append(np.copy(self.obs))
             mb_actions.append(actions)
             mb_values.append(values)
