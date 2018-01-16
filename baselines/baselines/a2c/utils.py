@@ -9,8 +9,13 @@ def sample(logits):
     noise = tf.random_uniform(tf.shape(logits))
     return tf.argmax(logits - tf.log(-tf.log(noise)), 1)
 
-def sample_without_exploration(logits):
-    return tf.nn.top_k(logits , 9).indices
+def sample_K(logits,size):
+    noise = tf.random_uniform(tf.shape(logits))
+    logits=logits - tf.log(-tf.log(noise))
+    return tf.nn.top_k(logits , size ).indices
+
+def sample_without_exploration(logits,size):
+    return tf.nn.top_k(logits , size ).indices
 
 def sample_legalmoves(logits,obs):
     # Choose legal move
