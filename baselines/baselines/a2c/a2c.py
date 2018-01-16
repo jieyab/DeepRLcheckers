@@ -123,14 +123,27 @@ class Runner(object):
         actions = [np.asarray(moves_nn[0])]
         return actions
 
+    def get_MCTS_action(self,board_state):
+        #Initialize
+        player = 1
+        available_moves = self.available_moves_1()
+        state = board_state
+        model =
+        # actions = self.get_MCTS_action(self.obs, [], [])
+        _, values, _, _ = self.model.step(self.obs, [], [])
+
+        # get available moves
+        # board size
+
+        return actions, values, _ ,_
     def run(self):
         mb_obs, mb_rewards, mb_actions, mb_values, mb_dones = [], [], [], [], []
         mb_states = self.states
         for n in range(self.nsteps):
             counter = n
-            actions, values, states, prob = self.model.step(self.obs, [], [])
-            #print(prob)
-            #print(actions)
+            actions, values, states, _ = self.model.step(self.obs, [], [])
+            #actions, values, _, _ = self.get_MCTS_action(self.obs, [], [])
+
             actions = [actions[0]]
             actions = self.get_legal_moves(actions)
             #actions=[pedro[0][0]]

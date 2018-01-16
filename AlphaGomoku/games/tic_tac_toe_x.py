@@ -481,6 +481,15 @@ class TicTacToeXGameSpec(BaseGameSpec):
     def dimensions(self):
         return self._board_size
 
+    def MCTS_winner(self):
+        pass
+
+    def MCTS_library(self):
+        pass
+
+
+        # return [board_state,[ availables move ], current player , board dimensions, last move]
+
 
 if __name__ == '__main__':
     env = TicTacToeXGameSpec(3, 3)
