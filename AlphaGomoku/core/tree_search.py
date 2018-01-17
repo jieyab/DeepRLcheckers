@@ -1,3 +1,4 @@
+import math
 import operator
 import random
 
@@ -5,33 +6,34 @@ import networkx as nx
 import numpy as np
 
 import AlphaGomoku.games.tic_tac_toe_x as tt
+from AlphaGomoku.common import logger
 
 EPSILON = 10e-6  # Prevents division by 0 in calculation of UCT
 
 
 class MonteCarlo:
-    def __init__(self):
+    def __init__(self, env, model):
         self.digraph = nx.DiGraph()
         self.node_counter = 0
-        self.computational_budget = 1
 
         self.num_simulations = 0
-        self.board_size = 3
-        self.winning_length = 3
-
-        # Constant parameter to weight exploration vs. exploitation for UCT
-        self.uct_c = np.sqrt(2)
+        self.board_size = env.get_board_size()
+        self.winning_length = env.get_winning_length()
 
         self.digraph.add_node(self.node_counter,
-                              num=self.node_counter,
-                              nw=0,
-                              nn=0,
-                              uct=0,
-                              expanded=False,
+                              num_visit=0,
+                              Q=0,
+                              u=0,
+                              P=1,
+                              side=-1,
                               state=tt.new_board(self.board_size))
-        # empty_board_node_id = self.node_counter
+
         self.node_counter += 1
         self.last_move = None
+
+        self.model = model
+        self._c_puct = 5
+        self._n_play_out = 200
 
     def reset_game(self):
         self.last_move = None
@@ -40,413 +42,198 @@ class MonteCarlo:
         moves = list(tt.available_moves(board_state))
         return random.choice(moves)
 
-    def pure_ai_player(self, board_state, _):
-        starting_node = None
-
-        if self.last_move is not None:
-            # Check if the starting state is already in the graph as a child of the last move that we made
-            for child in self.digraph.successors(self.last_move):
-                # Check if the child has the same state attribute as the starting state
-                if np.array_equal(self.digraph.node[child]['state'], board_state):
-                    # If it does, then check if there is a link between the last move and this child state
-                    if self.digraph.has_edge(self.last_move, child):
-                        starting_node = child
-                        break
-            else:
-                for node in self.digraph.nodes():
-                    if np.array_equal(self.digraph.node[node]['state'], board_state):
-                        starting_node = node
-        else:
-            for node in self.digraph.nodes():
-                if np.array_equal(self.digraph.node[node]['state'], board_state):
-                    starting_node = node
-
-        selected_node = self.selection(starting_node)
-        if selected_node is None:
-            self.last_move = None
-            move = random.choice(list(tt.available_moves(board_state)))
-            return move
-
-        new_child_node = self.expansion(selected_node)
-        reward = self.simulation(new_child_node)
-        self.backpropagation(new_child_node, reward)
-        move, resulting_node = self.best(starting_node)
-        self.last_move = resulting_node
-
-        return move
-
-    def get_next_move(self, board_state, list_board, list_ai_board):
-        selected_node = -1
-
-        for node in self.digraph.nodes():
-            if np.array_equal(self.digraph.node[node]['state'], board_state):
-                starting_node = node
-                break
-        else:
-            print('Cannot find the node!')
-            starting_node = 0
-
-        print('-' * 20 + ' selection ' + '-' * 20)
-        print("Running MCTS from this starting state with node id {}:\n{}".format(starting_node,
-                                                                                  board_state.tolist()))
-        children_node = []
-        for child_node in self.digraph.successors(starting_node):
-            children_node.append(self.digraph.node[child_node]['state'])
-        print(children_node)
-
-        if not self.digraph.node[starting_node]['expanded']:
-            moves = list(tt.available_moves(board_state))
-            list_index_delete = []
-            for i, m in enumerate(moves):
-                print('i', i, m)
-                new_board = tt.apply_move(np.copy(board_state), m, 1)
-                for cn in children_node:
-                    print('cc')
-                    print(cn.tolist()[0])
-                    if np.array_equal(new_board, cn):
-                        list_index_delete.append(i)
-
-            moves = [i for j, i in enumerate(moves) if j not in list_index_delete]
-
-            # move minus one player
-            if len(list(tt.available_moves(board_state))) == 0:
-                return True, selected_node
-            win = tt.has_winner(board_state, self.winning_length)
-            if win[0]:
-                return True, selected_node
-
-            if len(moves) == 1:
-                self.digraph.node[starting_node]['expanded'] = True
-
-            if not moves:
-                self.digraph.node[starting_node]['expanded'] = True
-                return True, selected_node
-
-            move = random.choice(moves)
-            board_state = tt.apply_move(board_state, move, 1)
-            print('List to delete', list_index_delete)
-            print(moves)
-
-            for node in self.digraph.nodes():
-                if np.array_equal(self.digraph.node[node]['state'], board_state):
-                    print(board_state.tolist())
-                    self.digraph.add_edge(starting_node, node)
-                    selected_node = node
-                    break
-            else:
-                print('Expand main player state!')
-                self.digraph.add_node(self.node_counter,
-                                      num=self.node_counter,
-                                      nw=0,
-                                      nn=0,
-                                      uct=0,
-                                      expanded=False,
-                                      state=np.copy(board_state))
-                self.digraph.add_edge(starting_node, self.node_counter)
-                print('Add main player node %d -> %d' % (starting_node, self.node_counter))
-                print('node', self.digraph.node[self.node_counter]['state'].tolist())
-                selected_node = self.node_counter
-                self.node_counter += 1
-
-            list_board.append(np.copy(board_state))
-            list_ai_board.append(np.copy(board_state))
-
-            if selected_node == -1:
-                raise Exception('Cannot successfully expand node!')
-
-            # move minus one player
-            if len(list(tt.available_moves(board_state))) == 0:
-                return True, selected_node
-            win = tt.has_winner(board_state, self.winning_length)
-            if win[0]:
-                return True, selected_node
-
-            moves = list(tt.available_moves(board_state))
-            move = random.choice(moves)
-            board_state = tt.apply_move(board_state, move, -1)
-
-            for node in self.digraph.nodes():
-                if np.array_equal(self.digraph.node[node]['state'], board_state):
-                    self.digraph.add_edge(selected_node, node)
-                    selected_node = node
-                    break
-            else:
-                print('Create random player state!')
-                self.digraph.add_node(self.node_counter,
-                                      num=self.node_counter,
-                                      nw=0,
-                                      nn=0,
-                                      uct=0,
-                                      expanded=False,
-                                      state=np.copy(board_state))
-                self.digraph.add_edge(selected_node, self.node_counter)
-                print('Add random player node %d -> %d' % (selected_node, self.node_counter))
-                print('node', self.digraph.node[self.node_counter]['state'].tolist())
-                selected_node = self.node_counter
-                self.node_counter += 1
-
-            list_board.append(np.copy(board_state))
-            to_be_expanded = True
-
-        else:
-            to_be_expanded, selected_node = self.az_selection(starting_node)
-            print(str(starting_node) + ' -> select -> ' + str(selected_node) + ': ' + str(to_be_expanded))
-            print('selected:\n{}'.format(self.digraph.node[selected_node]['state'].tolist()))
-
-        if selected_node == -1:
-            raise Exception('Cannot successfully expand node!')
-        return to_be_expanded, selected_node
-
-    def ai_player(self, board_state, _):
-        starting_node = None
-
-        if self.last_move is not None:
-            # Check if the starting state is already in the graph as a child of the last move that we made
-            for child in self.digraph.successors(self.last_move):
-                # Check if the child has the same state attribute as the starting state
-                if np.array_equal(self.digraph.node[child]['state'], board_state):
-                    # If it does, then check if there is a link between the last move and this child state
-                    if self.digraph.has_edge(self.last_move, child):
-                        starting_node = child
-                        break
-            else:
-                for node in self.digraph.nodes():
-                    if np.array_equal(self.digraph.node[node]['state'], board_state):
-                        starting_node = node
-        else:
-            for node in self.digraph.nodes():
-                if np.array_equal(self.digraph.node[node]['state'], board_state):
-                    starting_node = node
-
-        for i in range(self.computational_budget):
-            self.num_simulations += 1
-
-            print("Running MCTS from this starting state with node id {}:\n{}".format(starting_node,
-                                                                                      board_state.tolist()))
-            # Until computational budget runs out, run simulated trials through the tree:
-
-            # Selection: Recursively pick the best node that maximizes UCT until reaching an unvisited node
-            print('-' * 20 + ' selection ' + '-' * 20)
-            selected_node = self.selection(starting_node)
-            print(str(starting_node) + ' -> select -> ' + str(selected_node))
-            print('selected:\n{}'.format(self.digraph.node[selected_node]['state'].tolist()))
-
-            # Check if the selected node is a terminal state, and if so, this iteration is finished
-            if tt.has_winner(self.digraph.node[selected_node]['state'], self.winning_length):
-                break
-
-            # Expansion: Add a child node where simulation will start
-            print('-' * 20 + ' expansion ' + '-' * 20)
-            new_child_node = self.expansion(selected_node)
-            print('Node chosen for expansion:\n{}'.format(new_child_node))
-
-            # Simulation: Conduct a light playout
-            print('-' * 20 + ' simulation ' + '-' * 20)
-            reward = self.simulation(new_child_node)
-            print('Reward obtained: {}\n'.format(reward))
-
-            # Backpropagation: Update the nodes on the path with the simulation results
-            print('-' * 20 + ' backpropagation ' + '-' * 20)
-            self.backpropagation(new_child_node, reward)
-
-        move, resulting_node = self.best(starting_node)
-        print('MCTS complete. Suggesting move: {}\n'.format(move))
-
-        self.last_move = resulting_node
-
-        # If we won, reset the last move to None for future games
-        if tt.has_winner(self.digraph.node[resulting_node]['state'], 3):
-            print(self.digraph.node[resulting_node]['state'])
-            self.last_move = None
-
-        return move
-
-    def best(self, root):
+    def selection(self, root):
         """
-        Returns the action that results in the child with the highest UCT value
-        (An alternative strategy could also be used, where the action leading to
-        the child with the most number of visits is chosen
+        Select node
+
+        :param root:
+        :return:
         """
         children = self.digraph.successors(root)
-
-        uct_values = {}
-        for child_node in children:
-            uct_values[child_node] = self.uct(state=child_node)
-
-        # Choose the child node that maximizes the expected value given by UCT
-        # If more than one has the same UCT value then break ties randomly
-        best_children = [key for key, val in uct_values.items() if val == max(uct_values.values())]
-        idx = np.random.randint(len(best_children))
-        best_child = best_children[idx]
-
-        # Determine which action leads to this child
-        action = self.digraph.get_edge_data(root, best_child)['action']
-        return action, best_child
-
-    def az_selection(self, root):
-        children = self.digraph.successors(root)
-
-        uct_values = {}
+        values = {}
         has_children = False
+
         for child_node in children:
             has_children = True
-            uct_values[child_node] = self.uct(state=child_node)
+            values[child_node] = self.get_value(child_node)
 
         if not has_children:
             return True, root
 
-        # Choose the child node that maximizes the expected value given by UCT
-        best_child_node = max(uct_values.items(), key=operator.itemgetter(1))[0]
+        # Choose the child node that maximizes the expected value
+        best_child_node = max(values.items(), key=operator.itemgetter(1))[0]
         return False, best_child_node
 
-    def az_expansion(self, parent, child):
-        print('az_exp')
-        print(parent.tolist())
-        print(child.tolist())
+    def expansion(self, parent, dict_prob):
+        """
+        Expand node
 
-        if np.array_equal(self.digraph.node[0]['state'], child):
-            return
+        :param parent:
+        :return:
+        """
 
-        parent_node = -1
-        for node in self.digraph.nodes():
-            # print(node)
-            # print(self.digraph.node[node]['state'].tolist())
-            if np.array_equal(self.digraph.node[node]['state'], parent):
-                parent_node = node
-                break
+        state = self.digraph.node[parent]['state']
+        side = self.digraph.node[parent]['side']
 
-        if parent_node < 0:
-            print('Cannot find parent node!')
-            return
-
-        child_node = -1
-        for node in self.digraph.nodes():
-            # print(node)
-            # print(self.digraph.node[node]['state'].tolist())
-            # print(self.digraph.nodes())
-            if np.array_equal(self.digraph.node[node]['state'], child):
-                child_node = node
-                break
-
-        if child_node < 0:
+        for key, value in dict_prob.items():
+            new_state = tt.apply_move(np.copy(state), key, -side)
             self.digraph.add_node(self.node_counter,
-                                  num=self.node_counter,
-                                  nw=0,
-                                  nn=0,
-                                  uct=0,
-                                  expanded=False,
-                                  state=np.copy(child))
-            self.digraph.add_edge(parent_node, self.node_counter)
-            print('Add node %d -> %d' % (parent_node, self.node_counter))
-            print(self.node_counter)
-            print('node', self.digraph.node[self.node_counter]['state'].tolist())
+                                  num_visit=0,
+                                  Q=0,
+                                  u=0,
+                                  P=value,
+                                  side=-side,
+                                  state=np.copy(new_state))
+            self.digraph.add_edge(parent, self.node_counter)
+            logger.debug('Add node ', str(parent), ' -> ', str(self.node_counter))
+            logger.debug('Node ', str(self.node_counter), ' -> ', str(new_state.tolist()))
             self.node_counter += 1
-        else:
-            print('Find child node!')
-            self.digraph.add_edge(parent_node, child_node)
-            print('Add node %d -> %d' % (parent_node, child_node))
 
-        # for edge in self.digraph.edges:
-        #     print(edge)
-
-    def az_backup(self, list_ai_node, reward):
-        for state in list_ai_node:
-            for node in self.digraph.nodes():
-                if np.array_equal(self.digraph.node[node]['state'], state):
-                    self.digraph.node[node]['nn'] += 1
-                    self.digraph.node[node]['nw'] += reward
-                    break
-
-    def uct(self, state):
+    def get_value(self, node):
+        """Calculate and return the value for this node: a combination of leaf evaluations, Q, and
+        this node's prior adjusted for its visit count, u
+        c_puct -- a number in (0, inf) controlling the relative impact of values, Q, and
+            prior probability, P, on this node's score.
         """
-        Returns the expected value of a state, calculated as a weighted sum of
-        its exploitation value and exploration value
+
+        num_visit = int(self.digraph.node[node]['num_visit'])
+        Q = float(self.digraph.node[node]['Q'])
+        P = float(self.digraph.node[node]['P'])
+        u = self._c_puct * P * math.sqrt(num_visit) / (1 + num_visit)
+        self.digraph.node[node]['u'] = u
+        return Q + u
+
+    def update(self, node, value):
+        """Update node values from leaf evaluation.
+        Arguments:
+        leaf_value -- the value of subtree evaluation from the current player's perspective.
         """
-        n = self.digraph.node[state]['nn']  # Number of plays from this node
-        w = self.digraph.node[state]['nw']  # Number of wins from this node
-        t = self.num_simulations
-        c = self.uct_c
-        epsilon = EPSILON
 
-        exploitation_value = w / (n + epsilon)
-        exploration_value = c * np.sqrt(np.log(t) / (n + epsilon))
-        print('exploration_value: {}'.format(exploration_value))
+        num_visit = int(self.digraph.node[node]['num_visit']) + 1
+        Q = float(self.digraph.node[node]['Q']) + 1.0 * (value - float(self.digraph.node[node]['Q'])) / num_visit
+        self.digraph.node[node]['num_visit'] = num_visit
+        self.digraph.node[node]['Q'] = Q
 
-        value = exploitation_value + exploration_value
+    def update_recursive(self, node, value):
+        """Like a call to update(), but applied recursively for all ancestors.
+        """
 
-        print(exploitation_value)
-        print(exploration_value)
-        print('UCT value {:.3f} for state:\n'.format(value))
-        print(state)
+        if node != 0:
+            for key in self.digraph.predecessors(node):
+                node = key
+                break
+            self.update_recursive(node, -value)
+        self.update(node, value)
 
-        self.digraph.node[state]['uct'] = value
+    def play_out(self, node):
+        """
+        Play out algorithm
 
-        return value
-
-    def train(self, times):
-        for i in range(times):
-            tt.play_game(self.ai_player, self.random_player, self.board_size, self.winning_length, log=False)
-
-    def play_game(self):
-        board = tt.new_board(self.board_size)
-        print('Start play', board.tolist())
-        self.num_simulations += 1
-        list_board = [np.copy(board)]
-        list_ai_board = []
+        :return:
+        """
 
         while True:
-            print(board.tolist())
-            if len(list(tt.available_moves(board))) == 0:
-                return board, list_board, list_ai_board
-            win = tt.has_winner(board, self.winning_length)
-            if win[0]:
-                return board, list_board, list_ai_board
+            is_leaf, selected_node = self.selection(node)
+            node = selected_node
+            if is_leaf:
+                break
 
-            to_be_expanded, selected_node = self.get_next_move(board, list_board, list_ai_board)
+        logger.debug('Leaf_node: ', str(node))
+        # state.do_move(action)
+        done = tt.has_winner(self.digraph.node[node]['state'], self.winning_length)
 
-            if not to_be_expanded:
-                print('lb', to_be_expanded)
-                for i in list_board:
-                    print(i.tolist())
+        if self.digraph.node[node]['side'] == 1:
+            rs = np.copy(self.digraph.node[node]['state'])
+            np.place(rs, rs == 1, 2)
+            np.place(rs, rs == -1, 1)
+            np.place(rs, rs == 2, -1)
+            actions, value, _, prob = self.model.step(np.copy(rs), [], done)
+        else:
+            actions, value, _, prob = self.model.step(np.copy(self.digraph.node[node]['state']), [], done)
 
-                print('state_node', self.digraph.node[selected_node]['state'].tolist())
-                s_node = np.copy(self.digraph.node[selected_node]['state'])
-                list_board.append(s_node)
-                list_ai_board.append(s_node)
+        dict_prob = tt.get_available_moves_with_prob(self.digraph.node[node]['state'], prob)
+        logger.debug('dict_prob ', str(dict_prob))
 
-                board = np.copy(self.digraph.node[selected_node]['state'])
-                if len(list(tt.available_moves(board))) == 0:
-                    return board, list_board, list_ai_board
-                win = tt.has_winner(board, self.winning_length)
-                if win[0]:
-                    return board, list_board, list_ai_board
-                print(len(list(tt.available_moves(board))))
-
-                moves = list(tt.available_moves(board))
-                move = random.choice(moves)
-                board = tt.apply_move(board, move, -1)
-
-                list_board.append(np.copy(board))
-
-                for node in self.digraph.nodes():
-                    if np.array_equal(self.digraph.node[node]['state'], board):
-                        break
-                else:
-                    print('Create random player state!')
-                    self.digraph.add_node(self.node_counter,
-                                          num=self.node_counter,
-                                          nw=0,
-                                          nn=0,
-                                          uct=0,
-                                          expanded=False,
-                                          state=np.copy(board))
-                    self.digraph.add_edge(selected_node, self.node_counter)
-                    print('Add random player node %d -> %d' % (selected_node, self.node_counter))
-                    print('node', self.digraph.node[self.node_counter]['state'].tolist())
-                    self.node_counter += 1
-
+        if not done[0]:
+            self.expansion(node, dict_prob)
+        else:
+            if len(list(tt.available_moves(self.digraph.node[node]['state']))) == 0:
+                value = 0.0
             else:
-                return board, list_board, list_ai_board
+                value = 1
+
+        # Update value and visit count of nodes in this traversal.
+        self.update_recursive(node, value)
+
+    def softmax(self, x):
+        probs = np.exp(x - np.max(x))
+        probs /= np.sum(probs)
+        return probs
+
+    def get_move_probs(self, state, temp=1e-3):
+        """Runs all playouts sequentially and returns the available actions and their corresponding probabilities
+        Arguments:
+        state -- the current state, including both game state and the current player.
+        temp -- temperature parameter in (0, 1] that controls the level of exploration
+        Returns:
+        the available actions and the corresponding probabilities
+        """
+
+        logger.debug('get_move_probs, state: ', str(state.tolist()))
+        for node in self.digraph.nodes():
+            if np.array_equal(self.digraph.node[node]['state'], state):
+                current_node = node
+                break
+        else:
+            raise Exception('Cannot find the board state!')
+
+        logger.debug('get_move_probs, root node: ', str(current_node))
+        for n in range(self._n_play_out):
+            self.play_out(current_node)
+
+        children = self.digraph.successors(current_node)
+        nodes = []
+        visits = []
+        for child_node in children:
+            nodes.append(child_node)
+            visits.append(self.digraph.node[child_node]['num_visit'])
+
+        node_probs = self.softmax(1.0 / temp * np.log(visits))
+        return nodes, node_probs
+
+    def get_action(self, state, is_self_play=True):
+        available = list(tt.available_moves(state))
+
+        if len(available) > 0:
+            nodes, probs = self.get_move_probs(state)
+
+            if is_self_play:
+                node = np.random.choice(nodes, p=0.75 * probs + 0.25 * np.random.dirichlet(0.3 * np.ones(len(probs))))
+            else:
+                # with the default temp=1e-3, this is almost equivalent to choosing the move with the highest prob
+                node = np.random.choice(nodes, p=probs)
+
+            return node
+        else:
+            logger.error("WARNING: the board is full")
+            return None
+
+    def self_play(self):
+        self.num_simulations += 1
+        node = 0
+
+        while True:
+            state = np.copy(self.digraph.node[node]['state'])
+            logger.info('Node : ', str(node))
+            logger.info('State : ', str(state.tolist()))
+
+            if len(list(tt.available_moves(state))) == 0:
+                return node, 0
+            win = tt.has_winner(state, self.winning_length)
+            if win[0]:
+                return node, 1
+
+            node = self.get_action(np.copy(self.digraph.node[node]['state']))
 
     def play_against_random(self, play_round=20):
         win_count = 0
@@ -456,7 +243,6 @@ class MonteCarlo:
             record.append(result)
             if result == 1:
                 win_count += 1
-        print(record)
         print('Win rate: %f' % (win_count / float(play_round)))
 
     def visualization(self):
