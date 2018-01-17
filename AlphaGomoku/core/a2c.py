@@ -55,7 +55,7 @@ class Model(object):
             for step in range(len(obs)):
                 cur_lr = lr.value()
             td_map = {train_model.X: obs, A: actions, ADV: advs, R: rewards, LR: cur_lr}
-            if states != []:
+            if states:
                 td_map[train_model.S] = states
                 td_map[train_model.M] = masks
             policy_loss, value_loss, policy_entropy, _ = sess.run(
@@ -108,7 +108,7 @@ class Runner(object):
         self.states = model.initial_state
         self.dones = [False for _ in range(nenv)]
 
-        self.mcts = MonteCarlo()
+        self.mcts = MonteCarlo(env, self.model)
         self.list_board = []
         self.list_ai_board = []
 
@@ -125,23 +125,35 @@ class Runner(object):
         # self.list_board.clear()
 
     def run(self):
-        print('- ' * 20 + 'run' + ' -' * 20)
-        for i in self.list_board:
-            print(i.tolist())
+        logger.debug('- ' * 20 + 'run' + ' -' * 20)
+
         mb_obs, mb_rewards, mb_actions, mb_values, mb_dones = [], [], [], [], []
         mb_states = self.states
+        node, award = self.mcts.self_play()
+        a, b = self.mcts.get_state(node)
+        print('+:')
+        for i in a:
+            print(i.tolist())
+        print('-:')
+        for i in b:
+            print(i.tolist())
+        logger.debug('Result node: ', str(node))
 
         for n in range(self.nsteps):
             self.env.set_board(self.obs)
-
+            logger.info('Original state:', str(self.obs.tolist()))
             counter = n
-            print('Original state: ', self.obs.tolist())
+            logger.info(str(self.dones))
 
             actions, values, states, prob = self.model.step(self.obs, self.states, self.dones)
             logger.info('Prob:', str(prob))
+            # np.place(self.obs, self.obs == 1, 2)
+            # np.place(self.obs, self.obs == -1, 1)
+            # np.place(self.obs, self.obs == 2, -1)
+            # actions, values, states, prob = self.model.step(self.obs, self.states, self.dones)
+            # logger.info('Prob:', str(prob))
 
             logger.debug('List_action:', str(actions))
-            actions = [actions[0]]
             illegal_moves = self.env.get_illegal_moves()
             # print(actions[0])
             # print(self.obs)
@@ -187,60 +199,12 @@ class Runner(object):
                 self.clear_history_list()
 
             print('r2')
-            for ob in obs:
-                print(ob.tolist())
-            print('rewards', rewards)
-            print('dones', dones)
-            print('illegal', illegal)
-
-            # print(dones)
-            if illegal:
-                counter = 0
-                mb_obs, mb_rewards, mb_actions, mb_values, mb_dones = [], [], [], [], []
-                mb_obs.append(np.copy(self.obs))
-                mb_actions.append(actions)
-                mb_values.append(values)
-                mb_dones.append(self.dones)
-                # print(mb_obs, mb_rewards, mb_actions, mb_values, mb_dones)
-
             self.states = states
             self.dones = dones
             for n, done in enumerate(dones):
-                # print(n)
-                # print(done)
                 if done:
-                    # print(self.obs[n])
-                    # print('*'*20)
                     # clear obs
                     self.obs[n] = self.obs[n] * 0
-                    if len(self.list_board):
-                        print('Update state')
-                    print('done! list board')
-                    for i in self.list_board:
-                        print(i.tolist())
-                    print('done! list ai board')
-                    for i in self.list_ai_board:
-                        print(i.tolist())
-                    # print('irewards', rewards)
-                    # print(self.obs[n])
-                    # print('-'*20)
-
-                    # sys.stdout = sys.__stdout__
-                    for i in self.list_board:
-                        print(i.tolist())
-
-                    for i in range(len(self.list_board) - 1):
-                        print('expansion')
-                        print(self.list_board[i].tolist())
-                        print(self.list_board[i + 1].tolist())
-
-                        self.mcts.az_expansion(self.list_board[i], self.list_board[i + 1])
-
-                    if rewards[0] == -0.8:
-                        rewards[0] = -1
-                    self.mcts.az_backup(self.list_ai_board, rewards[0])
-                    self.clear_history_list()
-                    # sys.stdout = open(os.devnull, 'w')
 
             self.update_obs(obs)
             mb_rewards.append(rewards)
@@ -248,46 +212,30 @@ class Runner(object):
                 break
 
         mb_dones.append(self.dones)
-        # print(mb_dones)
-        # print('*'*20)
-        # batch of steps to batch of rollouts
         mb_obs = np.asarray(mb_obs, dtype=np.float32).swapaxes(1, 0).reshape(
             (self.nenv * (counter + 1), self.nh, self.nw, self.nc * self.nstack))
         mb_rewards = np.asarray(mb_rewards, dtype=np.float32).swapaxes(1, 0)
         mb_actions = np.asarray(mb_actions, dtype=np.int32).swapaxes(1, 0)
         mb_values = np.asarray(mb_values, dtype=np.float32).swapaxes(1, 0)
         mb_dones = np.asarray(mb_dones, dtype=np.bool).swapaxes(1, 0)
-        # print(mb_dones)
-        # print('-'*20)
         mb_masks = mb_dones[:, :-1]
-        # print(mb_masks)
-        # print('#'*20)
         mb_dones = mb_dones[:, 1:]
-        # print(mb_dones)
-        # print('~'*20)
         last_values = self.model.value(self.obs, self.states, self.dones).tolist()
+
         # discount/bootstrap off value fn
         for n, (rewards, dones, value) in enumerate(zip(mb_rewards, mb_dones, last_values)):
             rewards = rewards.tolist()
-            # print(rewards)
-            # print('^'*20)
             dones = dones.tolist()
-            # print(dones)
-            # print('!'*20)
             if dones[-1] == 0:
                 rewards = discount_with_dones(rewards + [value], dones + [0], self.gamma)[:-1]
             else:
                 rewards = discount_with_dones(rewards, dones, self.gamma)
-            # print(rewards)
-            # print('+'*20)
             mb_rewards[n] = rewards
         mb_rewards = mb_rewards.flatten()
         mb_actions = mb_actions.flatten()
         mb_values = mb_values.flatten()
         mb_masks = mb_masks.flatten()
-        # print(mb_masks)
-        # print('%'*20)
-        print('* ' * 20 + 'run' + ' *' * 20)
+        logger.debug('* ' * 20 + 'run' + ' *' * 20)
         return mb_obs, mb_states, mb_rewards, mb_masks, mb_actions, mb_values
 
 
@@ -315,12 +263,6 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
     tstart = time.time()
 
     for update in range(1, total_timesteps // nbatch + 1):
-        runner.clear_history_list()
-        board, list_board, list_ai_board = runner.mcts.play_game()
-        runner.obs = board
-        runner.list_board = list_board
-        runner.list_ai_board = list_ai_board
-
         obs, states, rewards, masks, actions, values = runner.run()
         print('- ' * 20 + 'lea' + ' -' * 20)
         for ob in obs:

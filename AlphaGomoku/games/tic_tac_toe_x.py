@@ -184,6 +184,14 @@ def _evaluate_line(line, winning_length):
     return score
 
 
+def get_available_moves_with_prob(state, prob):
+    dict_available_moves = {}
+    for x, y in itertools.product(range(len(state[0])), range(len(state[0]))):
+        if state[0, x, y, 0] == 0:
+            dict_available_moves[(x, y)] = prob[0, 3 * y + x]
+    return dict_available_moves
+
+
 def evaluate(board_state, winning_length):
     """An evaluation function for this game, gives an estimate of how good the board position is for the plus player.
     There is no specific range for the values returned, they just need to be relative to each other.
@@ -323,6 +331,12 @@ class TicTacToeXGameSpec(BaseGameSpec):
         self.print = True
         self.games_finish_in_draw = 0
 
+    def get_board_size(self):
+        return self._board_size
+
+    def get_winning_length(self):
+        return self._winning_length
+
     def new_board(self):
         self.board_state = new_board(self._board_size)
         return self.board_state
@@ -379,7 +393,7 @@ class TicTacToeXGameSpec(BaseGameSpec):
                 1 + self.games_wonAI + self.games_wonRandom + self.games_finish_in_draw + self.illegal_games)))
         logger.warn('AI made ', str((100 * self.illegal_games / (
                 1 + self.games_wonAI + self.games_wonRandom + self.games_finish_in_draw + self.illegal_games))),
-              ' illegal moves')
+                    ' illegal moves')
         logger.warn('- ' * 40)
         self.games_wonAI = 0
         self.games_wonRandom = 0
@@ -492,15 +506,32 @@ class TicTacToeXGameSpec(BaseGameSpec):
 
 
 if __name__ == '__main__':
-    # import networkx as nx
-    #
-    # digraph = nx.DiGraph()
-    # digraph.add_node(0,
-    #                  nw=0,
-    #                  nn=0,
-    #                  uct=0,
-    #                  expanded=False,
-    #                  state=new_board(3))
+    import networkx as nx
+
+    digraph = nx.DiGraph()
+    digraph.add_node(0,
+                     nw=0,
+                     nn=0,
+                     uct=0,
+                     expanded=False,
+                     state=new_board(3))
+    digraph.add_node(1,
+                     nw=0,
+                     nn=0,
+                     uct=0,
+                     expanded=False,
+                     state=new_board(3))
+    digraph.add_node(2,
+                     nw=0,
+                     nn=0,
+                     uct=0,
+                     expanded=False,
+                     state=new_board(3))
+    digraph.add_edge(0, 1)
+    digraph.add_edge(1, 2)
+    for key in digraph.predecessors(1):
+        print(key)
+        break
     # for node in digraph.nodes():
     #     if np.array_equal(digraph.node[node]['state'], new_board(3)):
     #         print('Find!!!')
@@ -514,7 +545,7 @@ if __name__ == '__main__':
     # print(new_board(3).tolist())
     # print(has_winner(e, 2)[0])
 
-    env = TicTacToeXGameSpec(3, 3)
-    print(env.step(8))
-    print(env.available_moves_1())
-    print(env.get_illegal_moves())
+    # env = TicTacToeXGameSpec(3, 3)
+    # print(env.step(8))
+    # print(env.available_moves_1())
+    # print(env.get_illegal_moves())
