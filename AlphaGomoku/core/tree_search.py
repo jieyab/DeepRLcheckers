@@ -34,6 +34,8 @@ class MonteCarlo:
         self.model = model
         self._c_puct = 5
         self._n_play_out = 200
+        self.list_plus_board_states = []
+        self.list_minus_board_states = []
 
     def reset_game(self):
         self.last_move = None
@@ -119,10 +121,11 @@ class MonteCarlo:
         """
 
         if node != 0:
+            new_node = -1
             for key in self.digraph.predecessors(node):
-                node = key
+                new_node = key
                 break
-            self.update_recursive(node, -value)
+            self.update_recursive(new_node, -value)
         self.update(node, value)
 
     def play_out(self, node):
@@ -234,6 +237,35 @@ class MonteCarlo:
                 return node, 1
 
             node = self.get_action(np.copy(self.digraph.node[node]['state']))
+
+    def get_state_recursive(self, node, is_root=True):
+        """
+        Get board state recursively
+        :param node:
+        :return:
+        """
+
+        if node != 0:
+            parent_node = -1
+            for key in self.digraph.predecessors(node):
+                parent_node = key
+                break
+            self.get_state_recursive(parent_node, False)
+
+        if is_root:
+            self.list_plus_board_states.append(np.copy(self.digraph.node[node]['state']))
+            self.list_minus_board_states.append(np.copy(self.digraph.node[node]['state']))
+        else:
+            if self.digraph.node[node]['side'] == 1:
+                self.list_plus_board_states.append(np.copy(self.digraph.node[node]['state']))
+            else:
+                self.list_minus_board_states.append(np.copy(self.digraph.node[node]['state']))
+
+    def get_state(self, node):
+        self.list_plus_board_states.clear()
+        self.list_minus_board_states.clear()
+        self.get_state_recursive(node)
+        return self.list_plus_board_states, self.list_minus_board_states
 
     def play_against_random(self, play_round=20):
         win_count = 0
