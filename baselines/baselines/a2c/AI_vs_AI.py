@@ -174,31 +174,38 @@ class Runner(object):
                 if done:
                     self.obs_B[n] = self.obs_B[n] * 0
             self.update_obs_B(obs_B)
-            if rewards == 1:
-                mb_dones_B = mb_dones
-                rewards_B = [-1]
-            elif rewards_B == 1:
-                mb_dones = mb_dones_B
-                rewards = [-1]
-            elif (rewards_B == -0.3):
-                mb_dones = mb_dones_B
-                rewards_B = [-0.3]
-                rewards = [-0.3]
-            elif(rewards == -0.3):
-                mb_dones_B = mb_dones
-                rewards_B = [-0.3]
-                rewards = [-0.3]
 
-            else:
-                mb_dones_B = mb_dones
+
+
 
             mb_rewards.append(rewards)
             mb_rewards_B.append(rewards_B)
-            if rewards != 0:
+            if (rewards or rewards_B) != 0:
                 break
 
-
         mb_dones.append(self.dones)
+        mb_dones_B.append(self.dones_B)
+
+
+        if rewards == 1:
+            mb_dones_B = mb_dones
+            rewards_B = [-1]
+        elif rewards_B == 1:
+            mb_dones = mb_dones_B
+            rewards = [-1]
+        elif (rewards_B == -0.3):
+            mb_dones = mb_dones_B
+            rewards_B = [-0.3]
+            rewards = [-0.3]
+        elif (rewards == -0.3):
+            mb_dones_B = mb_dones
+            rewards_B = [-0.3]
+            rewards = [-0.3]
+
+
+
+
+
         # batch of steps to batch of rollouts
         mb_obs = np.asarray(mb_obs, dtype=np.float32).swapaxes(1, 0).reshape(
             (self.nenv * (counter + 1), self.nh, self.nw, self.nc * self.nstack))
@@ -328,7 +335,7 @@ def learn(policy,policy_b, env, seed, nsteps=5, nstack=4, total_timesteps=int(80
             logger.record_tabular("value_loss_B", float(value_loss_B))
             logger.record_tabular("explained_variance_B", float(ev_B))
             logger.dump_tabular()
-        if (update % (log_interval * 1)) == 0:
+        if (update % (log_interval * 10)) == 0:
             model_A.save('./models/model_A.cpkt')
             model_B.save('./models/model_B.cpkt')
 

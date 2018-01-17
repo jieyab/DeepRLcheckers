@@ -56,7 +56,7 @@ def ortho_init(scale=1.0):
         return (scale * q[:shape[0], :shape[1]]).astype(np.float32)
     return _ortho_init
 
-def conv(x, scope, nf, rf, stride, pad='VALID', act=tf.nn.relu, init_scale=1.0):
+def conv(x, scope, nf, rf, stride, pad='VALID', act=tf.nn.elu, init_scale=1.0):
     with tf.variable_scope(scope):
         nin = x.get_shape()[3].value
         w = tf.get_variable("w", [rf, rf, nin, nf], initializer=ortho_init(init_scale))
