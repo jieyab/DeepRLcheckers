@@ -26,6 +26,7 @@ class MonteCarlo:
                               u=0,
                               P=1,
                               side=-1,
+                              action=0,
                               state=tt.new_board(self.board_size))
 
         self.node_counter += 1
@@ -36,6 +37,8 @@ class MonteCarlo:
         self._n_play_out = 200
         self.list_plus_board_states = []
         self.list_minus_board_states = []
+        self.list_plus_actions = []
+        self.list_minus_actions = []
 
     def reset_game(self):
         self.last_move = None
@@ -85,6 +88,7 @@ class MonteCarlo:
                                   u=0,
                                   P=value,
                                   side=-side,
+                                  action=3 * key[1] + key[0],
                                   state=np.copy(new_state))
             self.digraph.add_edge(parent, self.node_counter)
             logger.debug('Add node ', str(parent), ' -> ', str(self.node_counter))
@@ -241,6 +245,7 @@ class MonteCarlo:
     def get_state_recursive(self, node, is_root=True):
         """
         Get board state recursively
+        :param is_root:
         :param node:
         :return:
         """
@@ -255,17 +260,24 @@ class MonteCarlo:
         if is_root:
             self.list_plus_board_states.append(np.copy(self.digraph.node[node]['state']))
             self.list_minus_board_states.append(np.copy(self.digraph.node[node]['state']))
+            self.list_plus_actions.append(np.copy(self.digraph.node[node]['action']))
+            self.list_minus_actions.append(np.copy(self.digraph.node[node]['action']))
         else:
             if self.digraph.node[node]['side'] == 1:
                 self.list_plus_board_states.append(np.copy(self.digraph.node[node]['state']))
+                self.list_plus_actions.append(np.copy(self.digraph.node[node]['action']))
             else:
                 self.list_minus_board_states.append(np.copy(self.digraph.node[node]['state']))
+                self.list_minus_actions.append(np.copy(self.digraph.node[node]['action']))
 
     def get_state(self, node):
         self.list_plus_board_states.clear()
         self.list_minus_board_states.clear()
+        self.list_plus_actions.clear()
+        self.list_minus_actions.clear()
         self.get_state_recursive(node)
-        return self.list_plus_board_states, self.list_minus_board_states
+        return self.list_plus_board_states, self.list_minus_board_states, \
+               self.list_plus_actions, self.list_minus_actions
 
     def play_against_random(self, play_round=20):
         win_count = 0

@@ -124,8 +124,6 @@ def has_winner(board_state, winning_length):
     board_state = board_state[0, :, :, 0]
     board_width = len(board_state)
     board_height = len(board_state[0])
-    print(board_state)
-    print()
     # check rows
     for x in range(board_width):
         winner = _has_winning_line(board_state[x, :], winning_length)

@@ -118,102 +118,38 @@ class Runner(object):
         self.obs = np.roll(self.obs, shift=-1, axis=3)
         self.obs[:, :, :, -1] = obs[:, :, :, 0]
 
-    def clear_history_list(self):
-        del self.list_board[:]
-        del self.list_ai_board[:]
-        # self.list_ai_board.clear()
-        # self.list_board.clear()
-
     def run(self):
         logger.debug('- ' * 20 + 'run' + ' -' * 20)
-
         mb_obs, mb_rewards, mb_actions, mb_values, mb_dones = [], [], [], [], []
         mb_states = self.states
-        node, award = self.mcts.self_play()
-        a, b = self.mcts.get_state(node)
+
+        node, reward = self.mcts.self_play()
+        if reward == 0:
+            done = np.zeros(1, dtype=bool)
+
+        a, b, c, d = self.mcts.get_state(node)
         print('+:')
         for i in a:
             print(i.tolist())
         print('-:')
-        for i in b:
+        for i in c:
             print(i.tolist())
         logger.debug('Result node: ', str(node))
+        counter = len(a) + len(b) - 1
 
-        for n in range(self.nsteps):
-            self.env.set_board(self.obs)
-            logger.info('Original state:', str(self.obs.tolist()))
-            counter = n
-            logger.info(str(self.dones))
-
-            actions, values, states, prob = self.model.step(self.obs, self.states, self.dones)
-            logger.info('Prob:', str(prob))
-            # np.place(self.obs, self.obs == 1, 2)
-            # np.place(self.obs, self.obs == -1, 1)
-            # np.place(self.obs, self.obs == 2, -1)
-            # actions, values, states, prob = self.model.step(self.obs, self.states, self.dones)
-            # logger.info('Prob:', str(prob))
-
-            logger.debug('List_action:', str(actions))
-            illegal_moves = self.env.get_illegal_moves()
-            # print(actions[0])
-            # print(self.obs)
-            moves_nn = actions[0].tolist()
-            # print('moves_nn',moves_nn)
-            for i in illegal_moves:
-                if i in moves_nn:
-                    moves_nn.remove(i)
-            print('remove_illegal', moves_nn)
-            actions = [np.asarray(moves_nn[0])]
-
-            print('r1')
-            print('actions', actions)
-            print('values', values)
-            # print('states', states)
-
-            mb_obs.append(np.copy(self.obs))
-            mb_actions.append(actions)
-            mb_values.append(values)
-            mb_dones.append(self.dones)
-
-            obs, rewards, dones, _, illegal, old_obs, mid_obs, fin_obs = self.env.step(actions)
-            if not illegal:
-                # sys.stdout = sys.__stdout__
-                print('list_board')
-                for i in self.list_board:
-                    print(i.tolist())
-                print('list-board')
-                print('obs status:')
-                print(old_obs.tolist())
-                print(mid_obs.tolist())
-                print(fin_obs.tolist())
-                # self.mcts.az_expansion(old_obs, mid_obs)
-                # self.mcts.az_expansion(mid_obs, fin_obs)
-
-                self.list_ai_board.append(mid_obs)
-                self.list_board.append(mid_obs)
-                if not np.array_equal(mid_obs, fin_obs):
-                    self.list_board.append(fin_obs)
-
-                # sys.stdout = open(os.devnull, 'w')
-            else:
-                self.clear_history_list()
-
-            print('r2')
-            self.states = states
-            self.dones = dones
-            for n, done in enumerate(dones):
-                if done:
-                    # clear obs
-                    self.obs[n] = self.obs[n] * 0
-
-            self.update_obs(obs)
-            mb_rewards.append(rewards)
-            if dones[0] or illegal:
-                break
+        # for n in range(self.nsteps):
+        #     self.env.set_board(self.obs)
+        #
+        #     mb_obs.append(np.copy(self.obs))
+        #     mb_actions.append(action)
+        #     mb_values.append(value)
+        #
+        #     mb_dones.append(self.dones)
+        #     mb_rewards.append(reward)
 
         mb_dones.append(self.dones)
         mb_obs = np.asarray(mb_obs, dtype=np.float32).swapaxes(1, 0).reshape(
-            (self.nenv * (counter + 1), self.nh, self.nw, self.nc * self.nstack))
+            (self.nenv * counter, self.nh, self.nw, self.nc * self.nstack))
         mb_rewards = np.asarray(mb_rewards, dtype=np.float32).swapaxes(1, 0)
         mb_actions = np.asarray(mb_actions, dtype=np.int32).swapaxes(1, 0)
         mb_values = np.asarray(mb_values, dtype=np.float32).swapaxes(1, 0)
@@ -263,10 +199,11 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
     tstart = time.time()
 
     for update in range(1, total_timesteps // nbatch + 1):
+        logger.debug('- ' * 20 + 'lea' + ' -' * 20)
         obs, states, rewards, masks, actions, values = runner.run()
-        print('- ' * 20 + 'lea' + ' -' * 20)
-        for ob in obs:
-            print(ob.tolist())
+
+        # for ob in obs:
+        #     print(ob.tolist())
         print('actions', actions)
         print('values', values)
         print('rewards', rewards)
@@ -301,7 +238,7 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
             logger.dump_tabular()
         if (update % (log_interval * 10)) == 0:
             model.save('../models/gomoku.cpkt')
-        print('* ' * 20 + 'lea' + ' *' * 20)
+        logger.debug('* ' * 20 + 'lea' + ' *' * 20)
 
     runner.mcts.visualization()
     env.close()

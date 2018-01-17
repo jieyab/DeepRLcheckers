@@ -6,7 +6,7 @@ from AlphaGomoku.core.policies import CnnPolicy
 from AlphaGomoku.games.tic_tac_toe_x import TicTacToeXGameSpec
 
 if __name__ == '__main__':
-    logger.set_level(logger.DEBUG)
+    logger.set_level(logger.WARN)
 
     policy_fn = CnnPolicy
     env = TicTacToeXGameSpec(3, 3)
