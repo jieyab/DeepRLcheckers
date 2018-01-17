@@ -150,7 +150,8 @@ class CnnPolicy(object):
 
         def step(ob, *_args, **_kwargs):
             a, v, prob = sess.run([a0, v0, p0], {X: ob})
-            return a, v, [], prob  # dummy stat
+            # print('sum', (prob + 1) / (np.sum(prob) + len(prob[0])))
+            return a, v, [], (prob + 1) / (np.sum(prob) + len(prob[0]))
 
         def value(ob, *_args, **_kwargs):
             return sess.run(v0, {X: ob})
