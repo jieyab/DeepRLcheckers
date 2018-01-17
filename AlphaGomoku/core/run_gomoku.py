@@ -5,10 +5,13 @@ import sys
 from AlphaGomoku.core.a2c import learn
 from AlphaGomoku.core.policies import CnnPolicy
 from AlphaGomoku.games.tic_tac_toe_x import TicTacToeXGameSpec
+from AlphaGomoku.common import logger
 
 is_mute = 1
 
 if __name__ == '__main__':
+    logger.set_level(logger.WARN)
+
     if is_mute:
         sys.stdout = open(os.devnull, 'w')
 

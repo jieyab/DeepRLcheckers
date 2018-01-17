@@ -138,8 +138,9 @@ class Runner(object):
             print('Original state: ', self.obs.tolist())
 
             actions, values, states, prob = self.model.step(self.obs, self.states, self.dones)
-            print(prob)
-            print('list_action', actions)
+            logger.info('Prob:', str(prob))
+
+            logger.debug('List_action:', str(actions))
             actions = [actions[0]]
             illegal_moves = self.env.get_illegal_moves()
             # print(actions[0])

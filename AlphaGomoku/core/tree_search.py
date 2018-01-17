@@ -299,41 +299,6 @@ class MonteCarlo:
         best_child_node = max(uct_values.items(), key=operator.itemgetter(1))[0]
         return False, best_child_node
 
-    def selection(self, root):
-        """
-        Starting at root, recursively select the best node that maximizes UCT
-        until a node is reached that has no explored children
-        Keeps track of the path traversed by adding each node to path as
-        it is visited
-        :return: the node to expand
-        """
-        # In the case that the root node is not in the graph, add it
-        if root not in self.digraph.nodes():
-            self.digraph.add_node(self.node_counter,
-                                  num=self.node_counter,
-                                  nw=0,
-                                  nn=0,
-                                  uct=0,
-                                  expanded=False,
-                                  state=root)
-            self.node_counter += 1
-            return root
-        elif not self.digraph.node[root]['expanded']:
-            print('root in digraph but not expanded')
-            return root  # This is the node to expand
-        else:
-            print('root expanded, move on to a child')
-            # Handle the general case
-            children = self.digraph.successors(root)
-            uct_values = {}
-            for child_node in children:
-                uct_values[child_node] = self.uct(state=child_node)
-
-            # Choose the child node that maximizes the expected value given by UCT
-            best_child_node = max(uct_values.items(), key=operator.itemgetter(1))[0]
-
-            return self.selection(best_child_node)
-
     def az_expansion(self, parent, child):
         print('az_exp')
         print(parent.tolist())
@@ -384,75 +349,6 @@ class MonteCarlo:
         # for edge in self.digraph.edges:
         #     print(edge)
 
-    def expansion(self, node):
-        # As long as this node has at least one unvisited child, choose a legal move
-        legal_moves = list(tt.available_moves(self.digraph.node[node]['state']))
-        print('Legal moves: {}'.format(legal_moves))
-
-        # Select the next unvisited child with uniform probability
-        unvisited_children = []
-        corresponding_actions = []
-
-        for move in legal_moves:
-            print('adding to expansion analysis with: {}'.format(move))
-            child_state = tt.apply_move(self.digraph.node[node]['state'], move, 0)
-
-            in_children = False
-            for child_node in self.digraph.successors(node):
-                if np.array_equal(self.digraph.node[child_node]['state'], child_state):
-                    in_children = True
-
-            if not in_children:
-                unvisited_children.append(child_state)
-                corresponding_actions.append(move)
-
-        print('unvisited children: {}'.format(len(unvisited_children)))
-        if len(unvisited_children) > 0:
-            idx = np.random.randint(len(unvisited_children))
-            child, move = unvisited_children[idx], corresponding_actions[idx]
-
-            print('Add node %d -> %d' % (node, self.node_counter))
-            print(child)
-            self.digraph.add_node(self.node_counter,
-                                  num=self.node_counter,
-                                  nw=0,
-                                  nn=0,
-                                  uct=0,
-                                  expanded=False,
-                                  state=np.copy(child))
-            self.digraph.add_edge(node, self.node_counter, action=move)
-            child_node_id = self.node_counter
-            self.node_counter += 1
-        else:
-            return node
-
-        # If all legal moves are now children, mark this node as expanded.
-        num_children = 0
-        for _ in self.digraph.successors(node):
-            num_children += 1
-
-        if num_children == len(legal_moves):
-            self.digraph.node[node]['expanded'] = True
-            print('node is expanded')
-
-        return child_node_id
-
-    def simulation(self, node):
-        """
-        Conducts a light playout from the specified node
-        :return: The reward obtained once a terminal state is reached
-        """
-        # random_policy = RandomPolicy()
-        current_state = self.digraph.node[node]['state']
-        while not tt.has_winner(current_state, self.winning_length):
-            available = list(tt.available_moves(current_state))
-            if len(available) == 0:
-                return 0
-            move = random.choice(available)
-            current_state = tt.apply_move(current_state, move, 0)
-
-        return tt.has_winner(current_state, self.winning_length)
-
     def az_backup(self, list_ai_node, reward):
         for state in list_ai_node:
             for node in self.digraph.nodes():
@@ -460,39 +356,6 @@ class MonteCarlo:
                     self.digraph.node[node]['nn'] += 1
                     self.digraph.node[node]['nw'] += reward
                     break
-
-    def backpropagation(self, last_visited, reward):
-        """
-        Walk the path upwards to the root, incrementing the
-        'nn' and 'nw' attributes of the nodes along the way
-        """
-        current = last_visited
-        while True:
-            self.digraph.node[current]['nn'] += 1
-            self.digraph.node[current]['nw'] += reward
-
-            print('Updating to n={} and w={}:\n{}'.format(self.digraph.node[current]['nn'],
-                                                          self.digraph.node[current]['nw'],
-                                                          self.digraph.node[current]['state']))
-
-            # Terminate when we reach the empty board
-            if np.array_equal(self.digraph.node[current]['state'], tt.new_board(self.board_size)):
-                break
-            # Todo:
-            # Does this handle the necessary termination conditions for both 'X' and 'O'?
-            # As far as we can tell, it does
-
-            # Will throw an IndexError when we arrive at a node with no predecessors
-            # Todo: see if this additional check is no longer necessary
-            print('predecessors')
-            for key in self.digraph.predecessors(current):
-                print(key)
-                print()
-            try:
-                print('predecessors')
-                current = next(self.digraph.predecessors(current))
-            except StopIteration:
-                break
 
     def uct(self, state):
         """
