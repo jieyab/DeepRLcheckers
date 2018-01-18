@@ -277,7 +277,7 @@ class MonteCarlo:
         self.list_minus_actions.clear()
         self.get_state_recursive(node)
         return self.list_plus_board_states, self.list_minus_board_states, \
-               self.list_plus_actions, self.list_minus_actions
+            self.list_plus_actions, self.list_minus_actions
 
     def play_against_random(self, play_round=20):
         win_count = 0

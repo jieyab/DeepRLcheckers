@@ -122,41 +122,48 @@ class Runner(object):
         logger.debug('- ' * 20 + 'run' + ' -' * 20)
         mb_obs, mb_rewards, mb_actions, mb_values, mb_dones = [], [], [], [], []
         mb_states = self.states
+        mb_dones.append(np.zeros(1, dtype=bool))
 
         node, reward = self.mcts.self_play()
-        if reward == 0:
-            done = np.zeros(1, dtype=bool)
+        plus_state, minus_state, plus_action, minus_action = self.mcts.get_state(node)
 
-        a, b, c, d = self.mcts.get_state(node)
-        print('+:')
-        for i in a:
-            print(i.tolist())
-        print('-:')
-        for i in c:
-            print(i.tolist())
-        logger.debug('Result node: ', str(node))
-        counter = len(a) + len(b) - 1
+        for i in range(len(plus_state)):
+            mb_obs.append(np.copy(plus_state[i]))
+            mb_actions.append(np.ones(1, dtype=int) * plus_action[i])
 
-        # for n in range(self.nsteps):
-        #     self.env.set_board(self.obs)
-        #
-        #     mb_obs.append(np.copy(self.obs))
-        #     mb_actions.append(action)
-        #     mb_values.append(value)
-        #
-        #     mb_dones.append(self.dones)
-        #     mb_rewards.append(reward)
+            if i == len(plus_state) - 1:
+                value = self.model.value(plus_state[i], self.states, np.ones(1, dtype=bool))
+                mb_values.append(value)
+                mb_dones.append(np.ones(1, dtype=bool))
+                if reward:
+                    mb_rewards.append(np.ones(1))
+                else:
+                    mb_rewards.append(np.zeros(1))
+            else:
+                value = self.model.value(plus_state[i], self.states, np.zeros(1, dtype=bool))
+                mb_values.append(value)
+                mb_dones.append(np.zeros(1, dtype=bool))
+                mb_rewards.append(np.zeros(1))
 
-        mb_dones.append(self.dones)
         mb_obs = np.asarray(mb_obs, dtype=np.float32).swapaxes(1, 0).reshape(
-            (self.nenv * counter, self.nh, self.nw, self.nc * self.nstack))
+            (self.nenv * len(plus_state), self.nh, self.nw, self.nc * self.nstack))
         mb_rewards = np.asarray(mb_rewards, dtype=np.float32).swapaxes(1, 0)
         mb_actions = np.asarray(mb_actions, dtype=np.int32).swapaxes(1, 0)
         mb_values = np.asarray(mb_values, dtype=np.float32).swapaxes(1, 0)
         mb_dones = np.asarray(mb_dones, dtype=np.bool).swapaxes(1, 0)
         mb_masks = mb_dones[:, :-1]
         mb_dones = mb_dones[:, 1:]
-        last_values = self.model.value(self.obs, self.states, self.dones).tolist()
+
+        # for ob in mb_obs:
+        #     print(ob.tolist())
+        # print('actions', mb_actions)
+        # print('values', mb_values)
+        # print('rewards', mb_rewards)
+        # print('masks', mb_masks)
+        # print('status', mb_states)
+
+        last_values = self.model.value(plus_state[-1], self.states, self.dones).tolist()
+        logger.info('Last_values: ', last_values)
 
         # discount/bootstrap off value fn
         for n, (rewards, dones, value) in enumerate(zip(mb_rewards, mb_dones, last_values)):
@@ -171,8 +178,26 @@ class Runner(object):
         mb_actions = mb_actions.flatten()
         mb_values = mb_values.flatten()
         mb_masks = mb_masks.flatten()
+
+        for ob in mb_obs:
+            print(ob.tolist())
+        print('actions', mb_actions)
+        print('values', mb_values)
+        print('rewards', mb_rewards)
+        print('masks', mb_masks)
+        print('status', mb_states)
+
+        dim_necessary = self.nsteps - mb_obs.shape[0]
+        mb_obs = np.concatenate((mb_obs, np.zeros((dim_necessary, 3, 3, 1))), axis=0)
+        mb_rewards = np.concatenate((mb_rewards, np.zeros(dim_necessary)), axis=0)
+        mb_masks = np.concatenate((mb_masks, np.full(dim_necessary, True, dtype=bool)), axis=0)
+        mb_actions = np.concatenate((mb_actions, np.zeros(dim_necessary)), axis=0)
+        mb_values = np.concatenate((mb_values, np.zeros(dim_necessary)), axis=0)
+
+        policy_loss, value_loss, policy_entropy = self.model.train(mb_obs, mb_states, mb_rewards, mb_masks, mb_actions,
+                                                                   mb_values)
         logger.debug('* ' * 20 + 'run' + ' *' * 20)
-        return mb_obs, mb_states, mb_rewards, mb_masks, mb_actions, mb_values
+        return policy_loss, value_loss, policy_entropy
 
 
 def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_coef=0.5, ent_coef=0.01,
@@ -199,50 +224,34 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
     tstart = time.time()
 
     for update in range(1, total_timesteps // nbatch + 1):
-        logger.debug('- ' * 20 + 'lea' + ' -' * 20)
-        obs, states, rewards, masks, actions, values = runner.run()
-
-        # for ob in obs:
-        #     print(ob.tolist())
-        print('actions', actions)
-        print('values', values)
-        print('rewards', rewards)
-        print('masks', masks)
-        print('status', states)
-
-        dim_total = nsteps
-        dim = obs.shape[0]
-        dim_necesaria = dim_total - dim
-
-        obs = np.concatenate((obs, np.zeros((dim_necesaria, 3, 3, 1))), axis=0)
-        rewards = np.concatenate((rewards, np.zeros((dim_necesaria))), axis=0)
-        masks = np.concatenate((masks, np.full((dim_necesaria), True, dtype=bool)), axis=0)
-        actions = np.concatenate((actions, np.zeros(dim_necesaria)), axis=0)
-        values = np.concatenate((values, np.zeros(dim_necesaria)), axis=0)
-
-        # print('obs', obs, 'actions', actions)
-        # print('values', values, 'rewards', rewards, )
-        # print('states', states, 'masks', masks, )
-        policy_loss, value_loss, policy_entropy = model.train(obs, states, rewards, masks, actions, values)
+        policy_loss, value_loss, policy_entropy = runner.run()
 
         nseconds = time.time() - tstart
         fps = int((update * nbatch) / nseconds)
         if update % log_interval == 0 or update == 1:
-            ev = explained_variance(values, rewards)
             logger.record_tabular("nupdates", update)
             logger.record_tabular("total_timesteps", update * nbatch)
             logger.record_tabular("fps", fps)
             logger.record_tabular("policy_entropy", float(policy_entropy))
             logger.record_tabular("value_loss", float(value_loss))
-            logger.record_tabular("explained_variance", float(ev))
             logger.dump_tabular()
         if (update % (log_interval * 10)) == 0:
             model.save('../models/gomoku.cpkt')
-        logger.debug('* ' * 20 + 'lea' + ' *' * 20)
 
     runner.mcts.visualization()
     env.close()
 
 
 if __name__ == '__main__':
-    pass
+    import AlphaGomoku.games.tic_tac_toe_x as tt
+
+    from gym import spaces
+
+    observation_space = spaces.Box(low=-1, high=1, shape=(3, 3, 1))
+    nh, nw, nc = observation_space.shape
+    print(nh, nw, nc)
+
+    mb_obs = [tt.new_board(3), tt.new_board(3), tt.new_board(3), tt.new_board(3), tt.new_board(3)]
+    mb_obs = np.asarray(mb_obs, dtype=np.float32).swapaxes(1, 0).reshape(
+        (1 * 3, nh, nw, nc * 5))
+    print(mb_obs)
