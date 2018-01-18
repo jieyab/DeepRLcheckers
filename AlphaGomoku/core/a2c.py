@@ -154,14 +154,6 @@ class Runner(object):
         mb_masks = mb_dones[:, :-1]
         mb_dones = mb_dones[:, 1:]
 
-        # for ob in mb_obs:
-        #     print(ob.tolist())
-        # print('actions', mb_actions)
-        # print('values', mb_values)
-        # print('rewards', mb_rewards)
-        # print('masks', mb_masks)
-        # print('status', mb_states)
-
         last_values = self.model.value(plus_state[-1], self.states, self.dones).tolist()
         logger.info('Last_values: ', last_values)
 
@@ -201,7 +193,7 @@ class Runner(object):
 
 
 def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_coef=0.5, ent_coef=0.01,
-          max_grad_norm=0.5, lr=7e-4, lrschedule='linear', epsilon=1e-5, alpha=0.99, gamma=0.99, log_interval=1000,
+          max_grad_norm=0.5, lr=7e-4, lrschedule='linear', epsilon=1e-5, alpha=0.99, gamma=0.99, log_interval=20,
           load_model=False, model_path=''):
     tf.reset_default_graph()
     set_global_seeds(seed)
