@@ -245,7 +245,7 @@ class MonteCarlo:
                 return node, 0
             win = tt.has_winner(state, self.winning_length)
             if win[0]:
-                return node, 1
+                return node, self.digraph.node[node]['side']
 
             node = self.get_action(np.copy(self.digraph.node[node]['state']))
 
