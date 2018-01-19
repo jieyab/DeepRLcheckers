@@ -6,6 +6,7 @@ import networkx as nx
 import numpy as np
 
 import AlphaGomoku.games.tic_tac_toe_x as tt
+import AlphaGomoku.core.utils as ut
 from AlphaGomoku.common import logger
 
 EPSILON = 10e-6  # Prevents division by 0 in calculation of UCT
@@ -34,7 +35,7 @@ class MonteCarlo:
 
         self.model = model
         self._c_puct = 5
-        self._n_play_out = 400
+        self._n_play_out = 200
         self.list_plus_board_states = []
         self.list_minus_board_states = []
         self.list_plus_actions = []
@@ -103,9 +104,13 @@ class MonteCarlo:
         """
 
         num_visit = int(self.digraph.node[node]['num_visit'])
+        parent_num_visit = 0
         Q = float(self.digraph.node[node]['Q'])
         P = float(self.digraph.node[node]['P'])
-        u = self._c_puct * P * math.sqrt(num_visit) / (1 + num_visit)
+        for key in self.digraph.predecessors(node):
+            parent_num_visit = float(self.digraph.node[key]['num_visit'])
+            break
+        u = self._c_puct * P * math.sqrt(parent_num_visit) / (1 + num_visit)
         self.digraph.node[node]['u'] = u
         return Q + u
 
@@ -172,11 +177,6 @@ class MonteCarlo:
         # Update value and visit count of nodes in this traversal.
         self.update_recursive(node, value[0])
 
-    def softmax(self, x):
-        probs = np.exp(x - np.max(x))
-        probs /= np.sum(probs)
-        return probs
-
     def get_move_probs(self, state, temp=1e-3):
         """Runs all playouts sequentially and returns the available actions and their corresponding probabilities
         Arguments:
@@ -205,7 +205,7 @@ class MonteCarlo:
             nodes.append(child_node)
             visits.append(self.digraph.node[child_node]['num_visit'])
 
-        node_probs = self.softmax(1.0 / temp * np.log(visits))
+        node_probs = ut.softmax(1.0 / temp * np.log(visits))
         return nodes, node_probs
 
     def get_action(self, state, is_self_play=True):
@@ -311,19 +311,28 @@ class MonteCarlo:
                 parent_node = key
                 break
             self.get_state_recursive(parent_node, False)
-
-        if is_root:
-            self.list_plus_board_states.append(np.copy(self.digraph.node[node]['state']))
-            self.list_minus_board_states.append(np.copy(self.digraph.node[node]['state']))
-            self.list_plus_actions.append(np.copy(self.digraph.node[node]['action']))
-            self.list_minus_actions.append(np.copy(self.digraph.node[node]['action']))
         else:
-            if self.digraph.node[node]['side'] == 1:
-                self.list_plus_board_states.append(np.copy(self.digraph.node[node]['state']))
-                self.list_plus_actions.append(np.copy(self.digraph.node[node]['action']))
-            else:
-                self.list_minus_board_states.append(np.copy(self.digraph.node[node]['state']))
-                self.list_minus_actions.append(np.copy(self.digraph.node[node]['action']))
+            return
+
+        if self.digraph.node[node]['side'] == 1:
+            self.list_plus_board_states.append(np.copy(self.digraph.node[node]['state']))
+            self.list_plus_actions.append(np.copy(self.digraph.node[node]['action']))
+        else:
+            self.list_minus_board_states.append(np.copy(self.digraph.node[node]['state']))
+            self.list_minus_actions.append(np.copy(self.digraph.node[node]['action']))
+
+        # if is_root:
+        #     self.list_plus_board_states.append(np.copy(self.digraph.node[node]['state']))
+        #     self.list_minus_board_states.append(np.copy(self.digraph.node[node]['state']))
+        #     self.list_plus_actions.append(np.copy(self.digraph.node[node]['action']))
+        #     self.list_minus_actions.append(np.copy(self.digraph.node[node]['action']))
+        # else:
+        #     if self.digraph.node[node]['side'] == 1:
+        #         self.list_plus_board_states.append(np.copy(self.digraph.node[node]['state']))
+        #         self.list_plus_actions.append(np.copy(self.digraph.node[node]['action']))
+        #     else:
+        #         self.list_minus_board_states.append(np.copy(self.digraph.node[node]['state']))
+        #         self.list_minus_actions.append(np.copy(self.digraph.node[node]['action']))
 
     def get_state(self, node):
         self.list_plus_board_states.clear()
@@ -334,11 +343,14 @@ class MonteCarlo:
         return self.list_plus_board_states, self.list_minus_board_states, \
                self.list_plus_actions, self.list_minus_actions
 
-    def visualization(self):
+    def visualization(self, limited_size=300):
         """
         Draw dot graph of Monte Carlo Tree
         :return:
         """
+        for node in range(limited_size, len(self.digraph.nodes())):
+            self.digraph.remove_node(node)
+
         pd_tree = nx.nx_pydot.to_pydot(self.digraph)
         for node in pd_tree.get_nodes():
             attr = node.get_attributes()
