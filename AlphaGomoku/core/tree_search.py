@@ -34,7 +34,7 @@ class MonteCarlo:
 
         self.model = model
         self._c_puct = 5
-        self._n_play_out = 200
+        self._n_play_out = 400
         self.list_plus_board_states = []
         self.list_minus_board_states = []
         self.list_plus_actions = []
@@ -262,15 +262,21 @@ class MonteCarlo:
             if is_shown:
                 state = str(board_state).replace(']]', ']').replace(']]', '').replace('[[[[', '').replace('\n', '') \
                     .replace('[[', '\n').replace('[', '').replace(' ', '').replace(']', ' | ').replace(' | \n', '\n')
+                print('- ' * 20)
                 print(state)
+                print('- ' * 20)
             if len(_available_moves) == 0:
                 # draw
                 if is_shown:
                     print("no moves left, game ended a draw")
                 return 0.
             if player_turn > 0:
+                node = self.get_action(board_state, False)
+                self.last_node = node
+                board_state = np.copy(self.digraph.node[self.last_node]['state'])
+            else:
                 move = self.get_human_action()
-                self.play_out(self.last_node)
+                # self.play_out(self.last_node)
 
                 if move not in _available_moves:
                     # if a player makes an invalid move the other player wins
@@ -278,14 +284,15 @@ class MonteCarlo:
                         print("illegal move ", move)
                     return -player_turn
                 board_state = tt.apply_move(board_state, move, player_turn)
-            else:
-                node = self.get_action(board_state, False)
-                self.last_node = node
-                board_state = np.copy(self.digraph.node[self.last_node]['state'])
 
             winner = tt.has_winner(board_state, 3)
             if winner != 0:
                 if is_shown:
+                    state = str(board_state).replace(']]', ']').replace(']]', '').replace('[[[[', '').replace('\n', '') \
+                        .replace('[[', '\n').replace('[', '').replace(' ', '').replace(']', ' | ').replace(' | \n', '\n')
+                    print('- ' * 20)
+                    print(state)
+                    print('- ' * 20)
                     print("we have a winner, side: %s" % player_turn)
                 return winner
             player_turn = -player_turn
@@ -325,7 +332,7 @@ class MonteCarlo:
         self.list_minus_actions.clear()
         self.get_state_recursive(node)
         return self.list_plus_board_states, self.list_minus_board_states, \
-            self.list_plus_actions, self.list_minus_actions
+               self.list_plus_actions, self.list_minus_actions
 
     def visualization(self):
         """
@@ -354,4 +361,3 @@ class MonteCarlo:
 
 if __name__ == '__main__':
     print('start...')
-

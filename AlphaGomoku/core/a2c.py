@@ -218,7 +218,7 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
         policy_loss, value_loss, policy_entropy = runner.run()
 
         nseconds = time.time() - tstart
-        fps = int((update * nbatch) / nseconds)
+        fps = float((update * nbatch) / nseconds)
         if update % log_interval == 0 or update == 1:
             logger.record_tabular("nupdates", update)
             logger.record_tabular("total_timesteps", update * nbatch)
