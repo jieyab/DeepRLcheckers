@@ -5,7 +5,6 @@ import numpy as np
 import tensorflow as tf
 
 from AlphaGomoku.common import logger
-from AlphaGomoku.common.math_util import explained_variance
 from AlphaGomoku.common.misc_util import set_global_seeds
 from AlphaGomoku.core.tree_search import MonteCarlo
 from AlphaGomoku.core.utils import Scheduler, find_trainable_variables
@@ -231,6 +230,28 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
             model.save('../models/gomoku.cpkt')
 
     runner.mcts.visualization()
+    env.close()
+
+
+def play(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_coef=0.5, ent_coef=0.01,
+         max_grad_norm=0.5, lr=7e-4, lrschedule='linear', epsilon=1e-5, alpha=0.99, gamma=0.99, log_interval=20,
+         model_path=''):
+    tf.reset_default_graph()
+    set_global_seeds(seed)
+
+    nenvs = env.num_envs
+    ob_space = env.observation_space
+    ac_space = env.action_space
+    num_procs = len(env.remotes)  # HACK
+
+    model = Model(policy=policy, ob_space=ob_space, ac_space=ac_space, nenvs=nenvs, nsteps=nsteps, nstack=nstack,
+                  num_procs=num_procs, ent_coef=ent_coef, vf_coef=vf_coef,
+                  max_grad_norm=max_grad_norm, lr=lr, alpha=alpha, epsilon=epsilon, total_timesteps=total_timesteps,
+                  lrschedule=lrschedule)
+
+    model.load(model_path)
+    runner = Runner(env, model, nsteps=nsteps, nstack=nstack, gamma=gamma)
+    runner.mcts.start_play()
     env.close()
 
 

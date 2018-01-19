@@ -30,7 +30,7 @@ class MonteCarlo:
                               state=tt.new_board(self.board_size))
 
         self.node_counter += 1
-        self.last_move = None
+        self.last_node = 0
 
         self.model = model
         self._c_puct = 5
@@ -41,7 +41,7 @@ class MonteCarlo:
         self.list_minus_actions = []
 
     def reset_game(self):
-        self.last_move = None
+        self.last_node = 0
 
     def random_player(self, board_state, _):
         moves = list(tt.available_moves(board_state))
@@ -165,12 +165,12 @@ class MonteCarlo:
             self.expansion(node, dict_prob)
         else:
             if len(list(tt.available_moves(self.digraph.node[node]['state']))) == 0:
-                value = 0.0
+                value = [0.0]
             else:
-                value = 1
+                value = [1]
 
         # Update value and visit count of nodes in this traversal.
-        self.update_recursive(node, value)
+        self.update_recursive(node, value[0])
 
     def softmax(self, x):
         probs = np.exp(x - np.max(x))
@@ -213,6 +213,7 @@ class MonteCarlo:
 
         if len(available) > 0:
             nodes, probs = self.get_move_probs(state)
+            logger.debug('Prob: ', str(probs))
 
             if is_self_play:
                 node = np.random.choice(nodes, p=0.75 * probs + 0.25 * np.random.dirichlet(0.3 * np.ones(len(probs))))
@@ -224,6 +225,12 @@ class MonteCarlo:
         else:
             logger.error("WARNING: the board is full")
             return None
+
+    def get_human_action(self):
+        location = input("Your move: ")
+        if isinstance(location, str):
+            location = [int(n, 10) for n in location.split(",")]
+        return tuple(location)
 
     def self_play(self):
         self.num_simulations += 1
@@ -241,6 +248,47 @@ class MonteCarlo:
                 return node, 1
 
             node = self.get_action(np.copy(self.digraph.node[node]['state']))
+
+    def start_play(self, is_shown=1):
+        """
+        start a game between two players
+        """
+
+        board_state = tt.new_board(self.board_size)
+        player_turn = 1
+
+        while True:
+            _available_moves = list(tt.available_moves(board_state))
+            if is_shown:
+                state = str(board_state).replace(']]', ']').replace(']]', '').replace('[[[[', '').replace('\n', '') \
+                    .replace('[[', '\n').replace('[', '').replace(' ', '').replace(']', ' | ').replace(' | \n', '\n')
+                print(state)
+            if len(_available_moves) == 0:
+                # draw
+                if is_shown:
+                    print("no moves left, game ended a draw")
+                return 0.
+            if player_turn > 0:
+                move = self.get_human_action()
+                self.play_out(self.last_node)
+
+                if move not in _available_moves:
+                    # if a player makes an invalid move the other player wins
+                    if is_shown:
+                        print("illegal move ", move)
+                    return -player_turn
+                board_state = tt.apply_move(board_state, move, player_turn)
+            else:
+                node = self.get_action(board_state, False)
+                self.last_node = node
+                board_state = np.copy(self.digraph.node[self.last_node]['state'])
+
+            winner = tt.has_winner(board_state, 3)
+            if winner != 0:
+                if is_shown:
+                    print("we have a winner, side: %s" % player_turn)
+                return winner
+            player_turn = -player_turn
 
     def get_state_recursive(self, node, is_root=True):
         """
@@ -279,16 +327,6 @@ class MonteCarlo:
         return self.list_plus_board_states, self.list_minus_board_states, \
             self.list_plus_actions, self.list_minus_actions
 
-    def play_against_random(self, play_round=20):
-        win_count = 0
-        record = []
-        for i in range(play_round):
-            result = tt.play_game(self.ai_player, self.random_player, log=False)
-            record.append(result)
-            if result == 1:
-                win_count += 1
-        print('Win rate: %f' % (win_count / float(play_round)))
-
     def visualization(self):
         """
         Draw dot graph of Monte Carlo Tree
@@ -302,19 +340,18 @@ class MonteCarlo:
                     .replace('[[', '\n').replace('[', '').replace(' ', '').replace(']', ' | ').replace(' | \n', '\n')
                 # state = attr['state'].replace('),', '\n').replace('(', '').replace(')', '').replace(' ', '') \
                 #     .replace(',', ' | ')
-                w = attr['nw']
-                n = attr['nn']
-                num = attr['num']
-                uct = attr['uct'][:4]
-                node.set_label(state + '\n' + w + '/' + n + '\n' + uct + '\n' + num)
+                n = attr['num_visit']
+                Q = attr['Q']
+                u = attr['u']
+                P = attr['P']
+                # side = attr['side']
+                # action = attr['action']
+                node.set_label(state + '\n' + 'n: ' + n + '\n' + 'Q: ' + Q + '\n' + 'u: ' + u + '\n' + 'P: ' + P)
             except KeyError:
                 pass
-        pd_tree.write_png('tree.png')
+        pd_tree.write_png('../models/tree.png')
 
 
 if __name__ == '__main__':
     print('start...')
-    mc = MonteCarlo()
-    mc.train(5)
-    # mc.visualization()
-    # mc.play_against_random(5)
+
