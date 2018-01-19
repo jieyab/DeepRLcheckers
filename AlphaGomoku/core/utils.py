@@ -293,3 +293,9 @@ def my_explained_variance(qpred, q):
     _, varpred = tf.nn.moments(q - qpred, axes=[0, 1])
     check_shape([vary, varpred], [[]] * 2)
     return 1.0 - (varpred / vary)
+
+
+def softmax(x):
+    probs = np.exp(x - np.max(x))
+    probs /= np.sum(probs)
+    return probs
