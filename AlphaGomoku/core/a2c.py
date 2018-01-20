@@ -272,7 +272,19 @@ def learn(policy, policy2, env, seed, nsteps=5, nstack=4, total_timesteps=int(80
             logger.warn('Try to save cpkt file.')
             model.save(model_path)
             model2.save(model_path2)
-
+        #save statistics
+        PolicyLossFile = "../statistics/policy_loss.csv"
+        pl = open(PolicyLossFile, "a")
+        pl.write(str(policy_loss) + ',')
+        pl.close()
+        ValueLossFile = "../statistics/value_loss.csv"
+        vl = open(ValueLossFile, "a")
+        vl.write(str(value_loss) + ',')
+        vl.close()
+        PolicyEntropyFile = "../statistics/policy_entropy.csv"
+        pe = open(PolicyEntropyFile, "a")
+        pe.write(str(policy_entropy) + ',')
+        pe.close()
     runner.mcts.visualization()
     env.close()
 
