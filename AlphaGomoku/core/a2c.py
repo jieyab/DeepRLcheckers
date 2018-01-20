@@ -88,9 +88,10 @@ class Model(object):
 
 class Runner(object):
 
-    def __init__(self, env, model, nsteps=5, nstack=4, gamma=0.7):
+    def __init__(self, env, model, model2, nsteps=5, nstack=4, gamma=0.7):
         self.env = env
         self.model = model
+        self.model2 = model2
         nh, nw, nc = env.observation_space.shape
         nenv = env.num_envs
         self.nenv = env.num_envs
@@ -107,7 +108,7 @@ class Runner(object):
         self.states = model.initial_state
         self.dones = [False for _ in range(nenv)]
 
-        self.mcts = MonteCarlo(env, self.model)
+        self.mcts = MonteCarlo(env, self.model, self.model2)
         self.list_board = []
         self.list_ai_board = []
 
@@ -117,7 +118,7 @@ class Runner(object):
         self.obs = np.roll(self.obs, shift=-1, axis=3)
         self.obs[:, :, :, -1] = obs[:, :, :, 0]
 
-    def pad_training_data(self, list_state, list_action, reward):
+    def pad_training_data(self, list_state, list_action, reward, model):
         mb_obs, mb_rewards, mb_actions, mb_values, mb_dones = [], [], [], [], []
         mb_states = self.states
         mb_dones.append(np.zeros(1, dtype=bool))
@@ -127,7 +128,7 @@ class Runner(object):
             mb_actions.append(np.ones(1, dtype=int) * list_action[i])
 
             if i == len(list_state) - 1:
-                value = self.model.value(list_state[i], self.states, np.ones(1, dtype=bool))
+                value = model.value(list_state[i], self.states, np.ones(1, dtype=bool))
                 mb_values.append(value)
                 mb_dones.append(np.ones(1, dtype=bool))
                 if reward == 1:
@@ -137,7 +138,7 @@ class Runner(object):
                 else:
                     mb_rewards.append(np.zeros(1))
             else:
-                value = self.model.value(list_state[i], self.states, np.zeros(1, dtype=bool))
+                value = model.value(list_state[i], self.states, np.zeros(1, dtype=bool))
                 mb_values.append(value)
                 mb_dones.append(np.zeros(1, dtype=bool))
                 mb_rewards.append(np.zeros(1))
@@ -151,7 +152,7 @@ class Runner(object):
         mb_masks = mb_dones[:, :-1]
         mb_dones = mb_dones[:, 1:]
 
-        last_values = self.model.value(list_state[-1], self.states, self.dones).tolist()
+        last_values = model.value(list_state[-1], self.states, self.dones).tolist()
         logger.info('Last_values: ', str(last_values))
 
         # discount/bootstrap off value fn
@@ -192,7 +193,7 @@ class Runner(object):
         mb_actions = np.concatenate((mb_actions, np.zeros(dim_necessary)), axis=0)
         mb_values = np.concatenate((mb_values, np.zeros(dim_necessary)), axis=0)
 
-        policy_loss, value_loss, policy_entropy = self.model.train(mb_obs, mb_states, mb_rewards, mb_masks, mb_actions,
+        policy_loss, value_loss, policy_entropy = model.train(mb_obs, mb_states, mb_rewards, mb_masks, mb_actions,
                                                                    mb_values)
         return float(policy_loss), float(value_loss), float(policy_entropy)
 
@@ -203,14 +204,8 @@ class Runner(object):
         plus_state, minus_state, plus_action, minus_action = self.mcts.get_state(node)
         policy_loss, value_loss, policy_entropy = [], [], []
 
-        print('* ' * 20)
-        p1, v1, e1 = self.pad_training_data(plus_state, plus_action, reward)
-        for s in minus_state:
-            rs = s
-            np.place(rs, rs == 1, 2)
-            np.place(rs, rs == -1, 1)
-            np.place(rs, rs == 2, -1)
-        p2, v2, e2 = self.pad_training_data(minus_state, minus_action, -reward)
+        p1, v1, e1 = self.pad_training_data(plus_state, plus_action, reward, self.model)
+        p2, v2, e2 = self.pad_training_data(minus_state, minus_action, -reward, self.model2)
 
         policy_loss.append(p1)
         policy_loss.append(p2)
@@ -223,9 +218,9 @@ class Runner(object):
         return mean(policy_loss), mean(value_loss), mean(policy_entropy)
 
 
-def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_coef=0.5, ent_coef=0.01,
+def learn(policy, policy2, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_coef=0.5, ent_coef=0.01,
           max_grad_norm=0.5, lr=7e-4, lrschedule='linear', epsilon=1e-5, alpha=0.99, gamma=0.99, log_interval=20,
-          load_model=False, model_path=''):
+          load_model=False, model_path='', model_path2=''):
     tf.reset_default_graph()
     set_global_seeds(seed)
 
@@ -239,9 +234,15 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
                   max_grad_norm=max_grad_norm, lr=lr, alpha=alpha, epsilon=epsilon, total_timesteps=total_timesteps,
                   lrschedule=lrschedule)
 
+    model2 = Model(policy=policy2, ob_space=ob_space, ac_space=ac_space, nenvs=nenvs, nsteps=nsteps, nstack=nstack,
+                  num_procs=num_procs, ent_coef=ent_coef, vf_coef=vf_coef, size=env.get_board_size(),
+                  max_grad_norm=max_grad_norm, lr=lr, alpha=alpha, epsilon=epsilon, total_timesteps=total_timesteps,
+                  lrschedule=lrschedule)
+
     if load_model:
         model.load(model_path)
-    runner = Runner(env, model, nsteps=nsteps, nstack=nstack, gamma=gamma)
+        model2.load(model_path2)
+    runner = Runner(env, model, model2, nsteps=nsteps, nstack=nstack, gamma=gamma)
 
     nbatch = nenvs * nsteps
     tstart = time.time()
@@ -260,7 +261,8 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
             logger.dump_tabular()
         if (update % (log_interval * 5)) == 0:
             logger.warn('Try to save cpkt file.')
-            model.save('../models/gomoku.cpkt')
+            model.save(model_path)
+            model2.save(model_path2)
 
     runner.mcts.visualization()
     env.close()

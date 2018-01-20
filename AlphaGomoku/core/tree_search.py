@@ -11,7 +11,7 @@ from AlphaGomoku.common import logger
 
 
 class MonteCarlo:
-    def __init__(self, env, model):
+    def __init__(self, env, model, model2):
         self.digraph = nx.DiGraph()
         self.node_counter = 0
 
@@ -32,8 +32,9 @@ class MonteCarlo:
         self.last_node = 0
 
         self.model = model
+        self.model2 = model2
         self._c_puct = 5
-        self._n_play_out = 200
+        self._n_play_out = 50
         self.list_plus_board_states = []
         self.list_minus_board_states = []
         self.list_plus_actions = []
@@ -166,11 +167,7 @@ class MonteCarlo:
         done = tt.has_winner(self.digraph.node[node]['state'], self.winning_length)
 
         if self.digraph.node[node]['side'] == 1:
-            rs = np.copy(self.digraph.node[node]['state'])
-            np.place(rs, rs == 1, 2)
-            np.place(rs, rs == -1, 1)
-            np.place(rs, rs == 2, -1)
-            actions, value, _, prob = self.model.step(np.copy(rs), [], done)
+            actions, value, _, prob = self.model2.step(np.copy(self.digraph.node[node]['state']), [], done)
         else:
             actions, value, _, prob = self.model.step(np.copy(self.digraph.node[node]['state']), [], done)
 
