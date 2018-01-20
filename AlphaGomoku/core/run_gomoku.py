@@ -1,7 +1,12 @@
 #!/usr/bin/env python
 
+import os
+import sys
+
+sys.path.append(os.path.join(os.path.dirname(__file__), '../../'))
+
 from AlphaGomoku.common import logger
-from AlphaGomoku.core.a2c import learn, play
+from AlphaGomoku.core.a2c import learn
 from AlphaGomoku.core.policies import CnnPolicy
 from AlphaGomoku.games.tic_tac_toe_x import TicTacToeXGameSpec
 
