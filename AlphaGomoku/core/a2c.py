@@ -3,6 +3,7 @@ import time
 import joblib
 import numpy as np
 import tensorflow as tf
+from statistics import mean
 
 from AlphaGomoku.common import logger
 from AlphaGomoku.common.misc_util import set_global_seeds
@@ -117,35 +118,33 @@ class Runner(object):
         self.obs = np.roll(self.obs, shift=-1, axis=3)
         self.obs[:, :, :, -1] = obs[:, :, :, 0]
 
-    def run(self):
-        logger.debug('- ' * 20 + 'run' + ' -' * 20)
+    def pad_training_data(self, list_state, list_action, reward):
         mb_obs, mb_rewards, mb_actions, mb_values, mb_dones = [], [], [], [], []
         mb_states = self.states
         mb_dones.append(np.zeros(1, dtype=bool))
 
-        node, reward = self.mcts.self_play()
-        plus_state, minus_state, plus_action, minus_action = self.mcts.get_state(node)
+        for i in range(len(list_state)):
+            mb_obs.append(np.copy(list_state[i]))
+            mb_actions.append(np.ones(1, dtype=int) * list_action[i])
 
-        for i in range(len(plus_state)):
-            mb_obs.append(np.copy(plus_state[i]))
-            mb_actions.append(np.ones(1, dtype=int) * plus_action[i])
-
-            if i == len(plus_state) - 1:
-                value = self.model.value(plus_state[i], self.states, np.ones(1, dtype=bool))
+            if i == len(list_state) - 1:
+                value = self.model.value(list_state[i], self.states, np.ones(1, dtype=bool))
                 mb_values.append(value)
                 mb_dones.append(np.ones(1, dtype=bool))
-                if reward:
+                if reward == 1:
                     mb_rewards.append(np.ones(1))
+                elif reward == -1:
+                    mb_rewards.append(np.ones(1) * -1)
                 else:
                     mb_rewards.append(np.zeros(1))
             else:
-                value = self.model.value(plus_state[i], self.states, np.zeros(1, dtype=bool))
+                value = self.model.value(list_state[i], self.states, np.zeros(1, dtype=bool))
                 mb_values.append(value)
                 mb_dones.append(np.zeros(1, dtype=bool))
                 mb_rewards.append(np.zeros(1))
 
         mb_obs = np.asarray(mb_obs, dtype=np.float32).swapaxes(1, 0).reshape(
-            (self.nenv * len(plus_state), self.nh, self.nw, self.nc * self.nstack))
+            (self.nenv * len(list_state), self.nh, self.nw, self.nc * self.nstack))
         mb_rewards = np.asarray(mb_rewards, dtype=np.float32).swapaxes(1, 0)
         mb_actions = np.asarray(mb_actions, dtype=np.int32).swapaxes(1, 0)
         mb_values = np.asarray(mb_values, dtype=np.float32).swapaxes(1, 0)
@@ -153,8 +152,8 @@ class Runner(object):
         mb_masks = mb_dones[:, :-1]
         mb_dones = mb_dones[:, 1:]
 
-        last_values = self.model.value(plus_state[-1], self.states, self.dones).tolist()
-        logger.info('Last_values: ', last_values)
+        last_values = self.model.value(list_state[-1], self.states, self.dones).tolist()
+        logger.info('Last_values: ', str(last_values))
 
         # discount/bootstrap off value fn
         for n, (rewards, dones, value) in enumerate(zip(mb_rewards, mb_dones, last_values)):
@@ -170,13 +169,13 @@ class Runner(object):
         mb_values = mb_values.flatten()
         mb_masks = mb_masks.flatten()
 
-        for ob in mb_obs:
-            print(ob.tolist())
+        # for ob in mb_obs:
+        #     print(ob.tolist())
         print('actions', mb_actions)
         print('values', mb_values)
         print('rewards', mb_rewards)
-        print('masks', mb_masks)
-        print('status', mb_states)
+        # print('masks', mb_masks)
+        # print('status', mb_states)
 
         dim_necessary = self.nsteps - mb_obs.shape[0]
         mb_obs = np.concatenate((mb_obs, np.zeros((dim_necessary, 3, 3, 1))), axis=0)
@@ -187,8 +186,32 @@ class Runner(object):
 
         policy_loss, value_loss, policy_entropy = self.model.train(mb_obs, mb_states, mb_rewards, mb_masks, mb_actions,
                                                                    mb_values)
+        return float(policy_loss), float(value_loss), float(policy_entropy)
+
+    def run(self):
+        logger.debug('- ' * 20 + 'run' + ' -' * 20)
+
+        node, reward = self.mcts.self_play()
+        plus_state, minus_state, plus_action, minus_action = self.mcts.get_state(node)
+        policy_loss, value_loss, policy_entropy = [], [], []
+
+        p1, v1, e1 = self.pad_training_data(plus_state, plus_action, reward)
+        for s in minus_state:
+            rs = s
+            np.place(rs, rs == 1, 2)
+            np.place(rs, rs == -1, 1)
+            np.place(rs, rs == 2, -1)
+        p2, v2, e2 = self.pad_training_data(minus_state, minus_action, -reward)
+
+        policy_loss.append(p1)
+        policy_loss.append(p2)
+        value_loss.append(v1)
+        value_loss.append(v2)
+        policy_entropy.append(e1)
+        policy_entropy.append(e2)
+
         logger.debug('* ' * 20 + 'run' + ' *' * 20)
-        return policy_loss, value_loss, policy_entropy
+        return mean(policy_loss), mean(value_loss), mean(policy_entropy)
 
 
 def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_coef=0.5, ent_coef=0.01,
@@ -227,6 +250,7 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
             logger.record_tabular("value_loss", float(value_loss))
             logger.dump_tabular()
         if (update % (log_interval * 10)) == 0:
+            logger.warn('Try to save cpkt file.')
             model.save('../models/gomoku.cpkt')
 
     runner.mcts.visualization()

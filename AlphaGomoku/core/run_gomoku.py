@@ -10,7 +10,7 @@ if __name__ == '__main__':
 
     policy_fn = CnnPolicy
     env = TicTacToeXGameSpec(3, 3)
-    # learn(policy_fn, env, nsteps=10,
-    #       nstack=1, seed=0, total_timesteps=200, load_model=True, model_path='../models/gomoku.cpkt')
-    play(policy_fn, env, nsteps=10, nstack=1, seed=0, model_path='../models/gomoku.cpkt')
+    learn(policy_fn, env, nsteps=10, log_interval=5,
+          nstack=1, seed=0, total_timesteps=1000000000, load_model=False, model_path='../models/gomoku.cpkt')
+    # play(policy_fn, env, nsteps=10, nstack=1, seed=0, model_path='../models/gomoku.cpkt')
     env.close()
