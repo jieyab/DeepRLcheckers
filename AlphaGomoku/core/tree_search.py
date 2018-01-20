@@ -9,8 +9,6 @@ import AlphaGomoku.games.tic_tac_toe_x as tt
 import AlphaGomoku.core.utils as ut
 from AlphaGomoku.common import logger
 
-EPSILON = 10e-6  # Prevents division by 0 in calculation of UCT
-
 
 class MonteCarlo:
     def __init__(self, env, model):
@@ -35,7 +33,7 @@ class MonteCarlo:
 
         self.model = model
         self._c_puct = 5
-        self._n_play_out = 400
+        self._n_play_out = 200
         self.list_plus_board_states = []
         self.list_minus_board_states = []
         self.list_plus_actions = []
@@ -102,7 +100,7 @@ class MonteCarlo:
                                   u=0,
                                   P=value,
                                   side=-side,
-                                  action=self.winning_length * key[1] + key[0],
+                                  action=self.board_size * key[1] + key[0],
                                   state=np.copy(new_state))
             self.digraph.add_edge(parent, self.node_counter)
             logger.debug('Add node ', str(parent), ' -> ', str(self.node_counter))
@@ -179,13 +177,12 @@ class MonteCarlo:
         dict_prob = tt.get_available_moves_with_prob(self.digraph.node[node]['state'], prob)
         logger.debug('dict_prob ', str(dict_prob))
 
-        if not done[0]:
-            self.expansion(node, dict_prob)
+        if done[0]:
+            value = [self.digraph.node[node]['side']]
+        elif len(list(tt.available_moves(self.digraph.node[node]['state']))) == 0:
+            value = [0.0]
         else:
-            if len(list(tt.available_moves(self.digraph.node[node]['state']))) == 0:
-                value = [0.0]
-            else:
-                value = [1]
+            self.expansion(node, dict_prob)
 
         # Update value and visit count of nodes in this traversal.
         self.update_recursive(node, value[0])

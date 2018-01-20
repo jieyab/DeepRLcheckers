@@ -169,9 +169,16 @@ class Runner(object):
         mb_masks = mb_masks.flatten()
 
         print('- ' * 50)
-        for ob in mb_obs:
-            print(ob.tolist())
-        print('actions', mb_actions)
+        state = str(mb_obs[-1]).replace(']]', ']').replace(']]', '').replace('[[[[', '').replace('\n', '') \
+            .replace('[[', '\n').replace('[', '').replace(' ', '').replace(']', ' | ').replace(' | \n', '\n')
+        # print(mb_obs[-1][0, :, :, 0])
+        print(state)
+        # for ob in mb_obs:
+        #     print(ob.tolist())
+        actions = []
+        for action in mb_actions:
+            actions.append([int(action % self.env.get_board_size()), int(action / self.env.get_board_size())])
+        print('actions', actions)
         print('values', mb_values)
         print('rewards', mb_rewards)
         # print('masks', mb_masks)
@@ -196,6 +203,7 @@ class Runner(object):
         plus_state, minus_state, plus_action, minus_action = self.mcts.get_state(node)
         policy_loss, value_loss, policy_entropy = [], [], []
 
+        print('* ' * 20)
         p1, v1, e1 = self.pad_training_data(plus_state, plus_action, reward)
         for s in minus_state:
             rs = s
