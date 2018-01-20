@@ -261,6 +261,7 @@ def learn(policy, policy2, env, seed, nsteps=5, nstack=4, total_timesteps=int(80
         nseconds = time.time() - tstart
         fps = float((update * nbatch) / nseconds)
         if update % log_interval == 0 or update == 1:
+            runner.mcts.print_statistic()
             logger.record_tabular("nupdates", update)
             logger.record_tabular("total_timesteps", update * nbatch)
             logger.record_tabular("fps", fps)

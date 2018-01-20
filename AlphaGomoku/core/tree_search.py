@@ -5,8 +5,8 @@ import random
 import networkx as nx
 import numpy as np
 
-import AlphaGomoku.games.tic_tac_toe_x as tt
 import AlphaGomoku.core.utils as ut
+import AlphaGomoku.games.tic_tac_toe_x as tt
 from AlphaGomoku.common import logger
 
 
@@ -34,11 +34,18 @@ class MonteCarlo:
         self.model = model
         self.model2 = model2
         self._c_puct = 5
-        self._n_play_out = 50
+        self._n_play_out = 200
+
         self.list_plus_board_states = []
         self.list_minus_board_states = []
         self.list_plus_actions = []
         self.list_minus_actions = []
+
+        self.games_wonAI = 0
+        self.games_wonAI2 = 0
+        self.games_finish_in_draw = 0
+
+        self.current_player = 1
 
     def reset_game(self):
         self.digraph = nx.DiGraph()
@@ -251,11 +258,16 @@ class MonteCarlo:
             self.show_state(state)
 
             if len(list(tt.available_moves(state))) == 0:
+                self.games_finish_in_draw += 1
                 return node, 0
 
             win = tt.has_winner(state, self.winning_length)
             if win[0]:
                 reward = self.digraph.node[node]['side']
+                if reward * self.current_player == 1:
+                    self.games_wonAI += 1
+                else:
+                    self.games_wonAI2 += 1
                 return node, reward
 
             node = self.get_action(np.copy(self.digraph.node[node]['state']))
@@ -300,7 +312,8 @@ class MonteCarlo:
             if winner != 0:
                 if is_shown:
                     state = str(board_state).replace(']]', ']').replace(']]', '').replace('[[[[', '').replace('\n', '') \
-                        .replace('[[', '\n').replace('[', '').replace(' ', '').replace(']', ' | ').replace(' | \n', '\n')
+                        .replace('[[', '\n').replace('[', '').replace(' ', '').replace(']', ' | ').replace(' | \n',
+                                                                                                           '\n')
                     print('- ' * 20)
                     print(state)
                     print('- ' * 20)
@@ -358,6 +371,7 @@ class MonteCarlo:
         tmp = self.model
         self.model = self.model2
         self.model2 = tmp
+        self.current_player = -self.current_player
 
     def show_state(self, state):
         print('- ' * 15 + 'state' + ' -' * 15)
@@ -374,6 +388,19 @@ class MonteCarlo:
                 else:
                     print('_'.center(5), end='')
             print('\r\n')
+
+    def print_statistic(self):
+        logger.warn('- ' * 40)
+        logger.warn('AI wins in ', str((100 * self.games_wonAI) / (
+                self.games_wonAI + self.games_wonAI2 + self.games_finish_in_draw)))
+        logger.warn('Random player wins ', str((100 * self.games_wonAI2) / (
+                self.games_wonAI + self.games_wonAI2 + self.games_finish_in_draw)))
+        logger.warn('Draws ', str((100 * self.games_finish_in_draw) / (
+                self.games_wonAI + self.games_wonAI2 + self.games_finish_in_draw)))
+        logger.warn('- ' * 40)
+        self.games_wonAI = 0
+        self.games_wonAI2 = 0
+        self.games_finish_in_draw = 0
 
     def visualization(self, limited_size=300):
         """
