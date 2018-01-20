@@ -249,8 +249,9 @@ class MonteCarlo:
 
         while True:
             state = np.copy(self.digraph.node[node]['state'])
-            logger.info('Node : ', str(node))
-            logger.info('State : ', str(state.tolist()))
+            # logger.info('Node : ', str(node))
+            # logger.info('State : ', str(state.tolist()))
+            self.show_state(state)
 
             if len(list(tt.available_moves(state))) == 0:
                 return node, 0
@@ -355,6 +356,22 @@ class MonteCarlo:
         self.get_state_recursive(node)
         return self.list_plus_board_states, self.list_minus_board_states, \
                self.list_plus_actions, self.list_minus_actions
+
+    def show_state(self, state):
+        print('- ' * 15 + 'state' + ' -' * 15)
+        for x in range(self.board_size):
+            print("{0:5}".format(x), end='')
+        print('\r\n')
+        for i in range(self.board_size):
+            print("{0:2d}".format(i), end='')
+            for j in range(self.board_size):
+                if state[0, i, j, 0] == -1:
+                    print('X'.center(5), end='')
+                elif state[0, i, j, 0] == 1:
+                    print('O'.center(5), end='')
+                else:
+                    print('_'.center(5), end='')
+            print('\r\n')
 
     def visualization(self, limited_size=300):
         """

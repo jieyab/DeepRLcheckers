@@ -145,6 +145,8 @@ class CnnPolicy(object):
 
         v0 = vf[:, 0]
         a0 = sample_without_exploration(pi)
+        noise = tf.random_uniform(tf.shape(pi), tf.reduce_max(pi)) / 5
+        pi = noise + pi
         p0 = pi
         self.initial_state = []  # not stateful
 
