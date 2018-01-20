@@ -42,6 +42,19 @@ class MonteCarlo:
         self.list_minus_actions = []
 
     def reset_game(self):
+        self.digraph = nx.DiGraph()
+        self.node_counter = 0
+        self.num_simulations = 0
+        self.digraph.add_node(self.node_counter,
+                              num_visit=0,
+                              Q=0,
+                              u=0,
+                              P=1,
+                              side=-1,
+                              action=0,
+                              state=tt.new_board(self.board_size))
+
+        self.node_counter += 1
         self.last_node = 0
 
     def random_player(self, board_state, _):
@@ -233,6 +246,7 @@ class MonteCarlo:
         return tuple(location)
 
     def self_play(self):
+        self.reset_game()
         self.num_simulations += 1
         node = 0
 
@@ -243,9 +257,11 @@ class MonteCarlo:
 
             if len(list(tt.available_moves(state))) == 0:
                 return node, 0
+
             win = tt.has_winner(state, self.winning_length)
             if win[0]:
-                return node, self.digraph.node[node]['side']
+                reward = self.digraph.node[node]['side']
+                return node, reward
 
             node = self.get_action(np.copy(self.digraph.node[node]['state']))
 
