@@ -19,5 +19,6 @@ if __name__ == '__main__':
     learn(CnnPolicy, CnnPolicy2, env, nsteps=board_size * board_size, log_interval=5,
           nstack=1, seed=0, total_timesteps=1000000000, load_model=False, model_path='../models/gomoku_p1.cpkt',
           model_path2='../models/gomoku_p2.cpkt')
-    play(CnnPolicy, env, nsteps=board_size * board_size, nstack=1, seed=0, model_path='../models/gomoku.cpkt')
+    play(CnnPolicy, CnnPolicy2, env, nsteps=board_size * board_size, nstack=1, seed=0, model_path='../models/gomoku_p1.cpkt',
+         model_path2='../models/gomoku_p2.cpkt')
     env.close()

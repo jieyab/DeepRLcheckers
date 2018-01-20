@@ -112,6 +112,11 @@ class Runner(object):
         self.list_board = []
         self.list_ai_board = []
 
+    def exchange_models(self):
+        tmp = self.model
+        self.model = self.model2
+        self.model2 = tmp
+
     def update_obs(self, obs):
         # Do frame-stacking here instead of the FrameStack wrapper to reduce
         # IPC overhead
@@ -214,6 +219,9 @@ class Runner(object):
         policy_entropy.append(e1)
         policy_entropy.append(e2)
 
+        self.exchange_models()
+        self.mcts.exchange_models()
+
         logger.debug('* ' * 20 + 'run' + ' *' * 20)
         return mean(policy_loss), mean(value_loss), mean(policy_entropy)
 
@@ -268,9 +276,9 @@ def learn(policy, policy2, env, seed, nsteps=5, nstack=4, total_timesteps=int(80
     env.close()
 
 
-def play(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_coef=0.5, ent_coef=0.01,
+def play(policy, policy2, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_coef=0.5, ent_coef=0.01,
          max_grad_norm=0.5, lr=7e-4, lrschedule='linear', epsilon=1e-5, alpha=0.99, gamma=0.99, log_interval=20,
-         model_path=''):
+         model_path='', model_path2=''):
     tf.reset_default_graph()
     set_global_seeds(seed)
 
@@ -284,8 +292,14 @@ def play(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_co
                   max_grad_norm=max_grad_norm, lr=lr, alpha=alpha, epsilon=epsilon, total_timesteps=total_timesteps,
                   lrschedule=lrschedule)
 
+    model2 = Model(policy=policy2, ob_space=ob_space, ac_space=ac_space, nenvs=nenvs, nsteps=nsteps, nstack=nstack,
+                  num_procs=num_procs, ent_coef=ent_coef, vf_coef=vf_coef, size=env.get_board_size(),
+                  max_grad_norm=max_grad_norm, lr=lr, alpha=alpha, epsilon=epsilon, total_timesteps=total_timesteps,
+                  lrschedule=lrschedule)
+
     model.load(model_path)
-    runner = Runner(env, model, nsteps=nsteps, nstack=nstack, gamma=gamma)
+    model2.load(model_path2)
+    runner = Runner(env, model, model2, nsteps=nsteps, nstack=nstack, gamma=gamma)
     runner.mcts.start_play()
     env.close()
 

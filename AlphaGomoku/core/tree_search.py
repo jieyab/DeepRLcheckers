@@ -354,6 +354,11 @@ class MonteCarlo:
         return self.list_plus_board_states, self.list_minus_board_states, \
                self.list_plus_actions, self.list_minus_actions
 
+    def exchange_models(self):
+        tmp = self.model
+        self.model = self.model2
+        self.model2 = tmp
+
     def show_state(self, state):
         print('- ' * 15 + 'state' + ' -' * 15)
         for x in range(self.board_size):
