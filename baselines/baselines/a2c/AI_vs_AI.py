@@ -185,20 +185,20 @@ class Runner(object):
 
             if rewards == 1:
                 #mb_dones_B = mb_dones
-                rewards_B = [-10]
+                rewards_B = [-1]
             elif rewards_B == 1:
                 #mb_dones = mb_dones_B
-                rewards = [-10]
+                rewards = [-1]
             elif (rewards_B == 0.5):
                 #mb_dones = mb_dones_B
-                rewards_B = [0.5]
-                rewards = [0.5]
+                rewards_B = [0.9]
+                rewards = [0.9]
                 self.dones = np.ones((1, 1), dtype=bool)
                 self.dones_B = np.ones((1, 1), dtype=bool)
             elif (rewards == 0.5):
                 #mb_dones_B = mb_dones
-                rewards_B = [0.5]
-                rewards = [0.5]
+                rewards_B = [0.9]
+                rewards = [0.9]
                 self.dones = np.ones((1, 1), dtype=bool)
                 self.dones_B = np.ones((1, 1), dtype=bool)
 
@@ -335,7 +335,7 @@ def learn(policy,policy_b, env, seed, nsteps=5, nstack=4, total_timesteps=int(80
         actions_B = np.concatenate((actions_B, np.zeros(dim_necesaria)), axis=0)
         values_B = np.concatenate((values_B, np.zeros(dim_necesaria)), axis=0)
 
-        policy_loss_B, value_loss_B, policy_entropy_B = model_B.train(obs_B, states_B, rewards_B, masks_B, actions_B, values_B)
+        policy_loss_B, value_loss_B, policy_entropy_B = model_A.train(obs_B, states_B, rewards_B, masks_B, actions_B, values_B)
 
 
         nseconds = time.time() - tstart

@@ -283,7 +283,7 @@ class TicTacToeXGameSpec(BaseGameSpec):
 
         # rewards
         self.reward_winning = 1
-        self.reward_lossing = -10
+        self.reward_lossing = -1
         self.reward_illegal_move = -1
         self.reward_draw = 0.5
 

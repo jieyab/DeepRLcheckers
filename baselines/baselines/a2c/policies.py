@@ -216,7 +216,7 @@ class CnnPolicy_TTT(object):
             vf = fc(h4, 'v',1, act=lambda x: x)
 
         v0 = vf[:, 0]
-        noise = tf.random_uniform(tf.shape(pi), tf.reduce_max(pi)) / 10
+        noise = tf.random_uniform(tf.shape(pi), tf.reduce_max(pi)) / 2
         pi = noise + pi
         a0 = sample_K(pi,nact)
         p0 = [pi]
@@ -254,7 +254,7 @@ class CnnPolicy_VS_TTT(object):
             vf = fc(h4, 'v_B', 1,act=lambda x: x)
 
         v0 = vf[:, 0]
-        noise = tf.random_uniform(tf.shape(pi), tf.reduce_max(pi)) / 10
+        noise = tf.random_uniform(tf.shape(pi), tf.reduce_max(pi)) / 5
         pi = noise + pi
         a0 = sample_K(pi,nact)
         p0 = pi

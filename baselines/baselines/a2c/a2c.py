@@ -16,7 +16,7 @@ class Model(object):
 
     def __init__(self, policy, ob_space, ac_space, nenvs, nsteps, nstack, num_procs,
                  ent_coef=0.01, vf_coef=0.5, max_grad_norm=0.5, lr=7e-4,
-                 alpha=0.99, epsilon=1e-5, total_timesteps=int(80e6), lrschedule='linear'):
+                 alpha=0.8, epsilon=1e-5, total_timesteps=int(80e6), lrschedule='linear'):
         config = tf.ConfigProto(allow_soft_placement=True,
                                 intra_op_parallelism_threads=num_procs,
                                 inter_op_parallelism_threads=num_procs)
