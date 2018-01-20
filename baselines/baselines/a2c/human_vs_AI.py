@@ -138,57 +138,57 @@ class Runner(object):
         mb_obs_B, mb_rewards_B, mb_actions_B, mb_values_B, mb_dones_B = [],[],[],[],[]
         mb_states = self.states
         mb_states_B = self.states_B
-        self.obs = self.obs*0
-        self.obs_B = self.obs*0
 
         for n in range(self.nsteps):
             counter = n
             self.obs = self.obs_B
-            obs_play = self.obs_B *-1
-            actions, values, states, prob_A = self.model_A.step(obs_play, [], [])
-            save_actions_A = actions
+            actions, values, states, prob = self.model_A.step(self.obs, [], [])
+            print(prob)
             actions = [actions[0]]
             actions = self.get_legal_moves(actions)
-            mb_obs.append(np.copy(self.obs))
-            mb_actions.append(actions)
-            mb_values.append(values)
-            mb_dones.append(self.dones)
-            self.obs, rewards, dones, _, illegal = self.env.step_vs(actions, 'A')
+            # mb_obs.append(np.copy(self.obs))
+            # mb_actions.append(actions)
+            # mb_values.append(values)
+            # mb_dones.append(self.dones)
+            obs, rewards, dones, _, illegal = self.env.step_vs(actions, 'A')
+            print(obs[0, :, :, 0])
             #Vs AI
+            variable = input('input something!: ')
+            variable = int(variable[0])
+            variable =  np.ones(1)*variable
+            actions_B = [variable]
+            #actions_B, values_B, states_B , _= self.model_B.step(self.obs, [], [])
+            #actions_B, values_B, states_B , _= self.model_B.step(self.obs, [], [])
 
-            obs_play = self.obs * -1
+            # actions_B = [actions_B[0]]
+            # actions_B = self.get_legal_moves(actions_B)
+            # mb_obs_B.append(np.copy(self.obs))
+            # mb_actions_B.append(actions_B)
+            # mb_values_B.append(values_B)
+            # mb_dones_B.append(self.dones_B)
+            obs_B, rewards_B, dones_B, _, illegal_B = self.env.step_vs(actions_B, 'B')
+            print(print(obs_B[0, :, :, 0]))
 
-            actions_B, values_B, states_B , prob_B= self.model_B.step(obs_play, [], [])
-            save_actions_B = actions_B
-            actions_B = [actions_B[0]]
-            actions_B = self.get_legal_moves(actions_B)
-            mb_obs_B.append(np.copy(self.obs))
-            mb_actions_B.append(actions_B)
-            mb_values_B.append(values_B)
-            mb_dones_B.append(self.dones_B)
-            self.obs_B, rewards_B, dones_B, _, illegal_B = self.env.step_vs(actions_B, 'B')
-
-            self.obs_B = self.obs_B*-1
-            self.states = states
-            self.dones = dones
-            for n, done in enumerate(dones):
-                if done:
-                    self.obs[n] = self.obs[n] * 0
-            self.update_obs(self.obs)
-
-            self.states_B = states_B
-            self.dones_B = dones_B
-            for n, done in enumerate(dones_B):
-                if done:
-                    self.obs_B[n] = self.obs_B[n] * 0
-            self.update_obs_B(self.obs_B)
-
+            # self.states = states
+            # self.dones = dones
+            # for n, done in enumerate(dones):
+            #     if done:
+            #         self.obs[n] = self.obs[n] * 0
+            # self.update_obs(obs)
+            #
+            # self.states_B = states_B
+            # self.dones_B = dones_B
+            # for n, done in enumerate(dones_B):
+            #     if done:
+            #         self.obs_B[n] = self.obs_B[n] * 0
+            # self.update_obs_B(obs_B)
+            #
             if rewards == 1:
                 #mb_dones_B = mb_dones
-                rewards_B = [-10]
+                rewards_B = [-1]
             elif rewards_B == 1:
                 #mb_dones = mb_dones_B
-                rewards = [-10]
+                rewards = [-1]
             elif (rewards_B == 0.5):
                 #mb_dones = mb_dones_B
                 rewards_B = [0.5]
@@ -201,78 +201,77 @@ class Runner(object):
                 rewards = [0.5]
                 self.dones = np.ones((1, 1), dtype=bool)
                 self.dones_B = np.ones((1, 1), dtype=bool)
-
             mb_rewards.append(rewards)
             mb_rewards_B.append(rewards_B)
-            if rewards != 0 or rewards_B != 0:
+            if (rewards or rewards_B) != 0:
                 break
 
-        mb_dones.append(self.dones)
-        mb_dones_B.append(self.dones_B)
-
-        if rewards[0] >= 1:
-            mb_dones_B = mb_dones
-        elif rewards_B[0] <= 1:
-            mb_dones = mb_dones_B
-
-
-
-
-
-
-        # batch of steps to batch of rollouts
-        mb_obs = np.asarray(mb_obs, dtype=np.float32).swapaxes(1, 0).reshape(
-            (self.nenv * (counter + 1), self.nh, self.nw, self.nc * self.nstack))
+        # mb_dones.append(self.dones)
+        # mb_dones_B.append(self.dones_B)
+        #
+        # if rewards[0] >= 1:
+        #     mb_dones_B = mb_dones
+        # elif rewards_B[0] <= 1:
+        #     mb_dones = mb_dones_B
+        #
+        #
+        #
+        #
+        #
+        #
+        # # batch of steps to batch of rollouts
+        # mb_obs = np.asarray(mb_obs, dtype=np.float32).swapaxes(1, 0).reshape(
+        #     (self.nenv * (counter + 1), self.nh, self.nw, self.nc * self.nstack))
         mb_rewards = np.asarray(mb_rewards, dtype=np.float32).swapaxes(1, 0)
-        mb_actions = np.asarray(mb_actions, dtype=np.int32).swapaxes(1, 0)
-        mb_values = np.asarray(mb_values, dtype=np.float32).swapaxes(1, 0)
-        mb_dones = np.asarray(mb_dones, dtype=np.bool).swapaxes(1, 0)
-        mb_masks = mb_dones[:, :-1]
-        mb_dones = mb_dones[:, 1:]
-        last_values = self.model_A.value(self.obs, self.states, self.dones).tolist()
-
-        # batch of steps to batch of rollouts _B
-
-        mb_obs_B = np.asarray(mb_obs_B, dtype=np.float32).swapaxes(1, 0).reshape(
-            (self.nenv * (counter + 1), self.nh, self.nw, self.nc * self.nstack))
+        # mb_actions = np.asarray(mb_actions, dtype=np.int32).swapaxes(1, 0)
+        # mb_values = np.asarray(mb_values, dtype=np.float32).swapaxes(1, 0)
+        # mb_dones = np.asarray(mb_dones, dtype=np.bool).swapaxes(1, 0)
+        # mb_masks = mb_dones[:, :-1]
+        # mb_dones = mb_dones[:, 1:]
+        # last_values = self.model_A.value(self.obs, self.states, self.dones).tolist()
+        #
+        # # batch of steps to batch of rollouts _B
+        #
+        # mb_obs_B = np.asarray(mb_obs_B, dtype=np.float32).swapaxes(1, 0).reshape(
+        #     (self.nenv * (counter + 1), self.nh, self.nw, self.nc * self.nstack))
         mb_rewards_B = np.asarray(mb_rewards_B, dtype=np.float32).swapaxes(1, 0)
-        mb_actions_B = np.asarray(mb_actions_B, dtype=np.int32).swapaxes(1, 0)
-        mb_values_B = np.asarray(mb_values_B, dtype=np.float32).swapaxes(1, 0)
-        mb_dones_B = np.asarray(mb_dones_B, dtype=np.bool).swapaxes(1, 0)
-        mb_masks_B = mb_dones_B[:, :-1]
-        mb_dones_B = mb_dones_B[:, 1:]
-        last_values_B = self.model_B.value(self.obs_B, self.states_B, self.dones_B).tolist()
-
-        # discount/bootstrap off value fn
-        for n, (rewards, dones, value) in enumerate(zip(mb_rewards, mb_dones, last_values)):
-            rewards = rewards.tolist()
-            dones = dones.tolist()
-            if dones[-1] == 0:
-                rewards = discount_with_dones(rewards + [value], dones + [0], self.gamma)[:-1]
-            else:
-                rewards = discount_with_dones(rewards, dones, self.gamma)
-            mb_rewards[n] = rewards
+        # mb_actions_B = np.asarray(mb_actions_B, dtype=np.int32).swapaxes(1, 0)
+        # mb_values_B = np.asarray(mb_values_B, dtype=np.float32).swapaxes(1, 0)
+        # mb_dones_B = np.asarray(mb_dones_B, dtype=np.bool).swapaxes(1, 0)
+        # mb_masks_B = mb_dones_B[:, :-1]
+        # mb_dones_B = mb_dones_B[:, 1:]
+        # last_values_B = self.model_B.value(self.obs_B, self.states_B, self.dones_B).tolist()
+        #
+        # # discount/bootstrap off value fn
+        # for n, (rewards, dones, value) in enumerate(zip(mb_rewards, mb_dones, last_values)):
+        #     rewards = rewards.tolist()
+        #     dones = dones.tolist()
+        #     if dones[-1] == 0:
+        #         rewards = discount_with_dones(rewards + [value], dones + [0], self.gamma)[:-1]
+        #     else:
+        #         rewards = discount_with_dones(rewards, dones, self.gamma)
+        #     mb_rewards[n] = rewards
         mb_rewards = mb_rewards.flatten()
-        mb_actions = mb_actions.flatten()
-        mb_values = mb_values.flatten()
-        mb_masks = mb_masks.flatten()
-
-        # discount/bootstrap off value fn
-        for n, (rewards, dones, value) in enumerate(zip(mb_rewards_B, mb_dones_B, last_values_B)):
-            rewards = rewards.tolist()
-            dones = dones.tolist()
-            if dones[-1] == 0:
-                rewards = discount_with_dones(rewards + [value], dones + [0], self.gamma)[:-1]
-            else:
-                rewards = discount_with_dones(rewards, dones, self.gamma)
-            # print('Player A',mb_rewards, mb_dones, last_values)
-            mb_rewards_B[n] = rewards
+        # mb_actions = mb_actions.flatten()
+        # mb_values = mb_values.flatten()
+        # mb_masks = mb_masks.flatten()
+        #
+        # # discount/bootstrap off value fn
+        # for n, (rewards, dones, value) in enumerate(zip(mb_rewards_B, mb_dones_B, last_values_B)):
+        #     rewards = rewards.tolist()
+        #     dones = dones.tolist()
+        #     if dones[-1] == 0:
+        #         rewards = discount_with_dones(rewards + [value], dones + [0], self.gamma)[:-1]
+        #     else:
+        #         rewards = discount_with_dones(rewards, dones, self.gamma)
+        #     # print('Player A',mb_rewards, mb_dones, last_values)
+        #     mb_rewards_B[n] = rewards
         mb_rewards_B = mb_rewards_B.flatten()
-        mb_actions_B = mb_actions_B.flatten()
-        mb_values_B = mb_values_B.flatten()
-        mb_masks_B = mb_masks_B.flatten()
+        # mb_actions_B = mb_actions_B.flatten()
+        # mb_values_B = mb_values_B.flatten()
+        # mb_masks_B = mb_masks_B.flatten()
 
-        return mb_obs, mb_states, mb_rewards, mb_masks, mb_actions, mb_values, mb_obs_B, mb_states_B, mb_rewards_B, mb_masks_B, mb_actions_B, mb_values_B
+        return mb_rewards,mb_rewards_B
 
 
 def learn(policy,policy_b, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_coef=0.5, ent_coef=0.01,
@@ -295,8 +294,10 @@ def learn(policy,policy_b, env, seed, nsteps=5, nstack=4, total_timesteps=int(80
                     max_grad_norm=max_grad_norm, lr=lr, alpha=alpha, epsilon=epsilon,
                     total_timesteps=total_timesteps, lrschedule=lrschedule)
 
+    runner = Runner(env, model_A, model_B, nsteps=nsteps, nstack=nstack, gamma=gamma)
+
     if load_model:
-        #model_A.load('./models/model_A.cpkt')
+        model_A.load('./models/model_A.cpkt')
         #model_B.load('./models/model_B.cpkt')
         print('Model loaded')
 
@@ -305,59 +306,54 @@ def learn(policy,policy_b, env, seed, nsteps=5, nstack=4, total_timesteps=int(80
     nbatch = nenvs * nsteps
     tstart = time.time()
     for update in range(1, total_timesteps // nbatch + 1):
-        obs, states, rewards, masks, actions, values, obs_B, states_B, rewards_B, masks_B, actions_B, values_B= runner.run()
+        rewards, rewards_B= runner.run()
+        print('rewards',rewards,rewards_B)
         # print('obs',obs,'actions',actions)
         # print('values',values,'rewards',rewards,)
 
-        if update % 1000000 == 0:
-            aux = model_A
-            model_A = model_B
-            model_B = aux
-            runner = Runner(env, model_A, model_B, nsteps=nsteps, nstack=nstack, gamma=gamma)
-
-        dim_total = nsteps
-        dim = obs.shape[0]
-        dim_necesaria = dim_total - dim
-        obs = np.concatenate((obs, np.zeros((dim_necesaria, env.dimensions(), env.dimensions(), 1))), axis=0)
-        rewards = np.concatenate((rewards, np.zeros((dim_necesaria))), axis=0)
-        masks = np.concatenate((masks, np.full((dim_necesaria), True, dtype=bool)), axis=0)
-        actions = np.concatenate((actions, np.zeros(dim_necesaria)), axis=0)
-        values = np.concatenate((values, np.zeros(dim_necesaria)), axis=0)
-
-        policy_loss, value_loss, policy_entropy = model_A.train(obs, states, rewards, masks, actions, values)
-
-        dim_total = nsteps
-        dim = obs_B.shape[0]
-        dim_necesaria = dim_total - dim
-        obs_B = np.concatenate((obs_B, np.zeros((dim_necesaria, env.dimensions(), env.dimensions(), 1))), axis=0)
-        rewards_B = np.concatenate((rewards_B, np.zeros((dim_necesaria))), axis=0)
-        masks_B = np.concatenate((masks_B, np.full((dim_necesaria), True, dtype=bool)), axis=0)
-        actions_B = np.concatenate((actions_B, np.zeros(dim_necesaria)), axis=0)
-        values_B = np.concatenate((values_B, np.zeros(dim_necesaria)), axis=0)
-
-        policy_loss_B, value_loss_B, policy_entropy_B = model_B.train(obs_B, states_B, rewards_B, masks_B, actions_B, values_B)
-
-
-        nseconds = time.time() - tstart
-        fps = int((update * nbatch) / nseconds)
-        if update % log_interval == 0 or update == 1:
-            ev = explained_variance(values, rewards)
-            ev_B = explained_variance(values_B, rewards_B)
-            logger.record_tabular("nupdates", update)
-            logger.record_tabular("total_timesteps", update * nbatch)
-            logger.record_tabular("fps", fps)
-            logger.record_tabular("policy_entropy", float(policy_entropy))
-            logger.record_tabular("value_loss", float(value_loss))
-            logger.record_tabular("explained_variance", float(ev))
-
-            logger.record_tabular("policy_entropy_B", float(policy_entropy_B))
-            logger.record_tabular("value_loss_B", float(value_loss_B))
-            logger.record_tabular("explained_variance_B", float(ev_B))
-            logger.dump_tabular()
-        if (update % (log_interval * 1)) == 0:
-            model_A.save('./models/model_A.cpkt')
-            model_B.save('./models/model_B.cpkt')
-            print('Saved model')
+        # dim_total = nsteps
+        # dim = obs.shape[0]
+        # dim_necesaria = dim_total - dim
+        # obs = np.concatenate((obs, np.zeros((dim_necesaria, env.dimensions(), env.dimensions(), 1))), axis=0)
+        # rewards = np.concatenate((rewards, np.zeros((dim_necesaria))), axis=0)
+        # masks = np.concatenate((masks, np.full((dim_necesaria), True, dtype=bool)), axis=0)
+        # actions = np.concatenate((actions, np.zeros(dim_necesaria)), axis=0)
+        # values = np.concatenate((values, np.zeros(dim_necesaria)), axis=0)
+        #
+        # policy_loss, value_loss, policy_entropy = model_A.train(obs, states, rewards, masks, actions, values)
+        #
+        # dim_total = nsteps
+        # dim = obs_B.shape[0]
+        # dim_necesaria = dim_total - dim
+        # obs_B = np.concatenate((obs_B, np.zeros((dim_necesaria, env.dimensions(), env.dimensions(), 1))), axis=0)
+        # rewards_B = np.concatenate((rewards_B, np.zeros((dim_necesaria))), axis=0)
+        # masks_B = np.concatenate((masks_B, np.full((dim_necesaria), True, dtype=bool)), axis=0)
+        # actions_B = np.concatenate((actions_B, np.zeros(dim_necesaria)), axis=0)
+        # values_B = np.concatenate((values_B, np.zeros(dim_necesaria)), axis=0)
+        #
+        # policy_loss_B, value_loss_B, policy_entropy_B = model_B.train(obs_B, states_B, rewards_B, masks_B, actions_B, values_B)
+        #
+        #
+        # nseconds = time.time() - tstart
+        # fps = int((update * nbatch) / nseconds)
+        # if update % log_interval == 0 or update == 1:
+        #     ev = explained_variance(values, rewards)
+        #     ev_B = explained_variance(values_B, rewards_B)
+        #     logger.record_tabular("nupdates", update)
+        #     logger.record_tabular("total_timesteps", update * nbatch)
+        #     logger.record_tabular("fps", fps)
+        #     logger.record_tabular("policy_entropy", float(policy_entropy))
+        #     logger.record_tabular("value_loss", float(value_loss))
+        #     logger.record_tabular("explained_variance", float(ev))
+        #
+        #     logger.record_tabular("policy_entropy_B", float(policy_entropy_B))
+        #     logger.record_tabular("value_loss_B", float(value_loss_B))
+        #     logger.record_tabular("explained_variance_B", float(ev_B))
+        #     logger.dump_tabular()
+        # if (update % (log_interval * 1)) == 0:
+        #     model_A.save('./models/model_A.cpkt')
+        #     model_B.save('./models/model_B.cpkt')
+        #     print('Saved model')
 
 
     env.close()

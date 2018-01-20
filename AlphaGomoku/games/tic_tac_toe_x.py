@@ -283,7 +283,7 @@ class TicTacToeXGameSpec(BaseGameSpec):
 
         # rewards
         self.reward_winning = 1
-        self.reward_lossing = -1
+        self.reward_lossing = -10
         self.reward_illegal_move = -1
         self.reward_draw = 0.5
 
@@ -465,7 +465,7 @@ class TicTacToeXGameSpec(BaseGameSpec):
             self.board_state = _new_board(self._board_size)
             self.print = True
 
-        if (((self.games_won_A  + self.games_won_B  + self.games_finish_in_draw + self.illegal_games) % 200 == 0)
+        if (((self.games_won_A  + self.games_won_B  + self.games_finish_in_draw + self.illegal_games) % 1000 == 0)
             and self.print):
             self.print_stadistics_vs()
 

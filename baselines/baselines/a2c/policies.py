@@ -140,11 +140,11 @@ class CnnPolicy(object):
             h3 = conv(h2, 'c3', nf=64, rf=3, stride=1, init_scale=np.sqrt(2))
             h3 = conv_to_fc(h2)
             h4 = fc(h3, 'fc1', nh=512, init_scale=np.sqrt(2))
-            pi = fc(h4, 'pi', nact, tf.nn.softmax)
-            vf = fc(h4, 'v', 1)
+            pi = fc(h4, 'pi', nact, act=lambda x: x)
+            vf = fc(h4, 'v', 1, act=lambda x: x)
 
         v0 = vf[:, 0]
-        a0 = sample_K(pi,nact)
+        a0 = sample(pi,nact)
         p0 = pi
         self.initial_state = []  # not stateful
 
@@ -176,8 +176,8 @@ class CnnPolicy_VS(object):
             h3 = conv(h2, 'c3_B', nf=64, rf=3, stride=1, init_scale=np.sqrt(2))
             h3 = conv_to_fc(h2)
             h4 = fc(h3, 'fc1_B', nh=512, init_scale=np.sqrt(2))
-            pi = fc(h4, 'pi_B', nact, tf.nn.softmax)
-            vf = fc(h4, 'v_B', 1)
+            pi = fc(h4, 'pi_B',nact, act=lambda x: x)
+            vf = fc(h4, 'v_B', 1,act=lambda x: x)
 
         v0 = vf[:, 0]
         a0 = sample_K(pi,nact)
@@ -209,15 +209,17 @@ class CnnPolicy_TTT(object):
         with tf.variable_scope("model", reuse=reuse):
             h = conv(tf.cast(X, tf.float32), 'c1', nf=32, rf=2, stride=1, init_scale=np.sqrt(2))
             h2 = conv(h, 'c2', nf=64, rf=2, stride=1, init_scale=np.sqrt(2))
-            h3 = conv(h2, 'c3', nf=64, rf=3, stride=1, init_scale=np.sqrt(2))
+            #h3 = conv(h2, 'c3', nf=64, rf=3, stride=1, init_scale=np.sqrt(2))
             h3 = conv_to_fc(h2)
-            h4 = fc(h3, 'fc1', nh=128, init_scale=np.sqrt(2))
+            h4 = fc(h3, 'fc1', nh=512, init_scale=np.sqrt(2))
             pi = fc(h4, 'pi', nact, act=lambda x: x)
             vf = fc(h4, 'v',1, act=lambda x: x)
 
         v0 = vf[:, 0]
+        noise = tf.random_uniform(tf.shape(pi), tf.reduce_max(pi)) / 10
+        pi = noise + pi
         a0 = sample_K(pi,nact)
-        p0 = pi
+        p0 = [pi]
         self.initial_state = []  # not stateful
 
         def step(ob, *_args, **_kwargs):
@@ -252,6 +254,8 @@ class CnnPolicy_VS_TTT(object):
             vf = fc(h4, 'v_B', 1,act=lambda x: x)
 
         v0 = vf[:, 0]
+        noise = tf.random_uniform(tf.shape(pi), tf.reduce_max(pi)) / 10
+        pi = noise + pi
         a0 = sample_K(pi,nact)
         p0 = pi
         self.initial_state = []  # not stateful

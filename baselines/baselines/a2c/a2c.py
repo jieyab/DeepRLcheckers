@@ -128,7 +128,7 @@ class Runner(object):
         player = 1
         available_moves = self.available_moves_1()
         state = board_state
-        model =
+        model = ass
         # actions = self.get_MCTS_action(self.obs, [], [])
         _, values, _, _ = self.model.step(self.obs, [], [])
 
@@ -139,11 +139,14 @@ class Runner(object):
     def run(self):
         mb_obs, mb_rewards, mb_actions, mb_values, mb_dones = [], [], [], [], []
         mb_states = self.states
+        self.obs = self.obs*0
+        self.obs_B = self.obs*0
+
         for n in range(self.nsteps):
             counter = n
-            actions, values, states, _ = self.model.step(self.obs, [], [])
+            actions, values, states, probs = self.model.step(self.obs, [], [])
             #actions, values, _, _ = self.get_MCTS_action(self.obs, [], [])
-
+            original_actions = actions
             actions = [actions[0]]
             actions = self.get_legal_moves(actions)
             #actions=[pedro[0][0]]
@@ -214,7 +217,7 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
                   lrschedule=lrschedule)
 
     if load_model:
-        model.load(model_path)
+        model.load('./models/model_A.cpkt')
     runner = Runner(env, model, nsteps=nsteps, nstack=nstack, gamma=gamma)
 
     nbatch = nenvs * nsteps
@@ -238,7 +241,6 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
         nseconds = time.time() - tstart
         fps = int((update * nbatch) / nseconds)
         if update % log_interval == 0 or update == 1:
-            model.save('./model.cpkt')
             ev = explained_variance(values, rewards)
             logger.record_tabular("nupdates", update)
             logger.record_tabular("total_timesteps", update * nbatch)
@@ -247,8 +249,7 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
             logger.record_tabular("value_loss", float(value_loss))
             logger.record_tabular("explained_variance", float(ev))
             logger.dump_tabular()
-        if (update % (log_interval * 10)) == 0:
-            pass
-            # model.save('./models/tic_tac_toe.cpkt')
-
+        if (update % (log_interval * 1)) == 0:
+            model.save('./models/model_A.cpkt')
+            print('Saved model')
     env.close()

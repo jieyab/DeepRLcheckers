@@ -10,8 +10,9 @@ def sample(logits):
     return tf.argmax(logits - tf.log(-tf.log(noise)), 1)
 
 def sample_K(logits,size):
-    noise = tf.random_uniform(tf.shape(logits))
-    logits=logits - tf.log(-tf.log(noise))
+    noise = tf.random_uniform(tf.shape(logits), tf.reduce_max(logits))/10
+    #logits=logits - tf.log(-tf.log(noise))
+    logits = noise +logits
     return tf.nn.top_k(logits , size ).indices
 
 def sample_without_exploration(logits,size):
