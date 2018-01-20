@@ -1,144 +1,17 @@
-import math
-import operator
-import random
-
-import networkx as nx
-import numpy as np
-
-import AlphaGomoku.games.tic_tac_toe_x as tt
-import AlphaGomoku.core.utils as ut
-from AlphaGomoku.common import logger
+from AlphaGomoku.core.tree import TreeNode
 
 
-class MonteCarlo:
-    def __init__(self, env, model):
-        self.digraph = nx.DiGraph()
-        self.node_counter = 0
+class MonteCarlo2:
 
-        self.num_simulations = 0
-        self.board_size = env.get_board_size()
-        self.winning_length = env.get_winning_length()
+    def __init__(self, board_size, winning_length):
+        # Initialization
+        self._board_size = board_size
+        self._winning_length = winning_length
+        self._root = TreeNode()
 
-        self.digraph.add_node(self.node_counter,
-                              num_visit=0,
-                              Q=0,
-                              u=0,
-                              P=1,
-                              side=-1,
-                              action=0,
-                              state=tt.new_board(self.board_size))
-
-        self.node_counter += 1
-        self.last_node = 0
-
-        self.model = model
-        self._c_puct = 5
-        self._n_play_out = 1000
-        self.list_plus_board_states = []
-        self.list_minus_board_states = []
-        self.list_plus_actions = []
-        self.list_minus_actions = []
-
-    def reset_game(self):
-        self.last_node = 0
-
-    def random_player(self, board_state, _):
-        moves = list(tt.available_moves(board_state))
-        return random.choice(moves)
-
-    def selection(self, root):
-        """
-        Select node
-
-        :param root:
-        :return:
-        """
-        children = self.digraph.successors(root)
-        values = {}
-        has_children = False
-
-        for child_node in children:
-            has_children = True
-            values[child_node] = self.get_value(child_node)
-
-        if not has_children:
-            return True, root
-
-        # Choose the child node that maximizes the expected value
-        best_child_node = max(values.items(), key=operator.itemgetter(1))[0]
-        return False, best_child_node
-
-    def expansion(self, parent, dict_prob):
-        """
-        Expand node
-
-        :param parent:
-        :return:
-        """
-
-        state = self.digraph.node[parent]['state']
-        side = self.digraph.node[parent]['side']
-
-        for key, value in dict_prob.items():
-            new_state = tt.apply_move(np.copy(state), key, -side)
-            self.digraph.add_node(self.node_counter,
-                                  num_visit=0,
-                                  Q=0,
-                                  u=0,
-                                  P=value,
-                                  side=-side,
-                                  action=self.winning_length * key[1] + key[0],
-                                  state=np.copy(new_state))
-            self.digraph.add_edge(parent, self.node_counter)
-            logger.debug('Add node ', str(parent), ' -> ', str(self.node_counter))
-            logger.debug('Node ', str(self.node_counter), ' -> ', str(new_state.tolist()))
-            self.node_counter += 1
-
-    def get_value(self, node):
-        """Calculate and return the value for this node: a combination of leaf evaluations, Q, and
-        this node's prior adjusted for its visit count, u
-        c_puct -- a number in (0, inf) controlling the relative impact of values, Q, and
-            prior probability, P, on this node's score.
-        """
-
-        num_visit = int(self.digraph.node[node]['num_visit'])
-        parent_num_visit = 0
-        Q = float(self.digraph.node[node]['Q'])
-        P = float(self.digraph.node[node]['P'])
-        for key in self.digraph.predecessors(node):
-            parent_num_visit = float(self.digraph.node[key]['num_visit'])
-            break
-        u = self._c_puct * P * math.sqrt(parent_num_visit) / (1 + num_visit)
-        self.digraph.node[node]['u'] = u
-        return Q + u
-
-    def update(self, node, value):
-        """Update node values from leaf evaluation.
-        Arguments:
-        leaf_value -- the value of subtree evaluation from the current player's perspective.
-        """
-
-        num_visit = int(self.digraph.node[node]['num_visit']) + 1
-        Q = float(self.digraph.node[node]['Q']) + 1.0 * (value - float(self.digraph.node[node]['Q'])) / num_visit
-        self.digraph.node[node]['num_visit'] = num_visit
-        self.digraph.node[node]['Q'] = Q
-
-    def update_recursive(self, node, value):
-        """Like a call to update(), but applied recursively for all ancestors.
-        """
-
-        if node != 0:
-            new_node = -1
-            for key in self.digraph.predecessors(node):
-                new_node = key
-                break
-            self.update_recursive(new_node, -value)
-        self.update(node, value)
-
-    def play_out(self, node):
+    def play_out(self, state):
         """
         Play out algorithm
-
         :return:
         """
 
@@ -340,34 +213,3 @@ class MonteCarlo:
         self.get_state_recursive(node)
         return self.list_plus_board_states, self.list_minus_board_states, \
                self.list_plus_actions, self.list_minus_actions
-
-    def visualization(self, limited_size=300):
-        """
-        Draw dot graph of Monte Carlo Tree
-        :return:
-        """
-        for node in range(limited_size, len(self.digraph.nodes())):
-            self.digraph.remove_node(node)
-
-        pd_tree = nx.nx_pydot.to_pydot(self.digraph)
-        for node in pd_tree.get_nodes():
-            attr = node.get_attributes()
-            try:
-                state = attr['state'].replace(']]', ']').replace(']]', '').replace('[[[[', '').replace('\n', '') \
-                    .replace('[[', '\n').replace('[', '').replace(' ', '').replace(']', ' | ').replace(' | \n', '\n')
-                # state = attr['state'].replace('),', '\n').replace('(', '').replace(')', '').replace(' ', '') \
-                #     .replace(',', ' | ')
-                n = attr['num_visit']
-                Q = attr['Q']
-                u = attr['u']
-                P = attr['P']
-                # side = attr['side']
-                # action = attr['action']
-                node.set_label(state + '\n' + 'n: ' + n + '\n' + 'Q: ' + Q + '\n' + 'u: ' + u + '\n' + 'P: ' + P)
-            except KeyError:
-                pass
-        pd_tree.write_png('../models/tree.png')
-
-
-if __name__ == '__main__':
-    print('start...')
