@@ -147,8 +147,9 @@ class Runner(object):
             obs_play = self.obs_B *-1
             actions, values, states, prob_A = self.model_A.step(obs_play, [], [])
             save_actions_A = actions
-            actions = [actions[0]]
-            actions = self.get_legal_moves(actions)
+            actions = [np.asarray(actions[0][0])]
+            #actions = [actions[0]]
+            #actions = self.get_legal_moves(actions)
             mb_obs.append(np.copy(self.obs))
             mb_actions.append(actions)
             mb_values.append(values)
@@ -160,13 +161,29 @@ class Runner(object):
 
             actions_B, values_B, states_B , prob_B= self.model_B.step(obs_play, [], [])
             save_actions_B = actions_B
-            actions_B = [actions_B[0]]
-            actions_B = self.get_legal_moves(actions_B)
+            actions_B = [np.asarray(actions_B[0][0])]
+            #actions_B = [actions_B[0]]
+            #actions_B = self.get_legal_moves(actions_B)
             mb_obs_B.append(np.copy(self.obs))
             mb_actions_B.append(actions_B)
             mb_values_B.append(values_B)
             mb_dones_B.append(self.dones_B)
             self.obs_B, rewards_B, dones_B, _, illegal_B = self.env.step_vs(actions_B, 'B')
+
+            if illegal or illegal_B:
+                counter = 0
+                mb_obs, mb_rewards, mb_actions, mb_values, mb_dones = [], [], [], [], []
+                mb_obs.append(np.copy(self.obs))
+                mb_actions.append(actions)
+                mb_values.append(values)
+                mb_dones.append(self.dones)
+
+                counter = 0
+                mb_obs_B, mb_rewards_B, mb_actions_B, mb_values_B, mb_dones_B = [], [], [], [], []
+                mb_obs_B.append(np.copy(self.obs_B))
+                mb_actions_B.append(actions_B)
+                mb_values_B.append(values_B)
+                mb_dones_B.append(self.dones_B)
 
             self.obs_B = self.obs_B*-1
             self.states = states
@@ -185,10 +202,10 @@ class Runner(object):
 
             if rewards == 1:
                 #mb_dones_B = mb_dones
-                rewards_B = [-10]
+                rewards_B = [-0.5]
             elif rewards_B == 1:
                 #mb_dones = mb_dones_B
-                rewards = [-10]
+                rewards = [-0.5]
             elif (rewards_B == 0.5):
                 #mb_dones = mb_dones_B
                 rewards_B = [0.5]
@@ -204,7 +221,7 @@ class Runner(object):
 
             mb_rewards.append(rewards)
             mb_rewards_B.append(rewards_B)
-            if rewards != 0 or rewards_B != 0:
+            if rewards != 0 or rewards_B != 0 or illegal_B or illegal:
                 break
 
         mb_dones.append(self.dones)
@@ -272,7 +289,7 @@ class Runner(object):
         mb_values_B = mb_values_B.flatten()
         mb_masks_B = mb_masks_B.flatten()
 
-        return mb_obs, mb_states, mb_rewards, mb_masks, mb_actions, mb_values, mb_obs_B, mb_states_B, mb_rewards_B, mb_masks_B, mb_actions_B, mb_values_B
+        return mb_obs, mb_states, mb_rewards, mb_masks, mb_actions, mb_values, mb_obs_B, mb_states_B, mb_rewards_B, mb_masks_B, mb_actions_B, mb_values_B ,illegal, illegal_B
 
 
 def learn(policy,policy_b, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_coef=0.5, ent_coef=0.01,
@@ -305,7 +322,7 @@ def learn(policy,policy_b, env, seed, nsteps=5, nstack=4, total_timesteps=int(80
     nbatch = nenvs * nsteps
     tstart = time.time()
     for update in range(1, total_timesteps // nbatch + 1):
-        obs, states, rewards, masks, actions, values, obs_B, states_B, rewards_B, masks_B, actions_B, values_B= runner.run()
+        obs, states, rewards, masks, actions, values, obs_B, states_B, rewards_B, masks_B, actions_B, values_B, illegal, illegal_B= runner.run()
         # print('obs',obs,'actions',actions)
         # print('values',values,'rewards',rewards,)
 
@@ -314,33 +331,33 @@ def learn(policy,policy_b, env, seed, nsteps=5, nstack=4, total_timesteps=int(80
             model_A = model_B
             model_B = aux
             runner = Runner(env, model_A, model_B, nsteps=nsteps, nstack=nstack, gamma=gamma)
+        if illegal_B == False:
+            dim_total = nsteps
+            dim = obs.shape[0]
+            dim_necesaria = dim_total - dim
+            obs = np.concatenate((obs, np.zeros((dim_necesaria, env.dimensions(), env.dimensions(), 1))), axis=0)
+            rewards = np.concatenate((rewards, np.zeros((dim_necesaria))), axis=0)
+            masks = np.concatenate((masks, np.full((dim_necesaria), True, dtype=bool)), axis=0)
+            actions = np.concatenate((actions, np.zeros(dim_necesaria)), axis=0)
+            values = np.concatenate((values, np.zeros(dim_necesaria)), axis=0)
 
-        dim_total = nsteps
-        dim = obs.shape[0]
-        dim_necesaria = dim_total - dim
-        obs = np.concatenate((obs, np.zeros((dim_necesaria, env.dimensions(), env.dimensions(), 1))), axis=0)
-        rewards = np.concatenate((rewards, np.zeros((dim_necesaria))), axis=0)
-        masks = np.concatenate((masks, np.full((dim_necesaria), True, dtype=bool)), axis=0)
-        actions = np.concatenate((actions, np.zeros(dim_necesaria)), axis=0)
-        values = np.concatenate((values, np.zeros(dim_necesaria)), axis=0)
+            policy_loss, value_loss, policy_entropy = model_A.train(obs, states, rewards, masks, actions, values)
+        if illegal == False:
+            dim_total = nsteps
+            dim = obs_B.shape[0]
+            dim_necesaria = dim_total - dim
+            obs_B = np.concatenate((obs_B, np.zeros((dim_necesaria, env.dimensions(), env.dimensions(), 1))), axis=0)
+            rewards_B = np.concatenate((rewards_B, np.zeros((dim_necesaria))), axis=0)
+            masks_B = np.concatenate((masks_B, np.full((dim_necesaria), True, dtype=bool)), axis=0)
+            actions_B = np.concatenate((actions_B, np.zeros(dim_necesaria)), axis=0)
+            values_B = np.concatenate((values_B, np.zeros(dim_necesaria)), axis=0)
 
-        policy_loss, value_loss, policy_entropy = model_A.train(obs, states, rewards, masks, actions, values)
-
-        dim_total = nsteps
-        dim = obs_B.shape[0]
-        dim_necesaria = dim_total - dim
-        obs_B = np.concatenate((obs_B, np.zeros((dim_necesaria, env.dimensions(), env.dimensions(), 1))), axis=0)
-        rewards_B = np.concatenate((rewards_B, np.zeros((dim_necesaria))), axis=0)
-        masks_B = np.concatenate((masks_B, np.full((dim_necesaria), True, dtype=bool)), axis=0)
-        actions_B = np.concatenate((actions_B, np.zeros(dim_necesaria)), axis=0)
-        values_B = np.concatenate((values_B, np.zeros(dim_necesaria)), axis=0)
-
-        policy_loss_B, value_loss_B, policy_entropy_B = model_B.train(obs_B, states_B, rewards_B, masks_B, actions_B, values_B)
+            policy_loss_B, value_loss_B, policy_entropy_B = model_B.train(obs_B, states_B, rewards_B, masks_B, actions_B, values_B)
 
 
         nseconds = time.time() - tstart
         fps = int((update * nbatch) / nseconds)
-        if update % log_interval == 0 or update == 1:
+        if update % log_interval == 0:
             ev = explained_variance(values, rewards)
             ev_B = explained_variance(values_B, rewards_B)
             logger.record_tabular("nupdates", update)
