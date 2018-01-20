@@ -6,11 +6,11 @@ from AlphaGomoku.core.utils import conv, fc, conv_to_fc, batch_to_seq, seq_to_ba
 
 
 class LnLstmPolicy(object):
-    def __init__(self, sess, ob_space, ac_space, nenv, nsteps, nstack, nlstm=256, reuse=False):
+    def __init__(self, sess, ob_space, ac_space, nenv, nsteps, nstack, size, nlstm=256, reuse=False):
         nbatch = nenv * nsteps
         nh, nw, nc = ob_space.shape
         ob_shape = (nbatch, nh, nw, nc * nstack)
-        nact = 9  # ac_space.n
+        nact = size * size  # ac_space.n
         X = tf.placeholder(tf.uint8, ob_shape)  # obs
         M = tf.placeholder(tf.float32, [nbatch])  # mask (done t-1)
         S = tf.placeholder(tf.float32, [nenv, nlstm * 2])  # states
@@ -49,11 +49,11 @@ class LnLstmPolicy(object):
 
 class LstmPolicy(object):
 
-    def __init__(self, sess, ob_space, ac_space, nenv, nsteps, nstack, nlstm=64, reuse=False):
+    def __init__(self, sess, ob_space, ac_space, nenv, nsteps, nstack, size, nlstm=64, reuse=False):
         nbatch = nenv * nsteps
         nh, nw, nc = ob_space.shape
         ob_shape = (nbatch, nh, nw, nc * nstack)
-        nact = 9  # ac_space.n
+        nact = size * size  # ac_space.n
         X = tf.placeholder(tf.float32, ob_shape)  # obs
         M = tf.placeholder(tf.float32, [nbatch])  # mask (done t-1)
         S = tf.placeholder(tf.float32, [nenv, nlstm * 2])  # states
@@ -92,11 +92,11 @@ class LstmPolicy(object):
 
 class CnnPolicy(object):
 
-    def __init__(self, sess, ob_space, ac_space, nenv, nsteps, nstack, reuse=False):
+    def __init__(self, sess, ob_space, ac_space, nenv, nsteps, nstack, size, reuse=False):
         nbatch = nenv * nsteps
         nh, nw, nc = ob_space.shape
         ob_shape = (nbatch, nh, nw, nc * nstack)
-        nact = 9  # ac_space.n
+        nact = size * size  # ac_space.n
         X = tf.placeholder(tf.uint8, ob_shape)  # obs
         with tf.variable_scope("model", reuse=reuse):
             h = conv(tf.cast(X, tf.float32) / 255., 'c1', nf=32, rf=8, stride=4, init_scale=np.sqrt(2))
@@ -128,11 +128,11 @@ class CnnPolicy(object):
 
 class CnnPolicy(object):
 
-    def __init__(self, sess, ob_space, ac_space, nenv, nsteps, nstack, reuse=False):
+    def __init__(self, sess, ob_space, ac_space, nenv, nsteps, nstack, size, reuse=False):
         nbatch = nenv * nsteps
         nh, nw, nc = ob_space.shape
         ob_shape = (nbatch, nh, nw, nc * nstack)
-        nact = 9  # ac_space.n
+        nact = size * size  # ac_space.n
         X = tf.placeholder(tf.float32, ob_shape)  # obs
         with tf.variable_scope("model", reuse=reuse):
             h = conv(tf.cast(X, tf.float32), 'c1', nf=32, rf=2, stride=1, init_scale=np.sqrt(2))

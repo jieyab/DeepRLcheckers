@@ -1,9 +1,9 @@
 import time
+from statistics import mean
 
 import joblib
 import numpy as np
 import tensorflow as tf
-from statistics import mean
 
 from AlphaGomoku.common import logger
 from AlphaGomoku.common.misc_util import set_global_seeds
@@ -15,7 +15,7 @@ from AlphaGomoku.core.utils import discount_with_dones
 
 class Model(object):
 
-    def __init__(self, policy, ob_space, ac_space, nenvs, nsteps, nstack, num_procs,
+    def __init__(self, policy, ob_space, ac_space, nenvs, nsteps, nstack, num_procs, size,
                  ent_coef=0.01, vf_coef=0.5, max_grad_norm=0.5, lr=7e-4,
                  alpha=0.99, epsilon=1e-5, total_timesteps=int(80e6), lrschedule='linear'):
         config = tf.ConfigProto(allow_soft_placement=True,
@@ -23,7 +23,6 @@ class Model(object):
                                 inter_op_parallelism_threads=num_procs)
         config.gpu_options.allow_growth = True
         sess = tf.Session(config=config)
-        nact = 9  # ac_space.n
         nbatch = nenvs * nsteps
 
         A = tf.placeholder(tf.int32, [nbatch])
@@ -31,8 +30,8 @@ class Model(object):
         R = tf.placeholder(tf.float32, [nbatch])
         LR = tf.placeholder(tf.float32, [])
 
-        step_model = policy(sess, ob_space, ac_space, nenvs, 1, nstack, reuse=False)
-        train_model = policy(sess, ob_space, ac_space, nenvs, nsteps, nstack, reuse=True)
+        step_model = policy(sess, ob_space, ac_space, nenvs, 1, nstack, size, reuse=False)
+        train_model = policy(sess, ob_space, ac_space, nenvs, nsteps, nstack, size, reuse=True)
 
         neglogpac = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi, labels=A)
         pg_loss = tf.reduce_mean(ADV * neglogpac)
@@ -169,8 +168,9 @@ class Runner(object):
         mb_values = mb_values.flatten()
         mb_masks = mb_masks.flatten()
 
-        # for ob in mb_obs:
-        #     print(ob.tolist())
+        print('- ' * 50)
+        for ob in mb_obs:
+            print(ob.tolist())
         print('actions', mb_actions)
         print('values', mb_values)
         print('rewards', mb_rewards)
@@ -178,7 +178,8 @@ class Runner(object):
         # print('status', mb_states)
 
         dim_necessary = self.nsteps - mb_obs.shape[0]
-        mb_obs = np.concatenate((mb_obs, np.zeros((dim_necessary, 3, 3, 1))), axis=0)
+        mb_obs = np.concatenate(
+            (mb_obs, np.zeros((dim_necessary, self.env.get_board_size(), self.env.get_board_size(), 1))), axis=0)
         mb_rewards = np.concatenate((mb_rewards, np.zeros(dim_necessary)), axis=0)
         mb_masks = np.concatenate((mb_masks, np.full(dim_necessary, True, dtype=bool)), axis=0)
         mb_actions = np.concatenate((mb_actions, np.zeros(dim_necessary)), axis=0)
@@ -226,7 +227,7 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
     num_procs = len(env.remotes)  # HACK
 
     model = Model(policy=policy, ob_space=ob_space, ac_space=ac_space, nenvs=nenvs, nsteps=nsteps, nstack=nstack,
-                  num_procs=num_procs, ent_coef=ent_coef, vf_coef=vf_coef,
+                  num_procs=num_procs, ent_coef=ent_coef, vf_coef=vf_coef, size=env.get_board_size(),
                   max_grad_norm=max_grad_norm, lr=lr, alpha=alpha, epsilon=epsilon, total_timesteps=total_timesteps,
                   lrschedule=lrschedule)
 
@@ -269,7 +270,7 @@ def play(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_co
     num_procs = len(env.remotes)  # HACK
 
     model = Model(policy=policy, ob_space=ob_space, ac_space=ac_space, nenvs=nenvs, nsteps=nsteps, nstack=nstack,
-                  num_procs=num_procs, ent_coef=ent_coef, vf_coef=vf_coef,
+                  num_procs=num_procs, ent_coef=ent_coef, vf_coef=vf_coef, size=env.get_board_size(),
                   max_grad_norm=max_grad_norm, lr=lr, alpha=alpha, epsilon=epsilon, total_timesteps=total_timesteps,
                   lrschedule=lrschedule)
 

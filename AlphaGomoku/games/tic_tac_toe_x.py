@@ -186,7 +186,7 @@ def get_available_moves_with_prob(state, prob):
     dict_available_moves = {}
     for x, y in itertools.product(range(len(state[0])), range(len(state[0]))):
         if state[0, x, y, 0] == 0:
-            dict_available_moves[(x, y)] = prob[0, 3 * y + x]
+            dict_available_moves[(x, y)] = prob[0, len(state[0]) * y + x]
     return dict_available_moves
 
 

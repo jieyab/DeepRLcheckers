@@ -35,7 +35,7 @@ class MonteCarlo:
 
         self.model = model
         self._c_puct = 5
-        self._n_play_out = 200
+        self._n_play_out = 400
         self.list_plus_board_states = []
         self.list_minus_board_states = []
         self.list_plus_actions = []
@@ -89,7 +89,7 @@ class MonteCarlo:
                                   u=0,
                                   P=value,
                                   side=-side,
-                                  action=3 * key[1] + key[0],
+                                  action=self.winning_length * key[1] + key[0],
                                   state=np.copy(new_state))
             self.digraph.add_edge(parent, self.node_counter)
             logger.debug('Add node ', str(parent), ' -> ', str(self.node_counter))
@@ -285,7 +285,7 @@ class MonteCarlo:
                     return -player_turn
                 board_state = tt.apply_move(board_state, move, player_turn)
 
-            winner = tt.has_winner(board_state, 3)
+            winner = tt.has_winner(board_state, self.winning_length)
             if winner != 0:
                 if is_shown:
                     state = str(board_state).replace(']]', ']').replace(']]', '').replace('[[[[', '').replace('\n', '') \

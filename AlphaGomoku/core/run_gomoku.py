@@ -9,8 +9,8 @@ if __name__ == '__main__':
     logger.set_level(logger.WARN)
 
     policy_fn = CnnPolicy
-    env = TicTacToeXGameSpec(3, 3)
-    learn(policy_fn, env, nsteps=10, log_interval=5,
+    env = TicTacToeXGameSpec(7, 4)
+    learn(policy_fn, env, nsteps=50, log_interval=5,
           nstack=1, seed=0, total_timesteps=1000000000, load_model=False, model_path='../models/gomoku.cpkt')
     # play(policy_fn, env, nsteps=10, nstack=1, seed=0, model_path='../models/gomoku.cpkt')
     env.close()
