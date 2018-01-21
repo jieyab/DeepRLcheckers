@@ -4,6 +4,7 @@ from statistics import mean
 import joblib
 import numpy as np
 import tensorflow as tf
+import copy
 
 from AlphaGomoku.common import logger
 from AlphaGomoku.common.misc_util import set_global_seeds
@@ -111,6 +112,14 @@ class Runner(object):
         self.mcts = MonteCarlo(env, self.model, self.model2)
         self.list_board = []
         self.list_ai_board = []
+        self.matrix_actions = np.zeros((nh, nh))
+
+
+        for i in range(nh*nh):
+            actions = i
+            xy = [int(actions % nh),
+                  int(actions / nh)]
+            self.matrix_actions[xy[0], xy[1]] = i
 
     def exchange_models(self):
         tmp = self.model
@@ -204,26 +213,108 @@ class Runner(object):
 
     def run(self):
         logger.debug('- ' * 20 + 'run' + ' -' * 20)
-
         node, reward = self.mcts.self_play()
         plus_state, minus_state, plus_action, minus_action = self.mcts.get_state(node)
         policy_loss, value_loss, policy_entropy = [], [], []
+        policy_loss_2, value_loss_2, policy_entropy_2 = [], [], []
 
+
+        # Train normal
         p1, v1, e1 = self.pad_training_data(plus_state, plus_action, reward, self.model)
-        p2, v2, e2 = self.pad_training_data(minus_state, minus_action, -reward, self.model2)
+        p2_2, v2_2, e2_2 = self.pad_training_data(minus_state, minus_action, -reward, self.model2)
 
         policy_loss.append(p1)
-        policy_loss.append(p2)
+        policy_loss_2.append(p2_2)
         value_loss.append(v1)
-        value_loss.append(v2)
+        value_loss_2.append(v2_2)
         policy_entropy.append(e1)
-        policy_entropy.append(e2)
+        policy_entropy_2.append(e2_2)
 
+
+        # Rotation ACLW 180
+
+        rot_plus_action = copy.copy(plus_action)
+        rot_minus_action = copy.copy(minus_action)
+
+        rot_matrix = np.rot90(self.matrix_actions, 2)
+        rot_plus_state = copy.copy(plus_state)
+        rot_minus_state = copy.copy(minus_state)
+        print(len(plus_state),len(minus_state))
+        for i in range(len(plus_action)):
+
+            rot_plus_state[i] = np.rot90(plus_state[i], 2)
+            rot_plus_action[i] = rot_matrix[int(plus_action[i] % self.nh),
+                                            int(plus_action[i] / self.nh)]
+
+        for i in range(len(minus_action)):
+            rot_minus_state[i] = np.rot90(minus_state[i], 2)
+            rot_minus_action[i] = rot_matrix[int(minus_action[i] % self.nh),
+                                             int(minus_action[i] / self.nh)]
+
+        p1, v1, e1 = self.pad_training_data(rot_plus_state, rot_plus_action, reward, self.model)
+        p2_2, v2_2, e2_2 = self.pad_training_data(rot_minus_state, rot_minus_action, -reward, self.model2)
+
+        policy_loss.append(p1)
+        policy_loss_2.append(p2_2)
+        value_loss.append(v1)
+        value_loss_2.append(v2_2)
+        policy_entropy.append(e1)
+        policy_entropy_2.append(e2_2)
+
+
+        # Rotation ACLW 90
+        rot_matrix = np.rot90(self.matrix_actions, 1)
+
+
+        for i in range(len(plus_action)):
+            rot_plus_state[i][0,:,:,0] = np.rot90(plus_state[i][0,:,:,0], 1)
+            rot_plus_action[i] = rot_matrix[int(plus_action[i] % self.nh),
+                                            int(plus_action[i] / self.nh)]
+
+        for i in range(len(minus_action)):
+
+            rot_minus_state[i][0,:,:,0] = np.rot90(minus_state[i][0,:,:,0], 1)
+            rot_minus_action[i] = rot_matrix[int(minus_action[i] % self.nh),
+                                             int(minus_action[i] / self.nh)]
+
+        p1, v1, e1 = self.pad_training_data(rot_plus_state, rot_plus_action, reward, self.model)
+        p2_2, v2_2, e2_2 = self.pad_training_data(rot_minus_state, rot_minus_action, -reward, self.model2)
+
+        policy_loss.append(p1)
+        policy_loss_2.append(p2_2)
+        value_loss.append(v1)
+        value_loss_2.append(v2_2)
+        policy_entropy.append(e1)
+        policy_entropy_2.append(e2_2)
+
+        # Rotation ACLW 270
+        rot_matrix = np.rot90(self.matrix_actions, 3)
+
+        for i in range(len(plus_action)):
+            rot_plus_state[i][0, :, :, 0] = np.rot90(plus_state[i][0, :, :, 0], 3)
+            rot_plus_action[i] = rot_matrix[int(plus_action[i] % self.nh),
+                                            int(plus_action[i] / self.nh)]
+
+        for i in range(len(minus_action)):
+
+            rot_minus_state[i][0, :, :, 0] = np.rot90(minus_state[i][0, :, :, 0], 3)
+            rot_minus_action[i] = rot_matrix[int(minus_action[i] % self.nh),
+                                             int(minus_action[i] / self.nh)]
+
+        p1, v1, e1 = self.pad_training_data(rot_plus_state, rot_plus_action, reward, self.model)
+        p2_2, v2_2, e2_2 = self.pad_training_data(rot_minus_state, rot_minus_action, -reward, self.model2)
+
+        policy_loss.append(p1)
+        policy_loss_2.append(p2_2)
+        value_loss.append(v1)
+        value_loss_2.append(v2_2)
+        policy_entropy.append(e1)
+        policy_entropy_2.append(e2_2)
         self.exchange_models()
         self.mcts.exchange_models()
 
         logger.debug('* ' * 20 + 'run' + ' *' * 20)
-        return mean(policy_loss), mean(value_loss), mean(policy_entropy)
+        return mean(policy_loss), mean(value_loss), mean(policy_entropy), mean(policy_loss_2), mean(value_loss_2), mean(policy_entropy_2)
 
 
 def learn(policy, policy2, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_coef=0.5, ent_coef=0.01,
@@ -256,7 +347,7 @@ def learn(policy, policy2, env, seed, nsteps=5, nstack=4, total_timesteps=int(80
     tstart = time.time()
 
     for update in range(1, total_timesteps // nbatch + 1):
-        policy_loss, value_loss, policy_entropy = runner.run()
+        policy_loss, value_loss, policy_entropy, policy_loss_2, value_loss_2, policy_entropy_2  = runner.run()
 
         nseconds = time.time() - tstart
         fps = float((update * nbatch) / nseconds)
@@ -267,6 +358,8 @@ def learn(policy, policy2, env, seed, nsteps=5, nstack=4, total_timesteps=int(80
             logger.record_tabular("fps", fps)
             logger.record_tabular("policy_entropy", float(policy_entropy))
             logger.record_tabular("value_loss", float(value_loss))
+            logger.record_tabular("policy_entropy_2", float(policy_entropy_2))
+            logger.record_tabular("value_loss_2", float(value_loss_2))
             logger.dump_tabular()
         if (update % (log_interval * 5)) == 0:
             logger.warn('Try to save cpkt file.')

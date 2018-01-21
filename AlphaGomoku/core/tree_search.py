@@ -34,7 +34,7 @@ class MonteCarlo:
         self.model = model
         self.model2 = model2
         self._c_puct = 5
-        self._n_play_out = 200
+        self._n_play_out = 20
 
         self.list_plus_board_states = []
         self.list_minus_board_states = []
