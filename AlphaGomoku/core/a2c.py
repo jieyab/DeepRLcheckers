@@ -5,6 +5,7 @@ import joblib
 import numpy as np
 import tensorflow as tf
 import copy
+import csv
 
 from AlphaGomoku.common import logger
 from AlphaGomoku.common.misc_util import set_global_seeds
@@ -345,12 +346,21 @@ def learn(policy, policy2, env, seed, nsteps=5, nstack=4, total_timesteps=int(80
 
     nbatch = nenvs * nsteps
     tstart = time.time()
-
+    policy_loss_saver, value_loss_saver, policy_entropy_saver = [],[],[]
+    policy_loss_saver_2, value_loss_saver_2, policy_entropy_saver_2 = [], [], []
     for update in range(1, total_timesteps // nbatch + 1):
         policy_loss, value_loss, policy_entropy, policy_loss_2, value_loss_2, policy_entropy_2  = runner.run()
 
+        policy_loss_saver.append(str(policy_loss))
+        value_loss_saver.append(value_loss)
+        policy_entropy_saver.append(policy_entropy)
+        policy_loss_saver_2.append(str(policy_loss_2))
+        value_loss_saver_2.append(value_loss_2)
+        policy_entropy_saver_2.append(policy_entropy_2)
         nseconds = time.time() - tstart
         fps = float((update * nbatch) / nseconds)
+
+
         if update % log_interval == 0 or update == 1:
             runner.mcts.print_statistic()
             logger.record_tabular("nupdates", update)
@@ -361,23 +371,42 @@ def learn(policy, policy2, env, seed, nsteps=5, nstack=4, total_timesteps=int(80
             logger.record_tabular("policy_entropy_2", float(policy_entropy_2))
             logger.record_tabular("value_loss_2", float(value_loss_2))
             logger.dump_tabular()
-        if (update % (log_interval * 5)) == 0:
+        if (update % (log_interval * 10)) == 0:
             logger.warn('Try to save cpkt file.')
             model.save(model_path)
             model2.save(model_path2)
-        #save statistics
-        PolicyLossFile = "../statistics/policy_loss.csv"
-        pl = open(PolicyLossFile, "a")
-        pl.write(str(policy_loss) + ',')
-        pl.close()
-        ValueLossFile = "../statistics/value_loss.csv"
-        vl = open(ValueLossFile, "a")
-        vl.write(str(value_loss) + ',')
-        vl.close()
-        PolicyEntropyFile = "../statistics/policy_entropy.csv"
-        pe = open(PolicyEntropyFile, "a")
-        pe.write(str(policy_entropy) + ',')
-        pe.close()
+
+            PolicyLossFile = "../statistics/policy_loss.csv"
+            with open(PolicyLossFile, 'w') as f:
+                writer = csv.writer(f, lineterminator='\n', delimiter=',')
+                writer.writerow(float(val) for val in policy_loss_saver)
+
+            ValueLossFile = "../statistics/value_loss.csv"
+            with open(ValueLossFile, 'w') as f:
+                writer = csv.writer(f, lineterminator='\n', delimiter=',')
+                writer.writerow(float(val) for val in value_loss_saver)
+
+            PolicyEntropyFile = "../statistics/policy_entropy_loss.csv"
+            with open(PolicyEntropyFile, 'w') as f:
+                writer = csv.writer(f, lineterminator='\n', delimiter=',')
+                writer.writerow(float(val) for val in policy_entropy_saver)
+
+            # Second model
+            PolicyLossFile = "../statistics/policy_loss_2.csv"
+            with open(PolicyLossFile, 'w') as f:
+               writer = csv.writer(f, lineterminator='\n', delimiter=',')
+               writer.writerow(float(val) for val in policy_loss_saver_2)
+
+            ValueLossFile = "../statistics/value_loss_2.csv"
+            with open(ValueLossFile, 'w') as f:
+                writer = csv.writer(f, lineterminator='\n', delimiter=',')
+                writer.writerow(float(val) for val in value_loss_saver_2)
+
+            PolicyEntropyFile = "../statistics/policy_entropy_loss_2.csv"
+            with open(PolicyEntropyFile, 'w') as f:
+                writer = csv.writer(f, lineterminator='\n', delimiter=',')
+                writer.writerow(float(val) for val in policy_entropy_saver_2)
+    
     runner.mcts.visualization()
     env.close()
 
