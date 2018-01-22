@@ -175,10 +175,10 @@ class Runner(object):
         mb_masks = mb_masks.flatten()
 
         print('- ' * 50)
-        state = str(mb_obs[-1]).replace(']]', ']').replace(']]', '').replace('[[[[', '').replace('\n', '') \
-            .replace('[[', '\n').replace('[', '').replace(' ', '').replace(']', ' | ').replace(' | \n', '\n')
-        # print(mb_obs[-1][0, :, :, 0])
-        print(state)
+        # state = str(mb_obs[-1]).replace(']]', ']').replace(']]', '').replace('[[[[', '').replace('\n', '') \
+        #     .replace('[[', '\n').replace('[', '').replace(' ', '').replace(']', ' | ').replace(' | \n', '\n')
+        # print(state)
+        # self.mcts.show_state(mb_obs[-1])
         # for ob in mb_obs:
         #     print(ob.tolist())
         actions = []

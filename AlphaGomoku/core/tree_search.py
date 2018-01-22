@@ -283,11 +283,7 @@ class MonteCarlo:
         while True:
             _available_moves = list(tt.available_moves(board_state))
             if is_shown:
-                state = str(board_state).replace(']]', ']').replace(']]', '').replace('[[[[', '').replace('\n', '') \
-                    .replace('[[', '\n').replace('[', '').replace(' ', '').replace(']', ' | ').replace(' | \n', '\n')
-                print('- ' * 20)
-                print(state)
-                print('- ' * 20)
+                self.show_state(board_state)
             if len(_available_moves) == 0:
                 # draw
                 if is_shown:
@@ -298,25 +294,20 @@ class MonteCarlo:
                 self.last_node = node
                 board_state = np.copy(self.digraph.node[self.last_node]['state'])
             else:
-                move = self.get_human_action()
-                # self.play_out(self.last_node)
-
-                if move not in _available_moves:
-                    # if a player makes an invalid move the other player wins
-                    if is_shown:
-                        print("illegal move ", move)
-                    return -player_turn
+                while True:
+                    try:
+                        move = self.get_human_action()
+                        if move not in _available_moves:
+                            raise Exception()
+                        break
+                    except Exception:
+                        print('Illegal move, please try again!')
                 board_state = tt.apply_move(board_state, move, player_turn)
 
             winner = tt.has_winner(board_state, self.winning_length)
             if winner != 0:
                 if is_shown:
-                    state = str(board_state).replace(']]', ']').replace(']]', '').replace('[[[[', '').replace('\n', '') \
-                        .replace('[[', '\n').replace('[', '').replace(' ', '').replace(']', ' | ').replace(' | \n',
-                                                                                                           '\n')
-                    print('- ' * 20)
-                    print(state)
-                    print('- ' * 20)
+                    self.show_state(board_state)
                     print("we have a winner, side: %s" % player_turn)
                 return winner
             player_turn = -player_turn
