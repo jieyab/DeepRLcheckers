@@ -2,7 +2,9 @@ import numpy as np
 import tensorflow as tf
 
 from baselines.a2c.utils import conv, fc, conv_to_fc, batch_to_seq, seq_to_batch, lstm, lnlstm, sample, \
-    sample_without_exploration, sample_K
+    sample_without_exploration, sample_K,  normalized_columns_initializer
+
+import tensorflow.contrib.slim as slim
 
 
 class LnLstmPolicy(object):
@@ -273,3 +275,120 @@ class CnnPolicy_VS_TTT(object):
         self.vf = vf
         self.step = step
         self.value = value
+
+class CnnPolicySlim(object):
+
+    def __init__(self, sess, ob_space, ac_space, nenv, nsteps, nstack, reuse=False):
+        nbatch = nenv * nsteps
+        nh, nw, nc = ob_space.shape
+        ob_shape = (nbatch, nh, nw, nc * nstack)
+        nact = ac_space * ac_space  # ac_space.n
+        X = tf.placeholder(tf.float32, ob_shape)  # obs
+        with tf.variable_scope("model", reuse=reuse):
+            conv1 = slim.conv2d(activation_fn=tf.nn.elu,
+                                     inputs=X, num_outputs=32,
+                                     kernel_size=[2, 2], stride=[1, 1], padding='VALID')
+            conv2 = slim.conv2d(activation_fn=tf.nn.elu,
+                                     inputs=conv1, num_outputs=32,
+                                     kernel_size=[2, 2], stride=[1, 1], padding='VALID')
+            hidden = slim.fully_connected(slim.flatten(conv2), 256, activation_fn=tf.nn.elu)
+
+            pi = slim.fully_connected(hidden, nact,
+                                               activation_fn=None,
+                                               weights_initializer=normalized_columns_initializer(0.01),
+                                               biases_initializer=None)
+            vf = slim.fully_connected(hidden, 1,
+                                              activation_fn=None,
+                                              weights_initializer=normalized_columns_initializer(1.0),
+                                              biases_initializer=None)
+            # h = conv(tf.cast(X, tf.float32), 'c1m', nf=32, rf=2, stride=1, init_scale=np.sqrt(2))
+            # h = tf.nn.max_pool(h, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
+            # h2 = conv(h, 'c2m', nf=64, rf=2, stride=1, init_scale=np.sqrt(2))
+            # #h2 = tf.nn.max_pool(h2, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
+            # # h3 = conv(h2, 'c3m', nf=64, rf=3, stride=1, init_scale=np.sqrt(2))
+            # h3 = conv_to_fc(h2)
+            # h4 = fc(h3, 'fc1m', nh=512, init_scale=np.sqrt(2))
+            # pi = fc(h4, 'pim', nact, act=tf.nn.sigmoid)
+            # vf = fc(h4, 'vm', 1, act=tf.nn.tanh)
+
+        v0 = vf[:, 0]
+        noise = tf.random_uniform(tf.shape(pi), tf.reduce_max(pi)) / 5
+        pi = noise + pi
+        a0 = sample_K(pi, nact)
+        p0 = pi
+        self.initial_state = []  # not stateful
+
+        def step(ob, *_args, **_kwargs):
+            a, v, prob = sess.run([a0, v0, p0], {X: ob})
+            # print('sum', (prob + 1) / (np.sum(prob) + len(prob[0])))
+            return a, v, [], prob# (prob + 1) / (np.sum(prob) + len(prob[0]))
+
+        def value(ob, *_args, **_kwargs):
+            return sess.run(v0, {X: ob})
+
+        self.X = X
+        self.pi = pi
+        self.vf = vf
+        self.step = step
+        self.value = value
+
+
+
+class CnnPolicySlim2(object):
+
+    def __init__(self, sess, ob_space, ac_space, nenv, nsteps, nstack, reuse=False):
+        nbatch = nenv * nsteps
+        nh, nw, nc = ob_space.shape
+        ob_shape = (nbatch, nh, nw, nc * nstack)
+        nact = ac_space * ac_space  # ac_space.n
+        X = tf.placeholder(tf.float32, ob_shape)  # obs
+        with tf.variable_scope("model2", reuse=reuse):
+            conv1 = slim.conv2d(activation_fn=tf.nn.elu,
+                                     inputs=X, num_outputs=32,
+                                     kernel_size=[2, 2], stride=[1, 1], padding='VALID')
+            conv1 = tf.nn.max_pool(conv1, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
+            conv2 = slim.conv2d(activation_fn=tf.nn.elu,
+                                     inputs=conv1, num_outputs=32,
+                                     kernel_size=[2, 2], stride=[1, 1], padding='VALID')
+            hidden = slim.fully_connected(slim.flatten(conv2), 256, activation_fn=tf.nn.elu)
+
+            pi = slim.fully_connected(hidden, nact,
+                                               activation_fn=tf.nn.sigmoid,
+                                               weights_initializer=normalized_columns_initializer(0.01),
+                                               biases_initializer=None)
+            vf = slim.fully_connected(hidden, 1,
+                                              activation_fn=None,
+                                              weights_initializer=normalized_columns_initializer(1.0),
+                                              biases_initializer=None)
+            # h = conv(tf.cast(X, tf.float32), 'c1m', nf=32, rf=2, stride=1, init_scale=np.sqrt(2))
+            # h = tf.nn.max_pool(h, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
+            # h2 = conv(h, 'c2m', nf=64, rf=2, stride=1, init_scale=np.sqrt(2))
+            # #h2 = tf.nn.max_pool(h2, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
+            # # h3 = conv(h2, 'c3m', nf=64, rf=3, stride=1, init_scale=np.sqrt(2))
+            # h3 = conv_to_fc(h2)
+            # h4 = fc(h3, 'fc1m', nh=512, init_scale=np.sqrt(2))
+            # pi = fc(h4, 'pim', nact, act=tf.nn.sigmoid)
+            # vf = fc(h4, 'vm', 1, act=tf.nn.tanh)
+
+        v0 = vf[:, 0]
+        noise = tf.random_uniform(tf.shape(pi), tf.reduce_max(pi)) / 5
+        pi = noise + pi
+        a0 = sample_K(pi, nact)
+        p0 = pi
+        self.initial_state = []  # not stateful
+
+        def step(ob, *_args, **_kwargs):
+            a, v, prob = sess.run([a0, v0, p0], {X: ob})
+            # print('sum', (prob + 1) / (np.sum(prob) + len(prob[0])))
+            return a, v, [], prob# (prob + 1) / (np.sum(prob) + len(prob[0]))
+
+        def value(ob, *_args, **_kwargs):
+            return sess.run(v0, {X: ob})
+
+        self.X = X
+        self.pi = pi
+        self.vf = vf
+        self.step = step
+        self.value = value
+
+

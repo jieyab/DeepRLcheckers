@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 from AlphaGomoku.games.tic_tac_toe_x import TicTacToeXGameSpec
 from baselines.a2c.a2c import learn
-from baselines.a2c.policies import CnnPolicy_TTT
+from baselines.a2c.policies import CnnPolicy_TTT, CnnPolicySlim, CnnPolicySlim2
 
 if __name__ == '__main__':
     policy_fn = CnnPolicy_TTT
