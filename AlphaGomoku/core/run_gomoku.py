@@ -11,7 +11,7 @@ from AlphaGomoku.core.policies import CnnPolicy, CnnPolicy2
 from AlphaGomoku.games.tic_tac_toe_x import TicTacToeXGameSpec
 
 if __name__ == '__main__':
-    logger.set_level(logger.INFO)
+    #logger.set_level(logger.CURRENT)
 
     board_size = 5
     winning_length = 4

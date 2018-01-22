@@ -13,6 +13,7 @@ The board is represented by a board_size x board_size tuple of ints. A 0 means n
 player one has played there, -1 means the seconds player has played there. The apply_move method can be used to return a
 copy of a given state with a given move applied. This can be useful for doing min-max or monte carlo sampling.
 """
+import csv
 import itertools
 import random
 
@@ -328,6 +329,12 @@ class TicTacToeXGameSpec(BaseGameSpec):
         self.illegal_games = 0
         self.print = True
         self.games_finish_in_draw = 0
+        self.resultAIList = [0]
+        self.resultRandomList = [0]
+        self.resultDraw = [0]
+        self.resultIllegalMove = [0]
+        self.acumulated_reward = 0
+        self.listAcumulatedReward = [0]
 
     def get_board_size(self):
         return self._board_size
@@ -393,13 +400,70 @@ class TicTacToeXGameSpec(BaseGameSpec):
                 1 + self.games_wonAI + self.games_wonRandom + self.games_finish_in_draw + self.illegal_games))),
                     ' illegal moves')
         logger.warn('- ' * 40)
+        #save stat
+        AIresult = (100 * self.games_wonAI) / (
+                1 + self.games_wonAI + self.games_wonRandom + self.games_finish_in_draw + self.illegal_games)
+        randomPlayerResult = (100 * self.games_wonRandom) / (
+                1 + self.games_wonAI + self.games_wonRandom + self.games_finish_in_draw + self.illegal_games)
+        drawResult = (100 * self.games_finish_in_draw) / (
+                1 + self.games_wonAI + self.games_wonRandom + self.games_finish_in_draw + self.illegal_games)
+        illegalMoveResult = (100 * self.illegal_games / (
+                1 + self.games_wonAI + self.games_wonRandom + self.games_finish_in_draw + self.illegal_games))
+        RewardResultFile = "../statistics/RewardResultFile.csv"
+        with open(RewardResultFile, "w") as output:
+            writer = csv.writer(output, lineterminator='\n')
+            for val in self.listAcumulatedReward:
+                writer.writerow([val])
+
+        self.resultAIList.append(AIresult)
+        self.resultRandomList.append(randomPlayerResult)
+        self.resultDraw.append(drawResult)
+        self.resultIllegalMove.append(illegalMoveResult)
+
+        self.games_wonAI = 0
+        self.games_wonRandom = 0
+        self.illegal_games = 0
+        self.acumulated_reward = 0
         self.games_wonAI = 0
         self.games_wonRandom = 0
         self.games_finish_in_draw = 0
         self.illegal_games = 0
 
+    def save_statistics(self):
+        AIResultFile = "../statistics/AIResultFile.csv"
+        with open(AIResultFile, "w") as output:
+            writer = csv.writer(output, lineterminator='\n')
+            for val in self.resultAIList:
+                writer.writerow([val])
+        RandomResultFile = "../statistics/RandomResultFile.csv"
+        with open(RandomResultFile, "w") as output:
+            writer = csv.writer(output, lineterminator='\n')
+            for val in self.resultRandomList:
+                writer.writerow([val])
+        DrawResultFile = "../statistics/DrawResultFile.csv"
+        with open(DrawResultFile, "w") as output:
+            writer = csv.writer(output, lineterminator='\n')
+            for val in self.resultDraw:
+                writer.writerow([val])
+        IllegalResultFile = "../statistics/IllegalResultFile.csv"
+        with open(IllegalResultFile, "w") as output:
+            writer = csv.writer(output, lineterminator='\n')
+            for val in self.resultIllegalMove:
+                writer.writerow([val])
+
     def set_board(self, board):
         self.board_state = board
+
+    def acumulate_reward(self, reward):
+        reward = reward.tolist()
+        reward1 = float(reward[0])
+        # print('reward is', reward1)
+        # print(type(reward1))
+        self.acumulated_reward += reward1
+        # print("accu", self.acumulated_reward)
+
+        # print(type(self.acumulated_reward))
+        # print(reward,self.acumulated_reward)
 
     def step(self, actions_nn):
         print(actions_nn)
@@ -492,6 +556,7 @@ class TicTacToeXGameSpec(BaseGameSpec):
         if (((self.games_wonAI + self.games_wonRandom + self.games_finish_in_draw + self.illegal_games) % 1000 == 0)
                 and self.print):
             self.print_statistic()
+            self.save_statistics()
 
         return self.board_state, reward, winner, 0, False
 
