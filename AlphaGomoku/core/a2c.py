@@ -474,7 +474,7 @@ class Runner2(object):
             self.policy_value_net = PolicyValueNet(self.env.get_board_size(), self.env.get_board_size())
         self.mcts = MonteCarlo(env, None, None, self.policy_value_net.policy_value_fn)
         self.game_batch_num = 1000
-        self.check_freq = 50
+        self.check_freq = 20
         self.batch_size = 512  # mini-batch size for training
 
         self.learn_rate = 5e-3
@@ -557,12 +557,12 @@ class Runner2(object):
                 net_params = self.policy_value_net.get_policy_param()  # get model params
                 pickle.dump(net_params, open('current_policy.model', 'wb'), 0)  # save model param to file
 
-                policy_loss_file = "../statistics/policy_loss.csv"
+                policy_loss_file = "../statistics/loss.csv"
                 with open(policy_loss_file, 'w') as f:
                     writer = csv.writer(f, lineterminator='\n', delimiter=',')
                     writer.writerow(float(val) for val in list_loss)
 
-                value_loss_file = "../statistics/value_loss.csv"
+                value_loss_file = "../statistics/entropy.csv"
                 with open(value_loss_file, 'w') as f:
                     writer = csv.writer(f, lineterminator='\n', delimiter=',')
                     writer.writerow(float(val) for val in list_entropy)
