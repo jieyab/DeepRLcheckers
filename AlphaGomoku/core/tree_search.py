@@ -11,7 +11,7 @@ from AlphaGomoku.common import logger
 
 
 class MonteCarlo:
-    def __init__(self, env, model, model2):
+    def __init__(self, env, model=None, model2=None, new_model=None):
         self.digraph = nx.DiGraph()
         self.node_counter = 0
 
@@ -25,7 +25,7 @@ class MonteCarlo:
                               u=0,
                               P=1,
                               side=-1,
-                              action=0,
+                              action=-1,
                               state=tt.new_board(self.board_size))
 
         self.node_counter += 1
@@ -33,8 +33,9 @@ class MonteCarlo:
 
         self.model = model
         self.model2 = model2
+        self.new_model = new_model
         self._c_puct = 5
-        self._n_play_out = 20
+        self._n_play_out = 400
 
         self.list_plus_board_states = []
         self.list_minus_board_states = []
@@ -57,7 +58,7 @@ class MonteCarlo:
                               u=0,
                               P=1,
                               side=-1,
-                              action=0,
+                              action=-1,
                               state=tt.new_board(self.board_size))
 
         self.node_counter += 1
@@ -173,12 +174,18 @@ class MonteCarlo:
         # state.do_move(action)
         done = tt.has_winner(self.digraph.node[node]['state'], self.winning_length)
 
-        if self.digraph.node[node]['side'] == 1:
-            actions, value, _, prob = self.model2.step(np.copy(self.digraph.node[node]['state']), [], done)
+        if self.new_model:
+            current_state = tt.current_state(self.digraph.node[node]['state'], self.digraph.node[node]['action'],
+                                             self.digraph.node[node]['side'])
+            prob, value = self.new_model(current_state, tt.get_available_actions(self.digraph.node[node]['state']))
+            value = [value]
+            dict_prob = tt.get_available_moves_with_prob_2(self.digraph.node[node]['state'], prob)
         else:
-            actions, value, _, prob = self.model.step(np.copy(self.digraph.node[node]['state']), [], done)
-
-        dict_prob = tt.get_available_moves_with_prob(self.digraph.node[node]['state'], prob)
+            if self.digraph.node[node]['side'] == 1:
+                actions, value, _, prob = self.model2.step(np.copy(self.digraph.node[node]['state']), [], done)
+            else:
+                actions, value, _, prob = self.model.step(np.copy(self.digraph.node[node]['state']), [], done)
+            dict_prob = tt.get_available_moves_with_prob(self.digraph.node[node]['state'], prob)
         logger.debug('dict_prob ', str(dict_prob))
 
         if done[0]:
@@ -224,9 +231,12 @@ class MonteCarlo:
 
     def get_action(self, state, is_self_play=True):
         available = list(tt.available_moves(state))
+        move_probs = np.zeros(self.board_size * self.board_size)
 
         if len(available) > 0:
             nodes, probs = self.get_move_probs(state)
+            for i, node in enumerate(nodes):
+                move_probs[self.digraph.node[node]['action']] = probs[i]
             logger.debug('Prob: ', str(probs))
 
             if is_self_play:
@@ -235,10 +245,10 @@ class MonteCarlo:
                 # with the default temp=1e-3, this is almost equivalent to choosing the move with the highest prob
                 node = np.random.choice(nodes, p=probs)
 
-            return node
+            return node, move_probs
         else:
             logger.error("WARNING: the board is full")
-            return None
+            return None, None
 
     def get_human_action(self):
         location = input("Your move: ")
@@ -250,6 +260,7 @@ class MonteCarlo:
         self.reset_game()
         self.num_simulations += 1
         node = 0
+        states, mcts_probs, current_players = [], [], []
 
         while True:
             state = np.copy(self.digraph.node[node]['state'])
@@ -259,20 +270,39 @@ class MonteCarlo:
 
             if len(list(tt.available_moves(state))) == 0:
                 self.games_finish_in_draw += 1
-                return node, 0
+
+                winners_z = np.zeros(len(states))
+                if self.new_model:
+                    return 0, list(zip(states, mcts_probs, winners_z))
+                else:
+                    return node, 0
 
             win = tt.has_winner(state, self.winning_length)
             if win[0]:
                 reward = self.digraph.node[node]['side']
+                winners_z = np.zeros(len(states))
+                tmp_reward = 1
+                for i in reversed(range(len(states))):
+                    winners_z[i] = tmp_reward
+                    tmp_reward = -tmp_reward
+
                 if reward * self.current_player == 1:
                     self.games_wonAI += 1
                 else:
                     self.games_wonAI2 += 1
-                return node, reward
 
-            node = self.get_action(np.copy(self.digraph.node[node]['state']))
+                if self.new_model:
+                    return reward, list(zip(states, mcts_probs, winners_z))
+                else:
+                    return node, reward
 
-    def start_play(self, is_shown=1):
+            current_state = tt.current_state(self.digraph.node[node]['state'], self.digraph.node[node]['action'],
+                                             self.digraph.node[node]['side'])
+            states.append(current_state)
+            node, move_prob = self.get_action(np.copy(self.digraph.node[node]['state']))
+            mcts_probs.append(move_prob)
+
+    def start_play(self, is_shown=True):
         """
         start a game between two players
         """
@@ -290,7 +320,7 @@ class MonteCarlo:
                     print("no moves left, game ended a draw")
                 return 0.
             if player_turn > 0:
-                node = self.get_action(board_state, False)
+                node, _ = self.get_action(board_state, False)
                 self.last_node = node
                 board_state = np.copy(self.digraph.node[self.last_node]['state'])
             else:
@@ -312,10 +342,42 @@ class MonteCarlo:
                 return winner
             player_turn = -player_turn
 
-    def get_state_recursive(self, node, is_root=True):
+    def start_play_with_ai(self, is_shown=True):
+        """
+        start a game between two players
+        """
+
+        board_state = tt.new_board(self.board_size)
+        player_turn = 1
+
+        while True:
+            _available_moves = list(tt.available_moves(board_state))
+            if is_shown:
+                self.show_state(board_state)
+            if len(_available_moves) == 0:
+                # draw
+                if is_shown:
+                    print("no moves left, game ended a draw")
+                return 0.
+            if player_turn > 0:
+                node, _ = self.get_action(board_state, False)
+            else:
+                node, _ = self.get_action(board_state, False)
+
+            self.last_node = node
+            board_state = np.copy(self.digraph.node[self.last_node]['state'])
+
+            winner = tt.has_winner(board_state, self.winning_length)
+            if winner != 0:
+                if is_shown:
+                    self.show_state(board_state)
+                    print("we have a winner, side: %s" % player_turn)
+                return winner
+            player_turn = -player_turn
+
+    def get_state_recursive(self, node):
         """
         Get board state recursively
-        :param is_root:
         :param node:
         :return:
         """
@@ -325,7 +387,7 @@ class MonteCarlo:
             for key in self.digraph.predecessors(node):
                 parent_node = key
                 break
-            self.get_state_recursive(parent_node, False)
+            self.get_state_recursive(parent_node)
         else:
             return
 
@@ -335,19 +397,6 @@ class MonteCarlo:
         else:
             self.list_minus_board_states.append(np.copy(self.digraph.node[node]['state']))
             self.list_minus_actions.append(np.copy(self.digraph.node[node]['action']))
-
-        # if is_root:
-        #     self.list_plus_board_states.append(np.copy(self.digraph.node[node]['state']))
-        #     self.list_minus_board_states.append(np.copy(self.digraph.node[node]['state']))
-        #     self.list_plus_actions.append(np.copy(self.digraph.node[node]['action']))
-        #     self.list_minus_actions.append(np.copy(self.digraph.node[node]['action']))
-        # else:
-        #     if self.digraph.node[node]['side'] == 1:
-        #         self.list_plus_board_states.append(np.copy(self.digraph.node[node]['state']))
-        #         self.list_plus_actions.append(np.copy(self.digraph.node[node]['action']))
-        #     else:
-        #         self.list_minus_board_states.append(np.copy(self.digraph.node[node]['state']))
-        #         self.list_minus_actions.append(np.copy(self.digraph.node[node]['action']))
 
     def get_state(self, node):
         self.list_plus_board_states.clear()

@@ -5,6 +5,11 @@ import numpy as np
 import tensorflow as tf
 
 
+def relu(X):
+    out = np.maximum(X, 0)
+    return out
+
+
 def sample(logits):
     noise = tf.random_uniform(tf.shape(logits))
     return tf.argmax(logits - tf.log(-tf.log(noise)), 1)
@@ -67,6 +72,59 @@ def conv(x, scope, nf, rf, stride, pad='VALID', act=tf.nn.relu, init_scale=1.0):
         z = tf.nn.conv2d(x, w, strides=[1, stride, stride, 1], padding=pad) + b
         h = act(z)
         return h
+
+
+def fc_forward(X, W, b):
+    out = np.dot(X, W) + b
+    return out
+
+
+def get_im2col_indices(x_shape, field_height, field_width, padding=1, stride=1):
+    # First figure out what the size of the output should be
+    N, C, H, W = x_shape
+    assert (H + 2 * padding - field_height) % stride == 0
+    assert (W + 2 * padding - field_height) % stride == 0
+    out_height = int((H + 2 * padding - field_height) / stride + 1)
+    out_width = int((W + 2 * padding - field_width) / stride + 1)
+
+    i0 = np.repeat(np.arange(field_height), field_width)
+    i0 = np.tile(i0, C)
+    i1 = stride * np.repeat(np.arange(out_height), out_width)
+    j0 = np.tile(np.arange(field_width), field_height * C)
+    j1 = stride * np.tile(np.arange(out_width), out_height)
+    i = i0.reshape(-1, 1) + i1.reshape(1, -1)
+    j = j0.reshape(-1, 1) + j1.reshape(1, -1)
+
+    k = np.repeat(np.arange(C), field_height * field_width).reshape(-1, 1)
+    return k.astype(int), i.astype(int), j.astype(int)
+
+
+def im2col_indices(x, field_height, field_width, padding=1, stride=1):
+    # Zero-pad the input
+    p = padding
+    x_padded = np.pad(x, ((0, 0), (0, 0), (p, p), (p, p)), mode='constant')
+
+    k, i, j = get_im2col_indices(x.shape, field_height, field_width, padding, stride)
+
+    cols = x_padded[:, k, i, j]
+    C = x.shape[1]
+    cols = cols.transpose(1, 2, 0).reshape(field_height * field_width * C, -1)
+    return cols
+
+
+def conv_forward(X, W, b, stride=1, padding=1):
+    n_filters, d_filter, h_filter, w_filter = W.shape
+    W = W[:, :, ::-1, ::-1]  # theano conv2d flips the filters (rotate 180 degree) first while doing the calculation
+    n_x, d_x, h_x, w_x = X.shape
+    h_out = (h_x - h_filter + 2 * padding) / stride + 1
+    w_out = (w_x - w_filter + 2 * padding) / stride + 1
+    h_out, w_out = int(h_out), int(w_out)
+    X_col = im2col_indices(X, h_filter, w_filter, padding=padding, stride=stride)
+    W_col = W.reshape(n_filters, -1)
+    out = (np.dot(W_col, X_col).T + b).T
+    out = out.reshape(n_filters, h_out, w_out, n_x)
+    out = out.transpose(3, 0, 1, 2)
+    return out
 
 
 def fc(x, scope, nh, act=tf.nn.relu, init_scale=1.0):

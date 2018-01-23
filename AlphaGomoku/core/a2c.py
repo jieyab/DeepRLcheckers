@@ -1,18 +1,23 @@
+import copy
+import csv
+import random
 import time
+from collections import deque
 from statistics import mean
+import _pickle as pickle
 
 import joblib
 import numpy as np
 import tensorflow as tf
-import copy
-import csv
 
 from AlphaGomoku.common import logger
 from AlphaGomoku.common.misc_util import set_global_seeds
+from AlphaGomoku.core.policy_value_network import PolicyValueNet
 from AlphaGomoku.core.tree_search import MonteCarlo
 from AlphaGomoku.core.utils import Scheduler, find_trainable_variables
 from AlphaGomoku.core.utils import cat_entropy, mse
 from AlphaGomoku.core.utils import discount_with_dones
+from AlphaGomoku.games.tic_tac_toe_x import TicTacToeXGameSpec
 
 
 class Model(object):
@@ -115,8 +120,7 @@ class Runner(object):
         self.list_ai_board = []
         self.matrix_actions = np.zeros((nh, nh))
 
-
-        for i in range(nh*nh):
+        for i in range(nh * nh):
             actions = i
             xy = [int(actions % nh),
                   int(actions / nh)]
@@ -209,7 +213,7 @@ class Runner(object):
         mb_values = np.concatenate((mb_values, np.zeros(dim_necessary)), axis=0)
 
         policy_loss, value_loss, policy_entropy = model.train(mb_obs, mb_states, mb_rewards, mb_masks, mb_actions,
-                                                                   mb_values)
+                                                              mb_values)
         return float(policy_loss), float(value_loss), float(policy_entropy)
 
     def run(self):
@@ -218,7 +222,6 @@ class Runner(object):
         plus_state, minus_state, plus_action, minus_action = self.mcts.get_state(node)
         policy_loss, value_loss, policy_entropy = [], [], []
         policy_loss_2, value_loss_2, policy_entropy_2 = [], [], []
-
 
         # Train normal
         p1, v1, e1 = self.pad_training_data(plus_state, plus_action, reward, self.model)
@@ -231,7 +234,6 @@ class Runner(object):
         policy_entropy.append(e1)
         policy_entropy_2.append(e2_2)
 
-
         # Rotation ACLW 180
 
         rot_plus_action = copy.copy(plus_action)
@@ -240,9 +242,8 @@ class Runner(object):
         rot_matrix = np.rot90(self.matrix_actions, 2)
         rot_plus_state = copy.copy(plus_state)
         rot_minus_state = copy.copy(minus_state)
-        print(len(plus_state),len(minus_state))
+        print(len(plus_state), len(minus_state))
         for i in range(len(plus_action)):
-
             rot_plus_state[i] = np.rot90(plus_state[i], 2)
             rot_plus_action[i] = rot_matrix[int(plus_action[i] % self.nh),
                                             int(plus_action[i] / self.nh)]
@@ -262,19 +263,16 @@ class Runner(object):
         policy_entropy.append(e1)
         policy_entropy_2.append(e2_2)
 
-
         # Rotation ACLW 90
         rot_matrix = np.rot90(self.matrix_actions, 1)
 
-
         for i in range(len(plus_action)):
-            rot_plus_state[i][0,:,:,0] = np.rot90(plus_state[i][0,:,:,0], 1)
+            rot_plus_state[i][0, :, :, 0] = np.rot90(plus_state[i][0, :, :, 0], 1)
             rot_plus_action[i] = rot_matrix[int(plus_action[i] % self.nh),
                                             int(plus_action[i] / self.nh)]
 
         for i in range(len(minus_action)):
-
-            rot_minus_state[i][0,:,:,0] = np.rot90(minus_state[i][0,:,:,0], 1)
+            rot_minus_state[i][0, :, :, 0] = np.rot90(minus_state[i][0, :, :, 0], 1)
             rot_minus_action[i] = rot_matrix[int(minus_action[i] % self.nh),
                                              int(minus_action[i] / self.nh)]
 
@@ -297,7 +295,6 @@ class Runner(object):
                                             int(plus_action[i] / self.nh)]
 
         for i in range(len(minus_action)):
-
             rot_minus_state[i][0, :, :, 0] = np.rot90(minus_state[i][0, :, :, 0], 3)
             rot_minus_action[i] = rot_matrix[int(minus_action[i] % self.nh),
                                              int(minus_action[i] / self.nh)]
@@ -315,7 +312,8 @@ class Runner(object):
         self.mcts.exchange_models()
 
         logger.debug('* ' * 20 + 'run' + ' *' * 20)
-        return mean(policy_loss), mean(value_loss), mean(policy_entropy), mean(policy_loss_2), mean(value_loss_2), mean(policy_entropy_2)
+        return mean(policy_loss), mean(value_loss), mean(policy_entropy), mean(policy_loss_2), mean(value_loss_2), mean(
+            policy_entropy_2)
 
 
 def learn(policy, policy2, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_coef=0.5, ent_coef=0.01,
@@ -335,9 +333,9 @@ def learn(policy, policy2, env, seed, nsteps=5, nstack=4, total_timesteps=int(80
                   lrschedule=lrschedule)
 
     model2 = Model(policy=policy2, ob_space=ob_space, ac_space=ac_space, nenvs=nenvs, nsteps=nsteps, nstack=nstack,
-                  num_procs=num_procs, ent_coef=ent_coef, vf_coef=vf_coef, size=env.get_board_size(),
-                  max_grad_norm=max_grad_norm, lr=lr, alpha=alpha, epsilon=epsilon, total_timesteps=total_timesteps,
-                  lrschedule=lrschedule)
+                   num_procs=num_procs, ent_coef=ent_coef, vf_coef=vf_coef, size=env.get_board_size(),
+                   max_grad_norm=max_grad_norm, lr=lr, alpha=alpha, epsilon=epsilon, total_timesteps=total_timesteps,
+                   lrschedule=lrschedule)
 
     if load_model:
         model.load(model_path)
@@ -346,10 +344,10 @@ def learn(policy, policy2, env, seed, nsteps=5, nstack=4, total_timesteps=int(80
 
     nbatch = nenvs * nsteps
     tstart = time.time()
-    policy_loss_saver, value_loss_saver, policy_entropy_saver = [],[],[]
+    policy_loss_saver, value_loss_saver, policy_entropy_saver = [], [], []
     policy_loss_saver_2, value_loss_saver_2, policy_entropy_saver_2 = [], [], []
     for update in range(1, total_timesteps // nbatch + 1):
-        policy_loss, value_loss, policy_entropy, policy_loss_2, value_loss_2, policy_entropy_2  = runner.run()
+        policy_loss, value_loss, policy_entropy, policy_loss_2, value_loss_2, policy_entropy_2 = runner.run()
 
         policy_loss_saver.append(str(policy_loss))
         value_loss_saver.append(value_loss)
@@ -359,7 +357,6 @@ def learn(policy, policy2, env, seed, nsteps=5, nstack=4, total_timesteps=int(80
         policy_entropy_saver_2.append(policy_entropy_2)
         nseconds = time.time() - tstart
         fps = float((update * nbatch) / nseconds)
-
 
         if update % log_interval == 0 or update == 1:
             runner.mcts.print_statistic()
@@ -394,8 +391,8 @@ def learn(policy, policy2, env, seed, nsteps=5, nstack=4, total_timesteps=int(80
             # Second model
             PolicyLossFile = "../statistics/policy_loss_2.csv"
             with open(PolicyLossFile, 'w') as f:
-               writer = csv.writer(f, lineterminator='\n', delimiter=',')
-               writer.writerow(float(val) for val in policy_loss_saver_2)
+                writer = csv.writer(f, lineterminator='\n', delimiter=',')
+                writer.writerow(float(val) for val in policy_loss_saver_2)
 
             ValueLossFile = "../statistics/value_loss_2.csv"
             with open(ValueLossFile, 'w') as f:
@@ -406,7 +403,7 @@ def learn(policy, policy2, env, seed, nsteps=5, nstack=4, total_timesteps=int(80
             with open(PolicyEntropyFile, 'w') as f:
                 writer = csv.writer(f, lineterminator='\n', delimiter=',')
                 writer.writerow(float(val) for val in policy_entropy_saver_2)
-    
+
     runner.mcts.visualization()
     env.close()
 
@@ -428,9 +425,9 @@ def play(policy, policy2, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e
                   lrschedule=lrschedule)
 
     model2 = Model(policy=policy2, ob_space=ob_space, ac_space=ac_space, nenvs=nenvs, nsteps=nsteps, nstack=nstack,
-                  num_procs=num_procs, ent_coef=ent_coef, vf_coef=vf_coef, size=env.get_board_size(),
-                  max_grad_norm=max_grad_norm, lr=lr, alpha=alpha, epsilon=epsilon, total_timesteps=total_timesteps,
-                  lrschedule=lrschedule)
+                   num_procs=num_procs, ent_coef=ent_coef, vf_coef=vf_coef, size=env.get_board_size(),
+                   max_grad_norm=max_grad_norm, lr=lr, alpha=alpha, epsilon=epsilon, total_timesteps=total_timesteps,
+                   lrschedule=lrschedule)
 
     model.load(model_path)
     model2.load(model_path2)
@@ -439,16 +436,140 @@ def play(policy, policy2, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e
     env.close()
 
 
+def ai_play_with_ai(policy, policy2, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_coef=0.5,
+                    ent_coef=0.01, max_grad_norm=0.5, lr=7e-4, lrschedule='linear', epsilon=1e-5, alpha=0.99,
+                    gamma=0.99, log_interval=20, model_path='', model_path2=''):
+    tf.reset_default_graph()
+    set_global_seeds(seed)
+
+    nenvs = env.num_envs
+    ob_space = env.observation_space
+    ac_space = env.action_space
+    num_procs = len(env.remotes)  # HACK
+
+    model = Model(policy=policy, ob_space=ob_space, ac_space=ac_space, nenvs=nenvs, nsteps=nsteps, nstack=nstack,
+                  num_procs=num_procs, ent_coef=ent_coef, vf_coef=vf_coef, size=env.get_board_size(),
+                  max_grad_norm=max_grad_norm, lr=lr, alpha=alpha, epsilon=epsilon, total_timesteps=total_timesteps,
+                  lrschedule=lrschedule)
+
+    model2 = Model(policy=policy2, ob_space=ob_space, ac_space=ac_space, nenvs=nenvs, nsteps=nsteps, nstack=nstack,
+                   num_procs=num_procs, ent_coef=ent_coef, vf_coef=vf_coef, size=env.get_board_size(),
+                   max_grad_norm=max_grad_norm, lr=lr, alpha=alpha, epsilon=epsilon, total_timesteps=total_timesteps,
+                   lrschedule=lrschedule)
+
+    model.load(model_path)
+    model2.load(model_path2)
+    runner = Runner(env, model, model2, nsteps=nsteps, nstack=nstack, gamma=gamma)
+    runner.mcts.start_play_with_ai()
+    env.close()
+
+
+class Runner2(object):
+
+    def __init__(self, env, model=None):
+        self.env = env
+        if model:
+            self.policy_value_net = PolicyValueNet(self.env.get_board_size(), self.env.get_board_size(), model)
+        else:
+            self.policy_value_net = PolicyValueNet(self.env.get_board_size(), self.env.get_board_size())
+        self.mcts = MonteCarlo(env, None, None, self.policy_value_net.policy_value_fn)
+        self.game_batch_num = 1000
+        self.check_freq = 50
+        self.batch_size = 512  # mini-batch size for training
+
+        self.learn_rate = 5e-3
+        self.lr_multiplier = 1.0  # adaptively adjust the learning rate based on KL
+        self.temp = 1.0  # the temperature param
+        self.n_playout = 400  # num of simulations for each move
+        self.c_puct = 5
+        self.buffer_size = 10000
+        self.data_buffer = deque(maxlen=self.buffer_size)
+        self.play_batch_size = 1
+        self.epochs = 5  # num of train_steps for each update
+        self.kl_targ = 0.025
+        self.best_win_ratio = 0.0
+        # num of simulations used for the pure mcts, which is used as the opponent to evaluate the trained policy
+
+    def get_equi_data(self, play_data):
+        """
+        augment the data set by rotation and flipping
+        play_data: [(state, mcts_prob, winner_z), ..., ...]"""
+        extend_data = []
+        for state, mcts_porb, winner in play_data:
+            for i in [1, 2, 3, 4]:
+                # rotate counterclockwise
+                equi_state = np.array([np.rot90(s, i) for s in state])
+                equi_mcts_prob = np.rot90(np.flipud(mcts_porb.reshape(self.env.get_board_size(),
+                                                                      self.env.get_board_size())), i)
+                extend_data.append((equi_state, np.flipud(equi_mcts_prob).flatten(), winner))
+                # flip horizontally
+                equi_state = np.array([np.fliplr(s) for s in equi_state])
+                equi_mcts_prob = np.fliplr(equi_mcts_prob)
+                extend_data.append((equi_state, np.flipud(equi_mcts_prob).flatten(), winner))
+        return extend_data
+
+    def policy_update(self):
+        print('Start update')
+        """update the policy-value net"""
+        mini_batch = random.sample(self.data_buffer, self.batch_size)
+        state_batch = [data[0] for data in mini_batch]
+        mcts_probs_batch = [data[1] for data in mini_batch]
+        winner_batch = [data[2] for data in mini_batch]
+        old_probs, old_v = self.policy_value_net.policy_value(state_batch)
+        for i in range(self.epochs):
+            loss, entropy = self.policy_value_net.train_step(state_batch, mcts_probs_batch, winner_batch,
+                                                             self.learn_rate * self.lr_multiplier)
+            new_probs, new_v = self.policy_value_net.policy_value(state_batch)
+            kl = np.mean(np.sum(old_probs * (np.log(old_probs + 1e-10) - np.log(new_probs + 1e-10)), axis=1))
+            if kl > self.kl_targ * 4:  # early stopping if D_KL diverges badly
+                break
+        # adaptively adjust the learning rate
+        if kl > self.kl_targ * 2 and self.lr_multiplier > 0.1:
+            self.lr_multiplier /= 1.5
+        elif kl < self.kl_targ / 2 and self.lr_multiplier < 10:
+            self.lr_multiplier *= 1.5
+
+        explained_var_old = 1 - np.var(np.array(winner_batch) - old_v.flatten()) / np.var(np.array(winner_batch))
+        explained_var_new = 1 - np.var(np.array(winner_batch) - new_v.flatten()) / np.var(np.array(winner_batch))
+        print(
+            "kl:{:.5f},lr_multiplier:{:.3f},loss:{},entropy:{},explained_var_old:{:.3f},explained_var_new:{:.3f}".format(
+                kl, self.lr_multiplier, loss, entropy, explained_var_old, explained_var_new))
+        return loss, entropy
+
+    def learn_from_new_nn(self):
+        for i in range(self.game_batch_num):
+            winner, play_data = self.mcts.self_play()
+            self.data_buffer.extend(play_data)
+            # augment the data
+            play_data = self.get_equi_data(play_data)
+
+            if len(self.data_buffer) > self.batch_size:
+                loss, entropy = self.policy_update()
+                print('loss', loss)
+                print('entropy', entropy)
+
+            if (i + 1) % self.check_freq == 0:
+                print("current self-play batch: {}".format(i + 1))
+                #     win_ratio = self.policy_evaluate()
+                net_params = self.policy_value_net.get_policy_param()  # get model params
+                pickle.dump(net_params, open('current_policy.model', 'wb'), 0)  # save model param to file
+            #     if win_ratio > self.best_win_ratio:
+            #         print("New best policy!!!!!!!!")
+            #         self.best_win_ratio = win_ratio
+            #         pickle.dump(net_params, open('best_policy.model', 'wb'),
+            #                     pickle.HIGHEST_PROTOCOL)  # update the best_policy
+            #         if self.best_win_ratio == 1.0 and self.pure_mcts_playout_num < 5000:
+            #             self.pure_mcts_playout_num += 1000
+            #             self.best_win_ratio = 0.0
+
+
 if __name__ == '__main__':
-    import AlphaGomoku.games.tic_tac_toe_x as tt
+    logger.set_level(logger.INFO)
 
-    from gym import spaces
+    board_size = 5
+    winning_length = 4
+    env = TicTacToeXGameSpec(board_size, winning_length)
+    policy_param = pickle.load(open('current_policy.model', 'rb'), encoding='bytes')  # To support python3
+    runner = Runner2(env, policy_param)
+    runner.learn_from_new_nn()
 
-    observation_space = spaces.Box(low=-1, high=1, shape=(3, 3, 1))
-    nh, nw, nc = observation_space.shape
-    print(nh, nw, nc)
-
-    mb_obs = [tt.new_board(3), tt.new_board(3), tt.new_board(3), tt.new_board(3), tt.new_board(3)]
-    mb_obs = np.asarray(mb_obs, dtype=np.float32).swapaxes(1, 0).reshape(
-        (1 * 3, nh, nw, nc * 5))
-    print(mb_obs)

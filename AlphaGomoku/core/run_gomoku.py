@@ -11,14 +11,14 @@ from AlphaGomoku.core.policies import CnnPolicy, CnnPolicy2
 from AlphaGomoku.games.tic_tac_toe_x import TicTacToeXGameSpec
 
 if __name__ == '__main__':
-    #logger.set_level(logger.CURRENT)
+    logger.set_level(logger.INFO)
 
-    board_size = 5
-    winning_length = 4
+    board_size = 3
+    winning_length = 3
     env = TicTacToeXGameSpec(board_size, winning_length)
     learn(CnnPolicy, CnnPolicy2, env, nsteps=board_size * board_size, log_interval=5,
-          nstack=1, seed=0, total_timesteps=1000000000, load_model=False, model_path='../models/gomoku_p1.cpkt',
-          model_path2='../models/gomoku_p2.cpkt')
-    play(CnnPolicy, CnnPolicy2, env, nsteps=board_size * board_size, nstack=1, seed=0, model_path='../models/gomoku_p1.cpkt',
-         model_path2='../models/gomoku_p2.cpkt')
+          nstack=1, seed=0, total_timesteps=100, load_model=False,
+          model_path='../models/gomoku_p1.cpkt', model_path2='../models/gomoku_p2.cpkt')
+    # play(CnnPolicy, CnnPolicy2, env, nsteps=board_size * board_size, nstack=1, seed=0,
+    #      model_path='../models/gomoku_p1.cpkt', model_path2='../models/gomoku_p2.cpkt')
     env.close()

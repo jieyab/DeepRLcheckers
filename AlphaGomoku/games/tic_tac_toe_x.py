@@ -191,6 +191,42 @@ def get_available_moves_with_prob(state, prob):
     return dict_available_moves
 
 
+def get_available_moves_with_prob_2(state, prob):
+    dict_available_moves = {}
+    for action, p in prob:
+        dict_available_moves[(int(action % len(state[0])), int(action / len(state[0])))] = p
+    return dict_available_moves
+
+
+def get_available_actions(state):
+    actions = []
+    for x, y in itertools.product(range(len(state[0])), range(len(state[0]))):
+        if state[0, x, y, 0] == 0:
+            actions.append(len(state[0]) * y + x)
+    actions.sort()
+    return actions
+
+
+def current_state(state, action, side):
+    """return the board state from the perspective of the current player
+    shape: 4*width*height"""
+
+    square_state = np.zeros((4, len(state[0]), len(state[0])))
+
+    for x, y in itertools.product(range(len(state[0])), range(len(state[0]))):
+        if state[0, x, y, 0] == side:
+            square_state[0][x, y] = 1.0
+        elif state[0, x, y, 0] == -side:
+            square_state[1][x, y] = 1.0
+
+    if action >= 0:
+        square_state[2][int(action % len(state[0])), int(action / len(state[0]))] = 1
+    if side == -1:
+        square_state[3][:, :] = 1.0
+
+    return square_state
+
+
 def evaluate(board_state, winning_length):
     """An evaluation function for this game, gives an estimate of how good the board position is for the plus player.
     There is no specific range for the values returned, they just need to be relative to each other.
@@ -400,7 +436,7 @@ class TicTacToeXGameSpec(BaseGameSpec):
                 1 + self.games_wonAI + self.games_wonRandom + self.games_finish_in_draw + self.illegal_games))),
                     ' illegal moves')
         logger.warn('- ' * 40)
-        #save stat
+        # save stat
         AIresult = (100 * self.games_wonAI) / (
                 1 + self.games_wonAI + self.games_wonRandom + self.games_finish_in_draw + self.illegal_games)
         randomPlayerResult = (100 * self.games_wonRandom) / (
