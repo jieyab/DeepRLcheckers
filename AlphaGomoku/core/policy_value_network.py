@@ -78,13 +78,11 @@ class PolicyValueNetNumpy:
         self.board_height = board_height
         self.params = net_params
 
-    def policy_value_fn(self, board):
+    def policy_value_fn(self, current_state, legal_positions):
         """
         input: board
         output: a list of (action, probability) tuples for each available action and the score of the board state
         """
-        legal_positions = board.availables
-        current_state = board.current_state()
 
         X = current_state.reshape(-1, 4, self.board_width, self.board_height)
         # first 3 conv layers with ReLu nonlinearity

@@ -12,7 +12,7 @@ import tensorflow as tf
 
 from AlphaGomoku.common import logger
 from AlphaGomoku.common.misc_util import set_global_seeds
-from AlphaGomoku.core.policy_value_network import PolicyValueNet
+from AlphaGomoku.core.policy_value_network import PolicyValueNet, PolicyValueNetNumpy
 from AlphaGomoku.core.tree_search import MonteCarlo
 from AlphaGomoku.core.utils import Scheduler, find_trainable_variables
 from AlphaGomoku.core.utils import cat_entropy, mse
@@ -436,6 +436,13 @@ def play(policy, policy2, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e
     env.close()
 
 
+def play_with_new_nn(env):
+    policy_param = pickle.load(open('current_policy.model', 'rb'), encoding='bytes')  # To support python3
+    best_policy = PolicyValueNetNumpy(env.get_board_size(), env.get_board_size(), policy_param)
+    mcts = MonteCarlo(env, None, None, best_policy.policy_value_fn)
+    mcts.start_play()
+
+
 def ai_play_with_ai(policy, policy2, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_coef=0.5,
                     ent_coef=0.01, max_grad_norm=0.5, lr=7e-4, lrschedule='linear', epsilon=1e-5, alpha=0.99,
                     gamma=0.99, log_interval=20, model_path='', model_path2=''):
@@ -476,14 +483,11 @@ class Runner2(object):
         self.game_batch_num = 1000
         self.check_freq = 20
         self.batch_size = 512  # mini-batch size for training
-
+        self.data_buffer = deque(maxlen=self.buffer_size)
         self.learn_rate = 5e-3
         self.lr_multiplier = 1.0  # adaptively adjust the learning rate based on KL
-        self.temp = 1.0  # the temperature param
-        self.n_playout = 400  # num of simulations for each move
-        self.c_puct = 5
         self.buffer_size = 10000
-        self.data_buffer = deque(maxlen=self.buffer_size)
+
         self.play_batch_size = 1
         self.epochs = 5  # num of train_steps for each update
         self.kl_targ = 0.025
