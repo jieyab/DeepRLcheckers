@@ -537,22 +537,35 @@ class Runner2(object):
         return loss, entropy
 
     def learn_from_new_nn(self):
+        list_loss = []
+        list_entropy = []
+
         for i in range(self.game_batch_num):
             winner, play_data = self.mcts.self_play()
-            self.data_buffer.extend(play_data)
             # augment the data
             play_data = self.get_equi_data(play_data)
+            self.data_buffer.extend(play_data)
 
             if len(self.data_buffer) > self.batch_size:
                 loss, entropy = self.policy_update()
-                print('loss', loss)
-                print('entropy', entropy)
+                list_loss.append(loss)
+                list_entropy.append(entropy)
 
             if (i + 1) % self.check_freq == 0:
                 print("current self-play batch: {}".format(i + 1))
                 #     win_ratio = self.policy_evaluate()
                 net_params = self.policy_value_net.get_policy_param()  # get model params
                 pickle.dump(net_params, open('current_policy.model', 'wb'), 0)  # save model param to file
+
+                policy_loss_file = "../statistics/policy_loss.csv"
+                with open(policy_loss_file, 'w') as f:
+                    writer = csv.writer(f, lineterminator='\n', delimiter=',')
+                    writer.writerow(float(val) for val in list_loss)
+
+                value_loss_file = "../statistics/value_loss.csv"
+                with open(value_loss_file, 'w') as f:
+                    writer = csv.writer(f, lineterminator='\n', delimiter=',')
+                    writer.writerow(float(val) for val in list_entropy)
             #     if win_ratio > self.best_win_ratio:
             #         print("New best policy!!!!!!!!")
             #         self.best_win_ratio = win_ratio
