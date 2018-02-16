@@ -37,6 +37,8 @@ class Model(object):
 
         step_model = policy(sess, ob_space, ac_space, nenvs, 1, nstack, reuse=False)
         train_model = policy(sess, ob_space, ac_space, nenvs, nsteps, nstack, reuse=True)
+        #q = tf.one_hot(A, 9, dtype=tf.float32)
+        #neglogpac = -tf.reduce_sum(tf.log(tf.nn.softmax(train_model.pi) + 1e-10) * q, [1])
 
         neglogpac = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi, labels=A)
         pg_loss = tf.reduce_mean(ADV * neglogpac)
@@ -117,13 +119,43 @@ class Runner(object):
         self.obs = np.roll(self.obs, shift=-1, axis=3)
         self.obs[:, :, :, -1] = obs[:, :, :, 0]
 
+    def get_legal_moves(self, probs):
+        illegal_moves = self.env.get_illegal_moves()
+        for i in illegal_moves:
+            probs[i] = 0
+        return probs
+
+    def softmax_b(self, x):
+        illegal_moves = self.env.get_illegal_moves()
+        x = np.clip(x, 1e-20, 80.0)
+        x = np.delete(x, illegal_moves)
+        # print(x)
+        x = np.exp(x) / np.sum(np.exp(x), axis=0)
+        for i in range(len(illegal_moves)):
+            x = np.insert(x, illegal_moves[i], 0)
+        return x
+
+    def softmax(self, x):
+        return np.exp(x) / np.sum(np.exp(x), axis=0)
+
 
     def run(self):
         mb_obs, mb_rewards, mb_actions, mb_values, mb_dones = [],[],[],[],[]
         mb_states = self.states
+        self.obs = self.obs * 0
         for n in range(self.nsteps):
             counter = n
-            actions, values, states = self.model.step(self.obs, self.states, self.dones)
+            actions, values, states,probs = self.model.step(self.obs, self.states, self.dones)
+            probs = np.squeeze(probs)
+            a_dist = self.softmax(probs)
+            # print(probs)
+            # probs = self.get_legal_moves(probs)
+            # print(a_dist)
+            # print('+-+-+-+-+-+-+-+-+-+-+-+-+-')
+            # a_dist = probs / np.sum(probs)
+            a = np.random.choice(a_dist, p=a_dist)
+            actions = [np.argmax(a_dist == a)]
+
             mb_obs.append(np.copy(self.obs))
             mb_actions.append(actions)
             mb_values.append(values)
@@ -171,6 +203,31 @@ class Runner(object):
         mb_masks = mb_masks.flatten()
         return mb_obs, mb_states, mb_rewards, mb_masks, mb_actions, mb_values
 
+
+    def test(self):
+        self.obs = self.obs * 0
+        for n in range(self.nsteps):
+            actions, values, states, probs = self.model.step(self.obs, self.states, self.dones)
+
+            probs = np.squeeze(probs)
+            a_dist = self.softmax(probs)
+            #print(probs)
+            #print(a_dist)
+            a_dist = self.get_legal_moves(a_dist)
+            #print(a_dist)
+            # print('+-+-+-+-+-+-+-+-+-+-+-+-+-')
+            #a_dist = probs / np.sum(probs)
+            #a = np.random.choice(a_dist, p=a_dist)
+            actions = [np.argmax(a_dist)]
+            #print(actions, self.env.get_illegal_moves())
+            obs, rewards, dones, _, illegal = self.env.step(actions)
+
+            #print(illegal, )
+            self.obs = obs
+
+            if dones[0] or illegal:
+                break
+
 def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_coef=0.5, ent_coef=0.01, max_grad_norm=0.5, lr=7e-4, lrschedule='linear', epsilon=1e-5, alpha=0.99, gamma=0.99, log_interval=1000, load_model=False,model_path=''):
     tf.reset_default_graph()
     set_global_seeds(seed)
@@ -179,6 +236,8 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
     ob_space = env.observation_space
     ac_space = env.action_space
     num_procs = len(env.remotes) # HACK
+    statistics_path = ('./stadistics')
+    summary_writer = tf.summary.FileWriter(statistics_path)
 
     model = Model(policy=policy, ob_space=ob_space, ac_space=ac_space, nenvs=nenvs, nsteps=nsteps, nstack=nstack, num_procs=num_procs, ent_coef=ent_coef, vf_coef=vf_coef,
         max_grad_norm=max_grad_norm, lr=lr, alpha=alpha, epsilon=epsilon, total_timesteps=total_timesteps, lrschedule=lrschedule)
@@ -189,35 +248,54 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
 
     nbatch = nenvs*nsteps
     tstart = time.time()
-    for update in range(1, total_timesteps//nbatch+1):
-        obs, states, rewards, masks, actions, values = runner.run()
-        #print('obs',obs,'actions',actions)
-        #print('values',values,'rewards',rewards,)
+    for update in range(0, total_timesteps//nbatch+1):
+        if update % 1000 == 0:
+            print('update', update)
+            env.print_stadistics()
+        if (update % 10000 < 1000)  and (update % 10000 > 0):
+            #print("Aqui")
+            runner.test()
+            games_wonAI, games_wonRandom, games_finish_in_draw, illegal_games = env.get_stadistics()
+            if ((update % 10000) == 999):
+                summary = tf.Summary()
+                summary.value.add(tag='Stadistics/games_wonAI', simple_value=float(games_wonAI))
+                summary.value.add(tag='Stadistics/games_wonRandom', simple_value=float(games_wonRandom))
+                summary.value.add(tag='Stadistics/games_finish_in_draw', simple_value=float(games_finish_in_draw))
+                summary.value.add(tag='Stadistics/illegal_games', simple_value=float(illegal_games))
+                summary_writer.add_summary(summary, update)
 
-        dim_total = nsteps
-        dim = obs.shape[0]
-        dim_necesaria = dim_total - dim
-        obs = np.concatenate((obs,np.zeros((dim_necesaria,3,3,1))),axis=0)
-        rewards = np.concatenate((rewards,np.zeros((dim_necesaria))),axis=0)
-        masks = np.concatenate((masks,np.full((dim_necesaria), True, dtype=bool)),axis=0)
-        actions = np.concatenate((actions,np.zeros(dim_necesaria)),axis=0)
-        values = np.concatenate((values,np.zeros(dim_necesaria)),axis=0)
+                summary_writer.flush()
+        else:
+            obs, states, rewards, masks, actions, values = runner.run()
+            # print('obs',obs,'actions',actions)
+            # print('values',values,'rewards',rewards,)
 
-        policy_loss, value_loss, policy_entropy = model.train(obs, states, rewards, masks, actions, values)
+            dim_total = nsteps
+            dim = obs.shape[0]
+            dim_necesaria = dim_total - dim
+            obs = np.concatenate((obs, np.zeros((dim_necesaria, env.dimensions(), env.dimensions(), 1))), axis=0)
+            rewards = np.concatenate((rewards, np.zeros((dim_necesaria))), axis=0)
+            masks = np.concatenate((masks, np.full((dim_necesaria), True, dtype=bool)), axis=0)
+            actions = np.concatenate((actions, np.zeros(dim_necesaria)), axis=0)
+            values = np.concatenate((values, np.zeros(dim_necesaria)), axis=0)
 
-        nseconds = time.time()-tstart
-        fps = int((update*nbatch)/nseconds)
-        if update % log_interval == 0 or update == 1:
-            ev = explained_variance(values, rewards)
-            logger.record_tabular("nupdates", update)
-            logger.record_tabular("total_timesteps", update*nbatch)
-            logger.record_tabular("fps", fps)
-            logger.record_tabular("policy_entropy", float(policy_entropy))
-            logger.record_tabular("value_loss", float(value_loss))
-            logger.record_tabular("explained_variance", float(ev))
-            logger.dump_tabular()
-        if (update % (log_interval*10)) == 0 :
-            model.save('./models/tic_tac_toe.cpkt')
+            policy_loss, value_loss, policy_entropy = model.train(obs, states, rewards, masks, actions, values)
+
+            nseconds = time.time() - tstart
+            fps = int((update * nbatch) / nseconds)
+            if update % log_interval == 0 or update == 1:
+                ev = explained_variance(values, rewards)
+                logger.record_tabular("nupdates", update)
+                logger.record_tabular("total_timesteps", update * nbatch)
+                logger.record_tabular("fps", fps)
+                logger.record_tabular("policy_entropy", float(policy_entropy))
+                logger.record_tabular("policy_loss", float(policy_loss))
+
+                logger.record_tabular("value_loss", float(value_loss))
+                logger.record_tabular("explained_variance", float(ev))
+                logger.dump_tabular()
+            if (update % (log_interval * 10)) == 0:
+                model.save('./models/tic_tac_toe.cpkt')
 
     env.close()
 

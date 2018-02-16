@@ -1,9 +1,14 @@
 import numpy as np
 import tensorflow as tf
-from baselines.a2c.utils import conv, fc, conv_to_fc, batch_to_seq, seq_to_batch, lstm, lnlstm, sample, sample_without_exploration, check_shape
+from baselines.a2c.utils import conv, fc, conv_to_fc, batch_to_seq, seq_to_batch, lstm, lnlstm, sample, sample_without_exploration, normalized_columns_initializer
 from baselines.common.distributions import make_pdtype
 import baselines.common.tf_util as U
 import gym
+
+
+
+import tensorflow.contrib.slim as slim
+
 
 class LnLstmPolicy(object):
     def __init__(self, sess, ob_space, ac_space, nenv, nsteps, nstack, nlstm=256, reuse=False):
@@ -88,7 +93,7 @@ class LstmPolicy(object):
         self.step = step
         self.value = value
 
-class CnnPolicy(object):
+class CnnPolicy_A(object):
 
     def __init__(self, sess, ob_space, ac_space, nenv, nsteps, nstack, reuse=False):
         nbatch = nenv*nsteps
@@ -132,10 +137,10 @@ class CnnPolicy(object):
         nact = 9 #ac_space.n
         X = tf.placeholder(tf.float32, ob_shape) #obs
         with tf.variable_scope("model", reuse=reuse):
-            h = conv(tf.cast(X, tf.float32), 'c1', nf=32, rf=2, stride=1, init_scale=np.sqrt(2))
-            h2 = conv(h, 'c2', nf=64, rf=2, stride=1, init_scale=np.sqrt(2))
+            h = conv(tf.cast(X, tf.float32), 'c1', nf=32, rf=3, stride=1, init_scale=np.sqrt(2))
+            #h2 = conv(h, 'c2', nf=64, rf=2, stride=1, init_scale=np.sqrt(2))
             #h3 = conv(h2, 'c3', nf=64, rf=3, stride=1, init_scale=np.sqrt(2))
-            h3 = conv_to_fc(h2)
+            h3 = conv_to_fc(h)
             h4 = fc(h3, 'fc1', nh=512, init_scale=np.sqrt(2))
             pi = fc(h4, 'pi', nact, act=lambda x:x)
             vf = fc(h4, 'v', 1, act=lambda x:x)
@@ -162,3 +167,52 @@ class CnnPolicy(object):
         self.vf = vf
         self.step = step
         self.value = value
+
+
+class CnnPolicy_slim(object):
+
+    def __init__(self, sess, ob_space, ac_space, nenv, nsteps, nstack, reuse=False):
+        nbatch = nenv*nsteps
+        nh, nw, nc = ob_space.shape
+        ob_shape = (nbatch, nh, nw, nc*nstack)
+        nact = ac_space
+        X = tf.placeholder(tf.float32, ob_shape) #obs
+        with tf.variable_scope("model", reuse=reuse):
+            conv1 = slim.conv2d(activation_fn=tf.nn.elu,
+                                     inputs=X, num_outputs=32,
+                                     kernel_size=[3, 3], stride=[1, 1], padding='VALID')
+            #self.conv2 = slim.conv2d(activation_fn=tf.nn.elu,
+            #                         inputs=self.conv1, num_outputs=32,
+            #                         kernel_size=[4, 4], stride=[2, 2], padding='VALID')
+
+            hidden = slim.fully_connected(slim.flatten(conv1), 512, activation_fn=tf.nn.relu)
+            pi = slim.fully_connected(hidden, nact,
+                                      activation_fn = None,
+                                      weights_initializer = normalized_columns_initializer(0.01),
+                                      biases_initializer = None)
+            vf = slim.fully_connected(hidden, 1,
+                                         activation_fn=None,
+                                         weights_initializer=normalized_columns_initializer(1.0),
+                                         biases_initializer=None)
+
+        v0 = vf[:, 0]
+        p0 = [pi]
+        a0 = sample_without_exploration(pi)
+        self.initial_state = [] #not stateful
+        def step(ob, *_args, **_kwargs):
+            a, v, pi = sess.run([a0, v0, p0], {X:ob})
+            return a, v, [], pi
+
+        def value(ob, *_args, **_kwargs):
+            return sess.run(v0, {X:ob})
+
+        def get_pi(ob, *_args, **_kwargs):
+            a, v, pi = sess.run([a0, v0, p0], {X:ob})
+            return a, v, [], pi
+
+        self.X = X
+        self.pi = pi
+        self.vf = vf
+        self.step = step
+        self.value = value
+

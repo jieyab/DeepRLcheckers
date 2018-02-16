@@ -278,19 +278,21 @@ class TicTacToeXGameSpec(BaseGameSpec):
         self.available_moves = available_moves
         self.apply_move = apply_move
 
-        #rewards
-        self.reward_winning = 1
-        self.reward_lossing = -0.8
+        # rewards
+        self.reward_winning = 0.5
+        self.reward_lossing = -0.5
         self.reward_illegal_move = -1
-        self.reward_draw = -0.3
+        self.reward_draw = 0.1
 
         ##Our code
         self.observation_space = spaces.Box(low=-1, high=1, shape=(self._board_size, self._board_size, 1))
-        self.action_space = (self._board_size*self._board_size)
+        self.action_space = (self._board_size * self._board_size)
         self.board_state = _new_board(board_size)
-        self.num_envs = 1 #Change for more enviroments
-        self.remotes =[1]
+        self.num_envs = 1  # Change for more enviroments
+        self.remotes = [1]
         self.games_wonAI = 0
+        self.games_won_A = 0
+        self.games_won_B = 0
         self.games_wonRandom = 0
         self.flag = False
         self.illegal_games = 0
@@ -311,20 +313,20 @@ class TicTacToeXGameSpec(BaseGameSpec):
         return evaluate(board_state, self._winning_length)
 
     def reset(self):
-        #print('Enviroment has been reset')
+        # print('Enviroment has been reset')
         self.board_state = _new_board(self._board_size)
         return self.board_state
 
     def random_move(self):
-        return random.randint(0,self._board_size*self._board_size)
+        return random.randint(0, self._board_size * self._board_size)
 
     def close(self):
         pass
 
     def illegal_move(self, move):
         move_x, move_y = move
-        if(self.board_state[0, move_x, move_y, 0] != 0):
-            #print(self.board_state[0, :, :, 0], move)
+        if (self.board_state[0, move_x, move_y, 0] != 0):
+            # print(self.board_state[0, :, :, 0], move)
             return True
 
         return False
@@ -332,8 +334,8 @@ class TicTacToeXGameSpec(BaseGameSpec):
     def available_moves_1(self):
         list_avaible_moves = []
         for x, y in itertools.product(range(self._board_size), range(self._board_size)):
-            if(self.board_state[0,y,x,0] == 0):
-                list_avaible_moves.append(x*self._board_size+y)
+            if (self.board_state[0, y, x, 0] == 0):
+                list_avaible_moves.append(x * self._board_size + y)
         return list_avaible_moves
 
     def opponent_move(self):
@@ -343,27 +345,31 @@ class TicTacToeXGameSpec(BaseGameSpec):
         action_random = [int(action_random % self._board_size), int(action_random / self._board_size)]
         self.board_state = apply_move(self.board_state, action_random, -1)
 
-
     def print_stadistics(self):
         self.print = False
-        print('AI wins in', (100 * self.games_wonAI) / (
-        1 + self.games_wonAI + self.games_wonRandom + self.games_finish_in_draw + self.illegal_games))
-        print('Random player wins ', (100 * self.games_wonRandom) / (
-        1 + self.games_wonAI + self.games_wonRandom + self.games_finish_in_draw + self.illegal_games))
-        print('Draws', (100 * self.games_finish_in_draw) / (
-        1 + self.games_wonAI + self.games_wonRandom + self.games_finish_in_draw + self.illegal_games))
-        print('AI made', (100 * self.illegal_games / (
-        1 + self.games_wonAI + self.games_wonRandom + self.games_finish_in_draw + self.illegal_games)), 'illegal moves')
+        total = 1 + self.games_wonAI + self.games_wonRandom + self.games_finish_in_draw + self.illegal_games
+        print('AI wins in', (100 * self.games_wonAI) / total)
+        print('Random player wins ', (100 * self.games_wonRandom) / total)
+        print('Draws', (100 * self.games_finish_in_draw) / total)
+        print('AI made', (100 * self.illegal_games / total), 'illegal moves')
         self.games_wonAI = 0
         self.games_wonRandom = 0
+        self.games_finish_in_draw = 0
         self.illegal_games = 0
 
+    def get_stadistics(self):
+        total = 1 + self.games_wonAI + self.games_wonRandom + self.games_finish_in_draw + self.illegal_games
 
-    def step(self,actions_nn):
+        return self.games_wonAI/total, self.games_wonRandom/total, self.games_finish_in_draw/total, self.illegal_games/total
+
+    def step(self, actions_nn):
+        # print(actions_nn)
+        actions_nn = actions_nn[0]
         reward = np.zeros(1)
-        actions_nn = [int(actions_nn%self._board_size),int(actions_nn/self._board_size)] #Convert move from number to X,Y
+        actions_nn = [int(actions_nn % self._board_size),
+                      int(actions_nn / self._board_size)]  # Convert move from number to X,Y
 
-        if (self.illegal_move(actions_nn)):                                             #Check if the move was illegal
+        if (self.illegal_move(actions_nn)):  # Check if the move was illegal
             self.illegal_games += 1
             self.board_state = self.new_board()
             self.print = True
@@ -371,84 +377,105 @@ class TicTacToeXGameSpec(BaseGameSpec):
             winner = np.ones((1), dtype=bool)
             return (self.board_state, reward, winner, 0, True)
 
-        self.board_state = apply_move(self.board_state, actions_nn, 1)                 #Apply move to the board
-        winner = has_winner(self.board_state, self._winning_length)                    #Check for winner
+        self.board_state = apply_move(self.board_state, actions_nn, 1)  # Apply move to the board
+        winner = has_winner(self.board_state, self._winning_length)  # Check for winner
 
         if winner[0] == True:
             reward[0] = self.reward_winning
-            self.games_wonAI  += 1
-            #print('AI won')
+            self.games_wonAI += 1
+            # print('AI won')
 
-
-        else:                                                                         #If there is no winner check for draw and make random move
+        else:  # If there is no winner check for draw and make random move
             if (len(self.available_moves_1()) == 0):
-                #print('Draw')
+
+                # print('Draw')
                 self.games_finish_in_draw += 1
-                reward[0] = -0.3
+                reward[0] = self.reward_draw
 
             else:
                 self.opponent_move()
                 winner = has_winner(self.board_state, self._winning_length)
                 if winner[0] == True:
-                    reward[0] = -0.8
+                    reward[0] = self.reward_lossing
                     self.games_wonRandom += 1
-                    #print('random player won')
-                    #print(self.board_state[0, :, :, 0])
+
+                if (len(self.available_moves_1()) == 0):
+                    # print('Draw')
+                    self.games_finish_in_draw += 1
+                    reward[0] = self.reward_draw
 
         if reward[0] != 0:
-            #print(self.board_state[0, :, :, 0])
+            # print(self.board_state[0, :, :, 0])
             self.board_state = _new_board(self._board_size)
             self.print = True
 
-        if (((self.games_wonAI+self.games_wonRandom+self.games_finish_in_draw+self.illegal_games)%1000 == 0) and self.print):
-            self.print_stadistics()
+        #if (((self.games_wonAI + self.games_wonRandom + self.games_finish_in_draw + self.illegal_games) % 1000 == 0) and self.print):
+            #self.print_stadistics()
 
         return self.board_state, reward, winner, 0, False
 
+    def print_stadistics_vs(self):
+        self.print = False
+        total = 1 + self.games_won_A + self.games_won_B + self.games_finish_in_draw + self.illegal_games
 
-    def step_vs(self,actions_nn, side):
+        print('A wins in', (100 * self.games_won_A) / total)
+        print('B wins in', (100 * self.games_won_B) / total)
+        print('Draws', (100 * self.games_finish_in_draw) / total)
+        print('AI made', (100 * self.illegal_games / total), 'illegal moves')
+        print(' - - - - - - - - - - - -')
+        self.games_won_A = 0
+        self.games_won_B = 0
+        self.games_finish_in_draw = 0
+        self.illegal_games = 0
+
+    def step_vs(self, actions_nn, side):
+        if side == 'A':
+            token = 1
+
+        if side == 'B':
+            token = -1
+        actions_nn = actions_nn[0]
         reward = np.zeros(1)
-        actions_nn = [int(actions_nn%self._board_size),int(actions_nn/self._board_size)] #Convert move from number to X,Y
+        actions_nn = [int(actions_nn % self._board_size),
+                      int(actions_nn / self._board_size)]  # Convert move from number to X,Y
 
-        if (self.illegal_move(actions_nn)):                                             #Check if the move was illegal
-            self.illegal_games += 1
-            self.board_state = self.new_board()
-            self.print = True
-            reward[0] = self.reward_illegal_move
-            winner = np.ones((1), dtype=bool)
-            return (self.board_state, reward, winner, 0, True)
+        self.board_state = apply_move(self.board_state, actions_nn, token)  # Apply move to the board
+        winner = has_winner(self.board_state, self._winning_length)  # Check for winner
 
-        self.board_state = apply_move(self.board_state, actions_nn, side)                 #Apply move to the board
-        winner = has_winner(self.board_state, self._winning_length)                    #Check for winner
-
-        if winner[0] == True:
+        if winner[0]:
             reward[0] = self.reward_winning
-            self.games_wonAI  += 1
-            #print('AI won')
+            if side == 'A':
+                self.games_won_A += 1
+            if side == 'B':
+                self.games_won_B += 1
+                # print(self.board_state[0, :, :, 0], actions_nn,'win')
 
-
-        else:                                                                         #If there is no winner check for draw and make random move
-            if (len(self.available_moves_1()) == 0):
-                #print('Draw')
+        else:  # If there is no winner check for draw and make random move
+            if len(self.available_moves_1()) == 0:
+                # print(self.board_state[0, :, :, 0], actions_nn,'draw')
                 self.games_finish_in_draw += 1
-                reward[0] = -0.3
-
+                reward[0] = self.reward_draw
 
         if reward[0] != 0:
-            #print(self.board_state[0, :, :, 0])
+            # print(self.board_state[0, :, :, 0])
             self.board_state = _new_board(self._board_size)
             self.print = True
 
-        if (((self.games_wonAI+self.games_wonRandom+self.games_finish_in_draw+self.illegal_games)%1000 == 0) and self.print):
-            self.print_stadistics()
+        if (((self.games_won_A + self.games_won_B + self.games_finish_in_draw + self.illegal_games) % 1000 == 0)
+            and self.print):
+            self.print_stadistics_vs()
 
         return self.board_state, reward, winner, 0, False
 
+    def get_illegal_moves(self):
+        illegal_moves = list(range(self._board_size * self._board_size))
+        legal_moves = self.available_moves_1()
+        for i in legal_moves:
+            illegal_moves.remove(i)
+        return illegal_moves
 
-
-
-
-
+    def dimensions(self):
+        return self._board_size
 
 
 if __name__ == '__main__':
