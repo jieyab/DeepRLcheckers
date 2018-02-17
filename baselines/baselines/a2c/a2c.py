@@ -38,7 +38,7 @@ class Model(object):
         step_model = policy(sess, ob_space, ac_space, nenvs, 1, nstack, reuse=False)
         train_model = policy(sess, ob_space, ac_space, nenvs, nsteps, nstack, reuse=True)
         q = tf.one_hot(A, 9, dtype=tf.float32)
-        neglogpac = -tf.reduce_sum(tf.log((train_model.pi) + 1e-10) * q, [1])
+        neglogpac = -tf.reduce_sum(tf.log(tf.nn.softmax(train_model.pi) + 1e-10) * q, [1])
 
         #neglogpac = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi, labels=A)
         pg_loss = tf.reduce_mean(ADV * neglogpac)
