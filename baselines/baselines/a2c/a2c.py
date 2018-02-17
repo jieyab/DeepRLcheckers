@@ -19,7 +19,7 @@ from baselines.a2c.utils import cat_entropy, mse
 class Model(object):
 
     def __init__(self, policy, ob_space, ac_space, nenvs, nsteps, nstack, num_procs,
-            ent_coef=0.1, vf_coef=0.5, max_grad_norm=0.5, lr=7e-4,
+            ent_coef=0.1, vf_coef=0.5, max_grad_norm=0.05, lr=7e-4,
             alpha=0.99, epsilon=1e-5, total_timesteps=int(80e6), lrschedule='linear'):
         config = tf.ConfigProto(allow_soft_placement=True,
                                 intra_op_parallelism_threads=num_procs,
@@ -37,10 +37,10 @@ class Model(object):
 
         step_model = policy(sess, ob_space, ac_space, nenvs, 1, nstack, reuse=False)
         train_model = policy(sess, ob_space, ac_space, nenvs, nsteps, nstack, reuse=True)
-        #q = tf.one_hot(A, 9, dtype=tf.float32)
-        #neglogpac = -tf.reduce_sum(tf.log(tf.nn.softmax(train_model.pi) + 1e-10) * q, [1])
+        q = tf.one_hot(A, 9, dtype=tf.float32)
+        neglogpac = -tf.reduce_sum(tf.log((train_model.pi) + 1e-10) * q, [1])
 
-        neglogpac = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi, labels=A)
+        #neglogpac = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi, labels=A)
         pg_loss = tf.reduce_mean(ADV * neglogpac)
         vf_loss = tf.reduce_mean(mse(tf.squeeze(train_model.vf), R))
         entropy = tf.reduce_mean(cat_entropy(train_model.pi))
@@ -136,6 +136,7 @@ class Runner(object):
         return x
 
     def softmax(self, x):
+        x = np.clip(x, 1e-20, 80.0)
         return np.exp(x) / np.sum(np.exp(x), axis=0)
 
 
@@ -147,7 +148,7 @@ class Runner(object):
             counter = n
             actions, values, states,probs = self.model.step(self.obs, [], [])
             probs = np.squeeze(probs)
-            a_dist = self.softmax(probs)
+            a_dist = self.softmax_b(probs)
             # print(probs)
             # probs = self.get_legal_moves(probs)
             # print(a_dist)

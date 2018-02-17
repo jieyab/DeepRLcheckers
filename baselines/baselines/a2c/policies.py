@@ -179,21 +179,25 @@ class CnnPolicy_slim_TTT(object):
         X = tf.placeholder(tf.float32, ob_shape) #obs
         with tf.variable_scope("model", reuse=reuse):
             conv1 = slim.conv2d(activation_fn=tf.nn.elu,
-                                     inputs=X, num_outputs=32,
-                                     kernel_size=[3, 3], stride=[1, 1], padding='VALID')
+                                inputs=X, num_outputs=32,
+                                kernel_size=[3, 3], stride=[1, 1], padding='VALID',
+                                weights_regularizer=slim.l2_regularizer(0.00001))
             #self.conv2 = slim.conv2d(activation_fn=tf.nn.elu,
             #                         inputs=self.conv1, num_outputs=32,
             #                         kernel_size=[4, 4], stride=[2, 2], padding='VALID')
 
-            hidden = slim.fully_connected(slim.flatten(conv1), 512, activation_fn=tf.nn.relu)
+            hidden = slim.fully_connected(slim.flatten(conv1), 512, activation_fn=tf.nn.relu, weights_regularizer=slim.l2_regularizer(0.001)
+)
             pi = slim.fully_connected(hidden, nact,
                                       activation_fn = None,
                                       weights_initializer = normalized_columns_initializer(0.01),
-                                      biases_initializer = None)
+                                      biases_initializer = None,
+                                      weights_regularizer=slim.l2_regularizer(0.00001))
             vf = slim.fully_connected(hidden, 1,
                                          activation_fn=None,
                                          weights_initializer=normalized_columns_initializer(1.0),
-                                         biases_initializer=None)
+                                         biases_initializer=None,
+                                         weights_regularizer=slim.l2_regularizer(0.00001))
 
         v0 = vf[:, 0]
         p0 = [pi]
