@@ -26,7 +26,7 @@ class Model(object):
                                 inter_op_parallelism_threads=num_procs)
         config.gpu_options.allow_growth = True
         sess = tf.Session(config=config)
-        nact = 9 #ac_space.n
+        nact = ac_space
         nbatch = nenvs*nsteps
 
         A = tf.placeholder(tf.int32, [nbatch])
@@ -238,6 +238,8 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
     num_procs = len(env.remotes) # HACK
     statistics_path = ('./stadistics')
     summary_writer = tf.summary.FileWriter(statistics_path)
+    run_test = 5000
+    policy_entropy = 10
 
     model = Model(policy=policy, ob_space=ob_space, ac_space=ac_space, nenvs=nenvs, nsteps=nsteps, nstack=nstack, num_procs=num_procs, ent_coef=ent_coef, vf_coef=vf_coef,
         max_grad_norm=max_grad_norm, lr=lr, alpha=alpha, epsilon=epsilon, total_timesteps=total_timesteps, lrschedule=lrschedule)
@@ -252,16 +254,16 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
         if update % 1000 == 0:
             print('update', update)
             env.print_stadistics()
-        if (update % 10000 < 1000)  and (update % 10000 > 0):
+        if (update % run_test < 1000)  and (update % run_test > 0):
             #print("Aqui")
             runner.test()
             games_wonAI, games_wonRandom, games_finish_in_draw, illegal_games = env.get_stadistics()
-            if ((update % 10000) == 999):
+            if ((update % run_test) == 999):
                 summary = tf.Summary()
-                summary.value.add(tag='Stadistics/games_wonAI', simple_value=float(games_wonAI))
-                summary.value.add(tag='Stadistics/games_wonRandom', simple_value=float(games_wonRandom))
-                summary.value.add(tag='Stadistics/games_finish_in_draw', simple_value=float(games_finish_in_draw))
-                summary.value.add(tag='Stadistics/illegal_games', simple_value=float(illegal_games))
+                summary.value.add(tag='test/games_wonAI', simple_value=float(games_wonAI))
+                summary.value.add(tag='test/games_wonRandom', simple_value=float(games_wonRandom))
+                summary.value.add(tag='test/games_finish_in_draw', simple_value=float(games_finish_in_draw))
+                summary.value.add(tag='test/illegal_games', simple_value=float(illegal_games))
                 summary_writer.add_summary(summary, update)
 
                 summary_writer.flush()
@@ -290,10 +292,26 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
                 logger.record_tabular("fps", fps)
                 logger.record_tabular("policy_entropy", float(policy_entropy))
                 logger.record_tabular("policy_loss", float(policy_loss))
-
                 logger.record_tabular("value_loss", float(value_loss))
                 logger.record_tabular("explained_variance", float(ev))
+
                 logger.dump_tabular()
+
+                games_wonAI, games_wonRandom, games_finish_in_draw, illegal_games = env.get_stadistics()
+
+                summary = tf.Summary()
+                summary.value.add(tag='train/policy_entropy', simple_value=float(policy_entropy))
+                summary.value.add(tag='train/policy_loss', simple_value=float(policy_loss))
+                summary.value.add(tag='train/explained_variance', simple_value=float(ev))
+                summary.value.add(tag='train/value_loss', simple_value=float(value_loss))
+                summary.value.add(tag='train/games_wonAI', simple_value=float(games_wonAI))
+                summary.value.add(tag='train/games_wonRandom', simple_value=float(games_wonRandom))
+                summary.value.add(tag='train/games_finish_in_draw', simple_value=float(games_finish_in_draw))
+                summary.value.add(tag='train/illegal_games', simple_value=float(illegal_games))
+                summary_writer.add_summary(summary, update)
+
+                summary_writer.flush()
+
             if (update % (log_interval * 10)) == 0:
                 model.save('./models/tic_tac_toe.cpkt')
 
