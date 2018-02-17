@@ -38,7 +38,7 @@ class Model(object):
         step_model = policy(sess, ob_space, ac_space, nenvs, 1, nstack, reuse=False)
         train_model = policy(sess, ob_space, ac_space, nenvs, nsteps, nstack, reuse=True)
         q = tf.one_hot(A, 9, dtype=tf.float32)
-        neglogpac = -tf.reduce_sum(tf.log(tf.nn.softmax(train_model.pi) + 1e-10) * q, [1])
+        neglogpac = -tf.reduce_sum(tf.log((train_model.pi) + 1e-10) * q, [1])
 
         #neglogpac = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi, labels=A)
         pg_loss = tf.reduce_mean(ADV * neglogpac)
@@ -295,7 +295,6 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
                 logger.record_tabular("policy_loss", float(policy_loss))
                 logger.record_tabular("value_loss", float(value_loss))
                 logger.record_tabular("explained_variance", float(ev))
-
                 logger.dump_tabular()
 
                 games_wonAI, games_wonRandom, games_finish_in_draw, illegal_games = env.get_stadistics()
@@ -310,11 +309,11 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
                 summary.value.add(tag='train/games_finish_in_draw', simple_value=float(games_finish_in_draw))
                 summary.value.add(tag='train/illegal_games', simple_value=float(illegal_games))
                 summary_writer.add_summary(summary, update)
-
                 summary_writer.flush()
 
             if (update % (log_interval * 10)) == 0:
-                model.save('./models/tic_tac_toe.cpkt')
+                #model.save('./models/tic_tac_toe.cpkt')
+                pass
 
     env.close()
 
