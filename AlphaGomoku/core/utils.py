@@ -115,6 +115,7 @@ def im2col_indices(x, field_height, field_width, padding=1, stride=1):
 def conv_forward(X, W, b, stride=1, padding=1):
     n_filters, d_filter, h_filter, w_filter = W.shape
     W = W[:, :, ::-1, ::-1]  # theano conv2d flips the filters (rotate 180 degree) first while doing the calculation
+    # W = W[:, :, :, ::-1]  # theano conv2d flips the filters (rotate 180 degree) first while doing the calculation
     n_x, d_x, h_x, w_x = X.shape
     h_out = (h_x - h_filter + 2 * padding) / stride + 1
     w_out = (w_x - w_filter + 2 * padding) / stride + 1

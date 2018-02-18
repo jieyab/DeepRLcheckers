@@ -1,10 +1,10 @@
+import _pickle as pickle
 import copy
 import csv
 import random
 import time
 from collections import deque
 from statistics import mean
-import _pickle as pickle
 
 import joblib
 import numpy as np
@@ -348,6 +348,7 @@ def learn(policy, policy2, env, seed, nsteps=5, nstack=4, total_timesteps=int(80
     policy_loss_saver_2, value_loss_saver_2, policy_entropy_saver_2 = [], [], []
     for update in range(1, total_timesteps // nbatch + 1):
         policy_loss, value_loss, policy_entropy, policy_loss_2, value_loss_2, policy_entropy_2 = runner.run()
+        break
 
         policy_loss_saver.append(str(policy_loss))
         value_loss_saver.append(value_loss)
@@ -443,6 +444,77 @@ def play_with_new_nn(env):
     mcts.start_play()
 
 
+def self_play_with_different_playout_2(policy, policy2, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6),
+                                       vf_coef=0.5, ent_coef=0.01,
+                                       max_grad_norm=0.5, lr=7e-4, lrschedule='linear', epsilon=1e-5, alpha=0.99,
+                                       gamma=0.99, log_interval=20,
+                                       model_path='', model_path2='', playout1=0, playout2=0):
+    tf.reset_default_graph()
+    set_global_seeds(seed)
+
+    nenvs = env.num_envs
+    ob_space = env.observation_space
+    ac_space = env.action_space
+    num_procs = len(env.remotes)  # HACK
+
+    model = Model(policy=policy, ob_space=ob_space, ac_space=ac_space, nenvs=nenvs, nsteps=nsteps, nstack=nstack,
+                  num_procs=num_procs, ent_coef=ent_coef, vf_coef=vf_coef, size=env.get_board_size(),
+                  max_grad_norm=max_grad_norm, lr=lr, alpha=alpha, epsilon=epsilon, total_timesteps=total_timesteps,
+                  lrschedule=lrschedule)
+
+    model2 = Model(policy=policy2, ob_space=ob_space, ac_space=ac_space, nenvs=nenvs, nsteps=nsteps, nstack=nstack,
+                   num_procs=num_procs, ent_coef=ent_coef, vf_coef=vf_coef, size=env.get_board_size(),
+                   max_grad_norm=max_grad_norm, lr=lr, alpha=alpha, epsilon=epsilon, total_timesteps=total_timesteps,
+                   lrschedule=lrschedule)
+
+    model.load(model_path)
+    model2.load(model_path2)
+    runner = Runner(env, model, model2, nsteps=nsteps, nstack=nstack, gamma=gamma)
+
+    first_win = 0
+    second_win = 0
+    side = 1
+
+    for i in range(10):
+        winner = runner.mcts.start_play_with_ai(playout1, playout2)
+        if winner == side:
+            first_win += 1
+        elif winner == -side:
+            second_win += 1
+
+        tmp = playout1
+        playout1 = playout2
+        playout2 = tmp
+        side = -side
+
+    print(float(first_win) / float(10) * 100.)
+    print(float(10 - first_win - second_win) / float(10) * 100.)
+    env.close()
+
+
+def self_play_with_different_playout(env, playout1, playout2, games=10):
+    policy_param = pickle.load(open('current_policy.model', 'rb'), encoding='bytes')  # To support python3
+    best_policy = PolicyValueNetNumpy(env.get_board_size(), env.get_board_size(), policy_param)
+    mcts = MonteCarlo(env, None, None, best_policy.policy_value_fn)
+    first_win = 0
+    second_win = 0
+    side = 1
+
+    for i in range(games):
+        winner = mcts.start_play_with_ai(playout1, playout2)
+        if winner == side:
+            first_win += 1
+        elif winner == -side:
+            second_win += 1
+
+        tmp = playout1
+        playout1 = playout2
+        playout2 = tmp
+        side = -side
+
+    print(float(first_win) / float(first_win + second_win) * 100.)
+
+
 def ai_play_with_ai(policy, policy2, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_coef=0.5,
                     ent_coef=0.01, max_grad_norm=0.5, lr=7e-4, lrschedule='linear', epsilon=1e-5, alpha=0.99,
                     gamma=0.99, log_interval=20, model_path='', model_path2=''):
@@ -480,19 +552,16 @@ class Runner2(object):
         else:
             self.policy_value_net = PolicyValueNet(self.env.get_board_size(), self.env.get_board_size())
         self.mcts = MonteCarlo(env, None, None, self.policy_value_net.policy_value_fn)
-        self.game_batch_num = 1000
+        self.game_batch_num = 5000
         self.check_freq = 20
         self.batch_size = 512  # mini-batch size for training
+        self.buffer_size = 10000
         self.data_buffer = deque(maxlen=self.buffer_size)
         self.learn_rate = 5e-3
         self.lr_multiplier = 1.0  # adaptively adjust the learning rate based on KL
-        self.buffer_size = 10000
-
         self.play_batch_size = 1
         self.epochs = 5  # num of train_steps for each update
         self.kl_targ = 0.025
-        self.best_win_ratio = 0.0
-        # num of simulations used for the pure mcts, which is used as the opponent to evaluate the trained policy
 
     def get_equi_data(self, play_data):
         """
@@ -570,14 +639,6 @@ class Runner2(object):
                 with open(value_loss_file, 'w') as f:
                     writer = csv.writer(f, lineterminator='\n', delimiter=',')
                     writer.writerow(float(val) for val in list_entropy)
-            #     if win_ratio > self.best_win_ratio:
-            #         print("New best policy!!!!!!!!")
-            #         self.best_win_ratio = win_ratio
-            #         pickle.dump(net_params, open('best_policy.model', 'wb'),
-            #                     pickle.HIGHEST_PROTOCOL)  # update the best_policy
-            #         if self.best_win_ratio == 1.0 and self.pure_mcts_playout_num < 5000:
-            #             self.pure_mcts_playout_num += 1000
-            #             self.best_win_ratio = 0.0
 
 
 if __name__ == '__main__':
@@ -589,4 +650,3 @@ if __name__ == '__main__':
     policy_param = pickle.load(open('current_policy.model', 'rb'), encoding='bytes')  # To support python3
     runner = Runner2(env, policy_param)
     runner.learn_from_new_nn()
-

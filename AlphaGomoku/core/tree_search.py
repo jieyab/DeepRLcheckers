@@ -184,7 +184,11 @@ class MonteCarlo:
             if self.digraph.node[node]['side'] == 1:
                 actions, value, _, prob = self.model2.step(np.copy(self.digraph.node[node]['state']), [], done)
             else:
-                actions, value, _, prob = self.model.step(np.copy(self.digraph.node[node]['state']), [], done)
+                rs = np.copy(self.digraph.node[node]['state'])
+                np.place(rs, rs == 1, 2)
+                np.place(rs, rs == -1, 1)
+                np.place(rs, rs == 2, -1)
+                actions, value, _, prob = self.model.step(rs, [], done)
             dict_prob = tt.get_available_moves_with_prob(self.digraph.node[node]['state'], prob)
         logger.debug('dict_prob ', str(dict_prob))
 
@@ -319,7 +323,7 @@ class MonteCarlo:
                 if is_shown:
                     print("no moves left, game ended a draw")
                 return 0.
-            if player_turn > 0:
+            if player_turn < 0:
                 node, _ = self.get_action(board_state, False)
                 self.last_node = node
                 board_state = np.copy(self.digraph.node[self.last_node]['state'])
@@ -332,6 +336,7 @@ class MonteCarlo:
                         break
                     except Exception:
                         print('Illegal move, please try again!')
+                self.play_out(0)
                 board_state = tt.apply_move(board_state, move, player_turn)
 
             winner = tt.has_winner(board_state, self.winning_length)
@@ -342,7 +347,7 @@ class MonteCarlo:
                 return winner
             player_turn = -player_turn
 
-    def start_play_with_ai(self, is_shown=True):
+    def start_play_with_ai(self, playout1, playout2, is_shown=True):
         """
         start a game between two players
         """
@@ -353,15 +358,18 @@ class MonteCarlo:
         while True:
             _available_moves = list(tt.available_moves(board_state))
             if is_shown:
-                self.show_state(board_state)
+                # self.show_state(board_state)
+                pass
             if len(_available_moves) == 0:
                 # draw
                 if is_shown:
                     print("no moves left, game ended a draw")
-                return 0.
+                return 0
             if player_turn > 0:
+                self._n_play_out = playout1
                 node, _ = self.get_action(board_state, False)
             else:
+                self._n_play_out = playout2
                 node, _ = self.get_action(board_state, False)
 
             self.last_node = node
@@ -370,9 +378,8 @@ class MonteCarlo:
             winner = tt.has_winner(board_state, self.winning_length)
             if winner != 0:
                 if is_shown:
-                    self.show_state(board_state)
                     print("we have a winner, side: %s" % player_turn)
-                return winner
+                return player_turn
             player_turn = -player_turn
 
     def get_state_recursive(self, node):
@@ -442,7 +449,7 @@ class MonteCarlo:
         self.games_wonAI2 = 0
         self.games_finish_in_draw = 0
 
-    def visualization(self, limited_size=300):
+    def visualization(self, limited_size=1000):
         """
         Draw dot graph of Monte Carlo Tree
         :return:

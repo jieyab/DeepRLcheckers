@@ -135,7 +135,6 @@ class CnnPolicy2(object):
         nbatch = nenv * nsteps
         nh, nw, nc = ob_space.shape
         ob_shape = (nbatch, nh, nw, nc * nstack)
-        print(ob_shape)
         nact = size * size  # ac_space.n
         X = tf.placeholder(tf.float32, ob_shape)  # obs
         with tf.variable_scope("model", reuse=reuse):
