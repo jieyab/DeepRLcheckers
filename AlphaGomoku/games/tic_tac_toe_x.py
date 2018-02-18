@@ -282,7 +282,7 @@ class TicTacToeXGameSpec(BaseGameSpec):
         self.reward_winning = 0.5
         self.reward_lossing = -0.5
         self.reward_illegal_move = -1
-        self.reward_draw = 0.3
+        self.reward_draw = 0.1
 
         ##Our code
         self.observation_space = spaces.Box(low=-1, high=1, shape=(self._board_size, self._board_size, 1))
@@ -298,6 +298,7 @@ class TicTacToeXGameSpec(BaseGameSpec):
         self.illegal_games = 0
         self.print = True
         self.games_finish_in_draw = 0
+
 
     def new_board(self):
         self.board_state = _new_board(self._board_size)
@@ -360,7 +361,12 @@ class TicTacToeXGameSpec(BaseGameSpec):
     def get_stadistics(self):
         total = 1 + self.games_wonAI + self.games_wonRandom + self.games_finish_in_draw + self.illegal_games
 
-        return self.games_wonAI/total, self.games_wonRandom/total, self.games_finish_in_draw/total, self.illegal_games/total
+        won_AI = 100*self.games_wonAI/total
+        won_random = 100*self.games_wonRandom/total
+        draws = self.games_finish_in_draw/total
+        illegal_games = self.illegal_games/total
+
+        return won_AI, won_random, draws, illegal_games
 
     def step(self, actions_nn):
         # print(actions_nn)
@@ -422,11 +428,24 @@ class TicTacToeXGameSpec(BaseGameSpec):
         print('B wins in', (100 * self.games_won_B) / total)
         print('Draws', (100 * self.games_finish_in_draw) / total)
         print('AI made', (100 * self.illegal_games / total), 'illegal moves')
+        print('total', total)
         print(' - - - - - - - - - - - -')
+
+
+    def get_stadistics_vs(self):
+        total = 1 + self.games_won_A + self.games_won_B + self.games_finish_in_draw + self.illegal_games
+
+        won_A = 100 * self.games_won_A / total
+        won_B = 100 * self.games_won_B / total
+        draws = 100 *self.games_finish_in_draw / total
+        illegal_games =  100 * self.illegal_games / total
+
         self.games_won_A = 0
         self.games_won_B = 0
         self.games_finish_in_draw = 0
         self.illegal_games = 0
+
+        return won_A, won_B, draws, illegal_games
 
     def step_vs(self, actions_nn, side):
         if side == 'A':

@@ -258,8 +258,9 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
         if (update % run_test < 1000)  and (update % run_test > 0):
             #print("Aqui")
             runner.test()
-            games_wonAI, games_wonRandom, games_finish_in_draw, illegal_games = env.get_stadistics()
+
             if ((update % run_test) == 999):
+                games_wonAI, games_wonRandom, games_finish_in_draw, illegal_games = env.get_stadistics()
                 summary = tf.Summary()
                 summary.value.add(tag='test/games_wonAI', simple_value=float(games_wonAI))
                 summary.value.add(tag='test/games_wonRandom', simple_value=float(games_wonRandom))

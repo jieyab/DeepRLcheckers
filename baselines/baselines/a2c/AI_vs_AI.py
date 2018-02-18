@@ -37,16 +37,16 @@ class Model(object):
 
         step_model = policy(sess, ob_space, ac_space, nenvs, 1, nstack, reuse=False)
         train_model = policy(sess, ob_space, ac_space, nenvs, nsteps, nstack, reuse=True)
-        #q = tf.one_hot(A, 9, dtype=tf.float32)
-        #neglogpac = -tf.reduce_sum(tf.log(tf.nn.softmax(train_model.pi) + 1e-10) * q, [1])
+        q = tf.one_hot(A, 9, dtype=tf.float32)
+        neglogpac = -tf.reduce_sum(tf.log((train_model.pi) + 1e-10) * q, [1])
 
-        neglogpac = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi, labels=A)
+        #neglogpac = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi, labels=A)
         pg_loss = tf.reduce_mean(ADV * neglogpac)
         vf_loss = tf.reduce_mean(mse(tf.squeeze(train_model.vf), R))
         entropy = tf.reduce_mean(cat_entropy(train_model.pi))
         loss = pg_loss - entropy*ent_coef + vf_loss * vf_coef
 
-        params = find_trainable_variables("model")
+        params = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, 'model')
         grads = tf.gradients(loss, params)
         if max_grad_norm is not None:
             grads, grad_norm = tf.clip_by_global_norm(grads, max_grad_norm)
@@ -113,16 +113,16 @@ class Model_2(object):
 
         step_model = policy(sess, ob_space, ac_space, nenvs, 1, nstack, reuse=False)
         train_model = policy(sess, ob_space, ac_space, nenvs, nsteps, nstack, reuse=True)
-        #q = tf.one_hot(A, 9, dtype=tf.float32)
-        #neglogpac = -tf.reduce_sum(tf.log(tf.nn.softmax(train_model.pi) + 1e-10) * q, [1])
+        q = tf.one_hot(A, 9, dtype=tf.float32)
+        neglogpac = -tf.reduce_sum(tf.log((train_model.pi) + 1e-10) * q, [1])
 
-        neglogpac = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi, labels=A)
+        #neglogpac = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi, labels=A)
         pg_loss = tf.reduce_mean(ADV * neglogpac)
         vf_loss = tf.reduce_mean(mse(tf.squeeze(train_model.vf), R))
         entropy = tf.reduce_mean(cat_entropy(train_model.pi))
         loss = pg_loss - entropy*ent_coef + vf_loss * vf_coef
 
-        params = find_trainable_variables("model_2")
+        params = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, 'model_2')
         grads = tf.gradients(loss, params)
         if max_grad_norm is not None:
             grads, grad_norm = tf.clip_by_global_norm(grads, max_grad_norm)
@@ -243,14 +243,9 @@ class Runner(object):
             counter = n
             self.obs = self.obs_B
             obs_play = self.obs_B *-1
-            actions, values, states,probs = self.model.step(obs_play, self.states, self.dones)
-            probs = np.squeeze(probs)
-            a_dist = self.softmax_b(probs)
-            # print(probs)
-            # probs = self.get_legal_moves(probs)
-            # print(a_dist)
-            # print('+-+-+-+-+-+-+-+-+-+-+-+-+-')
-            # a_dist = probs / np.sum(probs)
+            _, values, states,probs = self.model.step(obs_play, [], [])
+            a_dist = np.squeeze(np.divide(probs,0.1))
+            a_dist = self.softmax_b(a_dist)
             a = np.random.choice(a_dist, p=a_dist)
             actions = [np.argmax(a_dist == a)]
 
@@ -258,8 +253,9 @@ class Runner(object):
             mb_actions.append(actions)
             mb_values.append(values)
             mb_dones.append(self.dones)
-            self.obs, rewards, dones, _, illegal = self.env.step_vs(actions, 'A')
-            obs_play = self.obs * -1
+            obs, rewards, dones, _, illegal = self.env.step_vs(actions, 'A')
+
+            obs_play = obs * -1
 
             self.states = states
             self.dones = dones
@@ -268,23 +264,17 @@ class Runner(object):
                     self.obs[n] = self.obs[n]*0
             self.update_obs(self.obs)
 
-            actions_B, values_B, states_B, probs = self.model.step(obs_play, [], [])
-            probs = np.squeeze(probs)
-            a_dist = self.softmax_b(probs)
-            # print(probs)
-            # probs = self.get_legal_moves(probs)
-            # print(a_dist)
-            # print('+-+-+-+-+-+-+-+-+-+-+-+-+-')
-            # a_dist = probs / np.sum(probs)
+            _, values_B, states_B, probs = self.model.step(obs_play, [], [])
+            a_dist = np.squeeze(probs)
+            a_dist = self.softmax_b(np.divide(probs,0.1))
             a = np.random.choice(a_dist, p=a_dist)
-            actions = [np.argmax(a_dist == a)]
+            actions_B = [np.argmax(a_dist == a)]
 
             mb_obs_B.append(np.copy(self.obs))
             mb_actions_B.append(actions_B)
             mb_values_B.append(values_B)
             mb_dones_B.append(self.dones_B)
             self.obs_B, rewards_B, dones_B, _, illegal_B = self.env.step_vs(actions_B, 'B')
-            obs_play = self.obs * -1
 
             self.obs_B = self.obs_B * -1
             self.states = states
@@ -292,6 +282,7 @@ class Runner(object):
 
             self.states_B = states_B
             self.dones_B = dones_B
+
             for n, done in enumerate(dones_B):
                 if done:
                     self.obs_B[n] = self.obs_B[n] * 0
@@ -300,21 +291,25 @@ class Runner(object):
             if rewards == self.reward_winning:
                 # mb_dones_B = mb_dones
                 rewards_B = [self.reward_lossing]
+
             elif rewards_B == self.reward_winning:
                 # mb_dones = mb_dones_B
                 rewards = [self.reward_lossing]
+
             elif (rewards_B == self.reward_draw):
                 # mb_dones = mb_dones_B
                 rewards_B = [self.reward_draw]
                 rewards = [self.reward_draw]
                 self.dones = np.ones((1, 1), dtype=bool)
                 self.dones_B = np.ones((1, 1), dtype=bool)
+
             elif (rewards == self.reward_draw):
                 # mb_dones_B = mb_dones
                 rewards_B = [self.reward_draw]
                 rewards = [self.reward_draw]
                 self.dones = np.ones((1, 1), dtype=bool)
                 self.dones_B = np.ones((1, 1), dtype=bool)
+
             mb_rewards.append(rewards)
             mb_rewards_B.append(rewards_B)
 
@@ -388,39 +383,28 @@ class Runner(object):
         for n in range(self.nsteps):
             self.obs = self.obs_B
             obs_play = self.obs_B * -1
-            actions, values, states, probs = self.model.step(self.obs, self.states, self.dones)
+            actions, values, states, probs = self.model.step(obs_play, self.states, self.dones)
 
-            probs = np.squeeze(probs)
-            a_dist = self.softmax(probs)
-            #print(probs)
-            #print(a_dist)
+            a_dist = np.squeeze(probs)
             a_dist = self.get_legal_moves(a_dist)
-            #print(a_dist)
-            # print('+-+-+-+-+-+-+-+-+-+-+-+-+-')
-            #a_dist = probs / np.sum(probs)
-            #a = np.random.choice(a_dist, p=a_dist)
             actions = [np.argmax(a_dist)]
-            #print(actions, self.env.get_illegal_moves())
-            obs, rewards, dones, _, illegal = self.env.step(actions)
 
-            #print(illegal, )
-            obs_play = self.obs * -1
+            obs, rewards, dones, _, illegal = self.env.step_vs(actions, 'A')
+
+            if rewards != 0:
+                break
+
+            obs_play = obs * -1
 
             actions_B, values_B, states_B, probs = self.model.step(obs_play, [], [])
-            probs = np.squeeze(probs)
-            a_dist = self.softmax_b(probs)
-            # print(probs)
-            # probs = self.get_legal_moves(probs)
-            # print(a_dist)
-            # print('+-+-+-+-+-+-+-+-+-+-+-+-+-')
-            # a_dist = probs / np.sum(probs)
-            a = np.random.choice(a_dist, p=a_dist)
-            actions = [np.argmax(a_dist == a)]
+
+            a_dist = np.squeeze(probs)
+            a_dist = self.get_legal_moves(a_dist)
+            actions_B = [np.argmax(a_dist)]
 
             self.obs_B, rewards_B, dones_B, _, illegal_B = self.env.step_vs(actions_B, 'B')
-            obs_play = self.obs * -1
 
-            if rewards != 0 or rewards_B != 0:
+            if rewards_B != 0:
                 break
 
 def learn(policy, policy_2,env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_coef=0.5, ent_coef=0.01, max_grad_norm=0.5, lr=7e-4, lrschedule='linear', epsilon=1e-5, alpha=0.99, gamma=0.99, log_interval=1000, load_model=False,model_path=''):
@@ -454,18 +438,20 @@ def learn(policy, policy_2,env, seed, nsteps=5, nstack=4, total_timesteps=int(80
     nbatch = nenvs*nsteps
     tstart = time.time()
     for update in range(0, total_timesteps//nbatch+1):
-        if update % 1000 == 0:
+        if update % 1000 == 0 and update != 0:
             print('update', update)
-            env.print_stadistics_vs()
+            #env.print_stadistics_vs()
 
         if (update % run_test < 1000)  and (update % run_test > 0):
             #print("Aqui")
             runner.test()
-            games_wonAI, games_wonRandom, games_finish_in_draw, illegal_games = env.get_stadistics()
+
             if ((update % run_test) == 999):
+                env.print_stadistics_vs()
+                games_A, games_B, games_finish_in_draw, illegal_games = env.get_stadistics_vs()
                 summary = tf.Summary()
-                summary.value.add(tag='test/games_wonAI', simple_value=float(games_wonAI))
-                summary.value.add(tag='test/games_wonRandom', simple_value=float(games_wonRandom))
+                summary.value.add(tag='test/games_A', simple_value=float(games_A))
+                summary.value.add(tag='test/games_B', simple_value=float(games_B))
                 summary.value.add(tag='test/games_finish_in_draw', simple_value=float(games_finish_in_draw))
                 summary.value.add(tag='test/illegal_games', simple_value=float(illegal_games))
                 summary_writer.add_summary(summary, update)
@@ -509,29 +495,44 @@ def learn(policy, policy_2,env, seed, nsteps=5, nstack=4, total_timesteps=int(80
 
             nseconds = time.time() - tstart
             fps = int((update * nbatch) / nseconds)
-            if update % log_interval == 0 or update == 1:
+
+            if update % log_interval == 999 or update == 1:
                 ev = explained_variance(values, rewards)
+                ev_B = explained_variance(values_B, rewards_B)
                 logger.record_tabular("nupdates", update)
                 logger.record_tabular("total_timesteps", update * nbatch)
                 logger.record_tabular("fps", fps)
+
                 logger.record_tabular("policy_entropy", float(policy_entropy))
                 logger.record_tabular("policy_loss", float(policy_loss))
                 logger.record_tabular("value_loss", float(value_loss))
                 logger.record_tabular("explained_variance", float(ev))
 
+                logger.record_tabular("policy_entropy_B", float(policy_entropy_B))
+                logger.record_tabular("policy_loss_B", float(policy_loss_B))
+                logger.record_tabular("value_loss_B", float(value_loss_B))
+                logger.record_tabular("explained_variance_B", float(ev_B))
+
                 logger.dump_tabular()
 
-                games_wonAI, games_wonRandom, games_finish_in_draw, illegal_games = env.get_stadistics()
+                env.print_stadistics_vs()
+                games_A, games_B, games_finish_in_draw, illegal_games = env.get_stadistics_vs()
+
 
                 summary = tf.Summary()
-                summary.value.add(tag='train/policy_entropy', simple_value=float(policy_entropy))
-                summary.value.add(tag='train/policy_loss', simple_value=float(policy_loss))
-                summary.value.add(tag='train/explained_variance', simple_value=float(ev))
-                summary.value.add(tag='train/value_loss', simple_value=float(value_loss))
-                summary.value.add(tag='train/games_wonAI', simple_value=float(games_wonAI))
-                summary.value.add(tag='train/games_wonRandom', simple_value=float(games_wonRandom))
+                summary.value.add(tag='train_A/policy_entropy', simple_value=float(policy_entropy))
+                summary.value.add(tag='train_loss/policy_loss_A', simple_value=float(policy_loss))
+                summary.value.add(tag='train_A/explained_variance', simple_value=float(ev))
+                summary.value.add(tag='train_loss/value_loss_A', simple_value=float(value_loss))
+
+                summary.value.add(tag='train_B/policy_entropy', simple_value=float(policy_entropy_B))
+                summary.value.add(tag='train_loss/policy_loss', simple_value=float(policy_loss_B))
+                summary.value.add(tag='train_B/explained_variance_B', simple_value=float(ev_B))
+                summary.value.add(tag='train_loss/value_loss_B', simple_value=float(value_loss_B))
+
+                summary.value.add(tag='train/wan_A', simple_value=float(games_A))
+                summary.value.add(tag='train/wan_B', simple_value=float(games_B))
                 summary.value.add(tag='train/games_finish_in_draw', simple_value=float(games_finish_in_draw))
-                summary.value.add(tag='train/illegal_games', simple_value=float(illegal_games))
                 summary_writer.add_summary(summary, update)
 
                 summary_writer.flush()

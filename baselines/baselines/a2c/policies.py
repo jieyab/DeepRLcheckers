@@ -238,8 +238,9 @@ class CnnPolicy_slim_TTT_2(object):
             #                         kernel_size=[4, 4], stride=[2, 2], padding='VALID')
 
             hidden = slim.fully_connected(slim.flatten(conv1), 512, activation_fn=tf.nn.relu)
+
             pi = slim.fully_connected(hidden, nact,
-                                      activation_fn = None,
+                                      activation_fn = tf.nn.softmax,
                                       weights_initializer = normalized_columns_initializer(0.01),
                                       biases_initializer = None)
             vf = slim.fully_connected(hidden, 1,
