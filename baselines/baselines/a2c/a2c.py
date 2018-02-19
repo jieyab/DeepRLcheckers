@@ -266,7 +266,7 @@ def train_data_augmentation(obs, states, rewards, masks, actions, values, model)
         policy_entropy.append(pe)
 
 
-        return np.mean(pl), np.mean(vl), np.mean(pe)
+    return np.mean(pl), np.mean(vl), np.mean(pe)
 
 def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_coef=0.5, ent_coef=0.01,
           max_grad_norm=0.5, lr=7e-4, lrschedule='linear', epsilon=1e-5, alpha=0.99, gamma=0.99, log_interval=1000,
