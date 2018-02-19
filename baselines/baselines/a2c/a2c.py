@@ -224,6 +224,50 @@ class Runner(object):
                 break
 
 
+def train_data_augmentation(obs, states, rewards, masks, actions, values, model):
+    policy_loss, value_loss, policy_entropy = [], [], []
+    actions_in_board = np.array([np.zeros((len(obs[0]), len(obs[0]))) for _ in range(len(actions))])
+    for i in range(len(actions)):
+        actions_in_board[i, int(actions[i] % len(obs[0])), int(actions[i] / len(obs[0]))] = 1
+    new_actions = np.array([0 for _ in range(len(actions))])
+    # print(actions_in_board)
+
+    for i in [1, 2, 3, 4]:
+        # rotate counterclockwise
+        rot_obs = np.array([np.rot90(s, i) for s in obs])
+        rot_actions = np.array([np.rot90(s, i) for s in actions_in_board])
+        new_actions.fill(0)
+        for i in range(len(actions)):
+            import itertools
+            for x, y in itertools.product(range(len(obs[0])), range(len(obs[0]))):
+                if rot_actions[i, x, y] == 1:
+                    new_actions[i] = 3 * y + x
+
+        pl, vl, pe = model.train(rot_obs, states, rewards, masks, new_actions,
+                                                              values)
+        policy_loss.append(pl)
+        value_loss.append(vl)
+        policy_entropy.append(pe)
+
+        flip_obs = np.array([np.fliplr(s) for s in rot_obs])
+        flip_actions = np.array([np.fliplr(s) for s in rot_actions])
+        new_actions.fill(0)
+        for i in range(len(actions)):
+            import itertools
+            for x, y in itertools.product(range(len(obs[0])), range(len(obs[0]))):
+                if flip_actions[i, x, y] == 1:
+                    new_actions[i] = 3 * y + x
+
+        pl, vl, pe = model.train(flip_obs, states, rewards, masks, new_actions,
+                                                              values)
+
+        policy_loss.append(pl)
+        value_loss.append(vl)
+        policy_entropy.append(pe)
+
+
+        return np.mean(pl), np.mean(vl), np.mean(pe)
+
 def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_coef=0.5, ent_coef=0.01,
           max_grad_norm=0.5, lr=7e-4, lrschedule='linear', epsilon=1e-5, alpha=0.99, gamma=0.99, log_interval=1000,
           load_model=False, model_path=''):
@@ -273,6 +317,8 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
             # print('obs',obs,'actions',actions)
             # print('values',values,'rewards',rewards,)
 
+
+
             dim_total = nsteps
             dim = obs.shape[0]
             dim_necesaria = dim_total - dim
@@ -282,39 +328,12 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
             actions = np.concatenate((actions, np.zeros(dim_necesaria)), axis=0)
             values = np.concatenate((values, np.zeros(dim_necesaria)), axis=0)
 
+            policy_loss, value_loss, policy_entropy = train_data_augmentation(obs, states, rewards, masks, actions, values, model)
+
+
             # print(obs[1,:,:,0])
             # print(actions)
-            actions_in_board = np.array([np.zeros((len(obs[0]), len(obs[0]))) for _ in range(len(actions))])
-            for i in range(len(actions)):
-                actions_in_board[i, int(actions[i] % len(obs[0])), int(actions[i] / len(obs[0]))] = 1
-            new_actions = np.array([0 for _ in range(len(actions))])
-            # print(actions_in_board)
 
-            for i in [1, 2, 3, 4]:
-                # rotate counterclockwise
-                rot_obs = np.array([np.rot90(s, i) for s in obs])
-                rot_actions = np.array([np.rot90(s, i) for s in actions_in_board])
-                new_actions.fill(0)
-                for i in range(len(actions)):
-                    import itertools
-                    for x, y in itertools.product(range(len(obs[0])), range(len(obs[0]))):
-                        if rot_actions[i, x, y] == 1:
-                            new_actions[i] = 3 * y + x
-
-                policy_loss, value_loss, policy_entropy = model.train(rot_obs, states, rewards, masks, new_actions,
-                                                                      values)
-
-                flip_obs = np.array([np.fliplr(s) for s in rot_obs])
-                flip_actions = np.array([np.fliplr(s) for s in rot_actions])
-                new_actions.fill(0)
-                for i in range(len(actions)):
-                    import itertools
-                    for x, y in itertools.product(range(len(obs[0])), range(len(obs[0]))):
-                        if flip_actions[i, x, y] == 1:
-                            new_actions[i] = 3 * y + x
-
-                policy_loss, value_loss, policy_entropy = model.train(flip_obs, states, rewards, masks, new_actions,
-                                                                      values)
 
             nseconds = time.time() - tstart
             fps = int((update * nbatch) / nseconds)
