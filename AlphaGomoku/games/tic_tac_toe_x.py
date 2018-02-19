@@ -16,7 +16,6 @@ copy of a given state with a given move applied. This can be useful for doing mi
 import itertools
 import random
 
-
 from common.base_game_spec import BaseGameSpec
 from gym import spaces
 import numpy as np
@@ -31,7 +30,7 @@ def _new_board(board_size):
     Returns:
         board_size x board_size numpy array of ints
     """
-    return np.zeros((1,board_size,board_size,1), dtype= np.int)
+    return np.zeros((1, board_size, board_size, 1), dtype=np.int)
 
 
 def apply_move(board_state, move, side):
@@ -46,7 +45,7 @@ def apply_move(board_state, move, side):
         (2d tuple of int): A copy of the board_state with the given move applied for the given side.
     """
     move_x, move_y = move
-    board_state[0,move_x,move_y,0] = side
+    board_state[0, move_x, move_y, 0] = side
 
     return board_state
 
@@ -72,14 +71,14 @@ def _has_winning_line(line, winning_length):
     last_side = 0
     temp = np.array(line)
     # print("length of temp", len(temp))
-    for x in range (len(line)):
+    for x in range(len(line)):
         if temp.item(x) != last_side:
             count = 1
             last_side = temp.item(x)
 
-        elif (last_side != 0 ) :
-                count += 1
-                last_side = temp.item(x)
+        elif (last_side != 0):
+            count += 1
+            last_side = temp.item(x)
 
         if count == winning_length:
             return last_side
@@ -97,39 +96,40 @@ def has_winner(board_state, winning_length):
     Returns:
         int: 1 if player one has won, -1 if player 2 has won, otherwise 0.
     """
-    board_state = board_state[0,:,:,0]
+    board_state = board_state[0, :, :, 0]
     board_width = len(board_state)
     board_height = len(board_state[0])
 
     # check rows
     for x in range(board_width):
-        winner = _has_winning_line(board_state[x,:], winning_length)
+        winner = _has_winning_line(board_state[x, :], winning_length)
         if winner != 0:
-            return np.ones((1),dtype=bool)
+            return np.ones((1), dtype=bool)
     # check columns
     for y in range(board_height):
-        winner =  _has_winning_line(board_state[:,y], winning_length)
+        winner = _has_winning_line(board_state[:, y], winning_length)
         if winner != 0:
             return np.ones((1), dtype=bool)
 
-    #Check diagonals
-    for d in range (0, (board_height - winning_length +1)):
-        winner = _has_winning_line(np.diagonal(board_state,d),winning_length)
+    # Check diagonals
+    for d in range(0, (board_height - winning_length + 1)):
+        winner = _has_winning_line(np.diagonal(board_state, d), winning_length)
         if winner != 0:
-             return np.ones((1), dtype=bool)
-    for d in range (0, (board_height - winning_length +1)):
-        winner = _has_winning_line(np.diagonal(board_state,-d),winning_length)
+            return np.ones((1), dtype=bool)
+    for d in range(0, (board_height - winning_length + 1)):
+        winner = _has_winning_line(np.diagonal(board_state, -d), winning_length)
         if winner != 0:
-             return np.ones((1), dtype=bool)
-    for d in range (0, (board_height - winning_length +1)):
-        winner = _has_winning_line(np.diagonal(np.fliplr(board_state),d),winning_length)
+            return np.ones((1), dtype=bool)
+    for d in range(0, (board_height - winning_length + 1)):
+        winner = _has_winning_line(np.diagonal(np.fliplr(board_state), d), winning_length)
         if winner != 0:
-             return np.ones((1), dtype=bool)
-    for d in range (0, (board_height - winning_length +1)):
-        winner = _has_winning_line(np.diagonal(np.fliplr(board_state),-d),winning_length)
+            return np.ones((1), dtype=bool)
+    for d in range(0, (board_height - winning_length + 1)):
+        winner = _has_winning_line(np.diagonal(np.fliplr(board_state), -d), winning_length)
         if winner != 0:
-             return np.ones((1), dtype=bool)
+            return np.ones((1), dtype=bool)
     return np.zeros((1), dtype=bool)
+
 
 def _evaluate_line(line, winning_length):
     score = 0
@@ -176,19 +176,19 @@ def evaluate(board_state, winning_length):
 
     # check rows
     for x in range(board_width):
-        score += _evaluate_line(board_state[x,:], winning_length)
+        score += _evaluate_line(board_state[x, :], winning_length)
     # check columns
     for y in range(board_height):
-        score += _evaluate_line(board_state[:,y], winning_length)
+        score += _evaluate_line(board_state[:, y], winning_length)
 
-    for d in range (0, (board_height - winning_length +1)):
-        score = _evaluate_line(np.diagonal(board_state,d),winning_length)
-    for d in range (0, (board_height - winning_length +1)):
-        score = _evaluate_line(np.diagonal(board_state,-d),winning_length)
-    for d in range (0, (board_height - winning_length +1)):
-        score = _evaluate_line(np.diagonal(np.fliplr(board_state),d),winning_length)
-    for d in range (0, (board_height - winning_length +1)):
-        score = _evaluate_line(np.diagonal(np.fliplr(board_state),-d),winning_length)
+    for d in range(0, (board_height - winning_length + 1)):
+        score = _evaluate_line(np.diagonal(board_state, d), winning_length)
+    for d in range(0, (board_height - winning_length + 1)):
+        score = _evaluate_line(np.diagonal(board_state, -d), winning_length)
+    for d in range(0, (board_height - winning_length + 1)):
+        score = _evaluate_line(np.diagonal(np.fliplr(board_state), d), winning_length)
+    for d in range(0, (board_height - winning_length + 1)):
+        score = _evaluate_line(np.diagonal(np.fliplr(board_state), -d), winning_length)
     return score
 
 
@@ -256,7 +256,6 @@ def random_player(board_state, _):
     return random.choice(moves)
 
 
-
 class TicTacToeXGameSpec(BaseGameSpec):
     def __init__(self, board_size, winning_length):
         """
@@ -282,7 +281,7 @@ class TicTacToeXGameSpec(BaseGameSpec):
         self.reward_winning = 0.5
         self.reward_lossing = -0.5
         self.reward_illegal_move = -1
-        self.reward_draw = 0.1
+        self.reward_draw = -0.5
 
         ##Our code
         self.observation_space = spaces.Box(low=-1, high=1, shape=(self._board_size, self._board_size, 1))
@@ -298,7 +297,6 @@ class TicTacToeXGameSpec(BaseGameSpec):
         self.illegal_games = 0
         self.print = True
         self.games_finish_in_draw = 0
-
 
     def new_board(self):
         self.board_state = _new_board(self._board_size)
@@ -353,6 +351,7 @@ class TicTacToeXGameSpec(BaseGameSpec):
         print('Random player wins ', (100 * self.games_wonRandom) / total)
         print('Draws', (100 * self.games_finish_in_draw) / total)
         print('AI made', (100 * self.illegal_games / total), 'illegal moves')
+
         self.games_wonAI = 0
         self.games_wonRandom = 0
         self.games_finish_in_draw = 0
@@ -361,10 +360,10 @@ class TicTacToeXGameSpec(BaseGameSpec):
     def get_stadistics(self):
         total = 1 + self.games_wonAI + self.games_wonRandom + self.games_finish_in_draw + self.illegal_games
 
-        won_AI = 100*self.games_wonAI/total
-        won_random = 100*self.games_wonRandom/total
-        draws = self.games_finish_in_draw/total
-        illegal_games = self.illegal_games/total
+        won_AI = 100 * self.games_wonAI / total
+        won_random = 100 * self.games_wonRandom / total
+        draws = self.games_finish_in_draw / total
+        illegal_games = self.illegal_games / total
 
         return won_AI, won_random, draws, illegal_games
 
@@ -415,13 +414,12 @@ class TicTacToeXGameSpec(BaseGameSpec):
             self.board_state = _new_board(self._board_size)
             self.print = True
 
-        #if (((self.games_wonAI + self.games_wonRandom + self.games_finish_in_draw + self.illegal_games) % 1000 == 0) and self.print):
-            #self.print_stadistics()
+            # if (((self.games_wonAI + self.games_wonRandom + self.games_finish_in_draw + self.illegal_games) % 999 == 0) and self.print):
+            # self.print_stadistics()
 
         return self.board_state, reward, winner, 0, False
 
     def print_stadistics_vs(self):
-        self.print = False
         total = 1 + self.games_won_A + self.games_won_B + self.games_finish_in_draw + self.illegal_games
 
         print('A wins in', (100 * self.games_won_A) / total)
@@ -431,19 +429,20 @@ class TicTacToeXGameSpec(BaseGameSpec):
         print('total', total)
         print(' - - - - - - - - - - - -')
 
-
     def get_stadistics_vs(self):
         total = 1 + self.games_won_A + self.games_won_B + self.games_finish_in_draw + self.illegal_games
 
         won_A = 100 * self.games_won_A / total
         won_B = 100 * self.games_won_B / total
-        draws = 100 *self.games_finish_in_draw / total
-        illegal_games =  100 * self.illegal_games / total
+        draws = 100 * self.games_finish_in_draw / total
+        illegal_games = 100 * self.illegal_games / total
+
 
         self.games_won_A = 0
         self.games_won_B = 0
         self.games_finish_in_draw = 0
         self.illegal_games = 0
+
 
         return won_A, won_B, draws, illegal_games
 
@@ -453,13 +452,14 @@ class TicTacToeXGameSpec(BaseGameSpec):
 
         if side == 'B':
             token = -1
+
         actions_nn = actions_nn[0]
         reward = np.zeros(1)
         actions_nn = [int(actions_nn % self._board_size),
-                      int(actions_nn / self._board_size)]  # Convert move from number to X,Y
+                      int(actions_nn / self._board_size)]                   # Convert move from number to X,Y
 
         self.board_state = apply_move(self.board_state, actions_nn, token)  # Apply move to the board
-        winner = has_winner(self.board_state, self._winning_length)  # Check for winner
+        winner = has_winner(self.board_state, self._winning_length)         # Check for winner
 
         if winner[0]:
             reward[0] = self.reward_winning
@@ -467,18 +467,20 @@ class TicTacToeXGameSpec(BaseGameSpec):
                 self.games_won_A += 1
             if side == 'B':
                 self.games_won_B += 1
-                # print(self.board_state[0, :, :, 0], actions_nn,'win')
+                                                                            # print(self.board_state[0, :, :, 0], actions_nn,'win')
 
-        else:  # If there is no winner check for draw and make random move
+        else:                                                               # If there is no winner check for draw and make random move
             if len(self.available_moves_1()) == 0:
                 # print(self.board_state[0, :, :, 0], actions_nn,'draw')
                 self.games_finish_in_draw += 1
                 reward[0] = self.reward_draw
 
+        if ((self.games_won_A + self.games_won_B + self.games_finish_in_draw + self.illegal_games) % 999 == 0):
+            print(self.board_state[0, :, :, 0])
+
         if reward[0] != 0:
             # print(self.board_state[0, :, :, 0])
             self.board_state = _new_board(self._board_size)
-            self.print = True
 
         # if (((self.games_won_A + self.games_won_B + self.games_finish_in_draw + self.illegal_games) % 1000 == 0)
         #     and self.print):
@@ -498,9 +500,6 @@ class TicTacToeXGameSpec(BaseGameSpec):
 
 
 if __name__ == '__main__':
-
-
-    env = TicTacToeXGameSpec(3,3)
+    env = TicTacToeXGameSpec(3, 3)
 
     print(env.step(8))
-

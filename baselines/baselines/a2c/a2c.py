@@ -268,9 +268,14 @@ def train_data_augmentation(obs, states, rewards, masks, actions, values, model)
 
     return np.mean(pl), np.mean(vl), np.mean(pe)
 
+def train_without_data_augmentation(obs, states, rewards, masks, actions, values, model):
+    pl, vl, pe =model.train(obs, states, rewards, masks, actions, values)
+
+    return pl, vl, pe
+
 def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_coef=0.5, ent_coef=0.01,
           max_grad_norm=0.5, lr=7e-4, lrschedule='linear', epsilon=1e-5, alpha=0.99, gamma=0.99, log_interval=1000,
-          load_model=False, model_path=''):
+          load_model=False, model_path='',data_augmentation=True):
     tf.reset_default_graph()
     set_global_seeds(seed)
 
@@ -328,8 +333,10 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
             actions = np.concatenate((actions, np.zeros(dim_necesaria)), axis=0)
             values = np.concatenate((values, np.zeros(dim_necesaria)), axis=0)
 
-            policy_loss, value_loss, policy_entropy = train_data_augmentation(obs, states, rewards, masks, actions, values, model)
-
+            if data_augmentation:
+                policy_loss, value_loss, policy_entropy = train_data_augmentation(obs, states, rewards, masks, actions, values, model)
+            else:
+                policy_loss, value_loss, policy_entropy = train_without_data_augmentation(obs, states, rewards, masks, actions, values, model)
 
             # print(obs[1,:,:,0])
             # print(actions)

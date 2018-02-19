@@ -189,7 +189,7 @@ class CnnPolicy_slim_TTT(object):
             hidden = slim.fully_connected(slim.flatten(conv1), 512, activation_fn=tf.nn.relu, weights_regularizer=slim.l2_regularizer(0.001)
 )
             pi = slim.fully_connected(hidden, nact,
-                                      activation_fn = tf.nn.softmax,
+                                      activation_fn = None,
                                       weights_initializer = normalized_columns_initializer(0.01),
                                       biases_initializer = None,
                                       weights_regularizer=slim.l2_regularizer(0.00001))
@@ -198,6 +198,7 @@ class CnnPolicy_slim_TTT(object):
                                          weights_initializer=normalized_columns_initializer(1.0),
                                          biases_initializer=None,
                                          weights_regularizer=slim.l2_regularizer(0.00001))
+            pi = tf.nn.softmax(pi)
 
         v0 = vf[:, 0]
         p0 = [pi]
@@ -281,10 +282,10 @@ class CnnPolicy_slim(object):
         with tf.variable_scope("model", reuse=reuse):
             conv1 = slim.conv2d(activation_fn=tf.nn.elu,
                                      inputs=X, num_outputs=32,
-                                     kernel_size=[4, 4], stride=[1, 1], padding='VALID')
+                                     kernel_size=[3, 3], stride=[1, 1], padding='VALID')
             conv2 = slim.conv2d(activation_fn=tf.nn.elu,
                                      inputs=conv1, num_outputs=32,
-                                     kernel_size=[4, 4], stride=[1, 1], padding='VALID')
+                                     kernel_size=[2, 2], stride=[1, 1], padding='VALID')
 
             hidden = slim.fully_connected(slim.flatten(conv2), 512, activation_fn=tf.nn.relu)
             pi = slim.fully_connected(hidden, nact,
@@ -328,10 +329,10 @@ class CnnPolicy_slim_2(object):
         with tf.variable_scope("model_2", reuse=reuse):
             conv1 = slim.conv2d(activation_fn=tf.nn.elu,
                                      inputs=X, num_outputs=32,
-                                     kernel_size=[4, 4], stride=[1, 1], padding='VALID')
+                                     kernel_size=[3, 3], stride=[1, 1], padding='VALID')
             conv2 = slim.conv2d(activation_fn=tf.nn.elu,
                                      inputs=conv1, num_outputs=32,
-                                     kernel_size=[4, 4], stride=[1, 1], padding='VALID')
+                                     kernel_size=[2, 2], stride=[1, 1], padding='VALID')
 
             hidden = slim.fully_connected(slim.flatten(conv2), 512, activation_fn=tf.nn.relu)
             pi = slim.fully_connected(hidden, nact,
