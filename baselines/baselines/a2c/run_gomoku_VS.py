@@ -5,11 +5,11 @@ from AlphaGomoku.games.tic_tac_toe_x import TicTacToeXGameSpec
 
 if __name__ == '__main__':
 
-    policy_fn = CnnPolicy_slim
-    policy_fn_2 = CnnPolicy_slim_2
-    size_board= 5
-    winning_length = 4
+    policy_fn = CnnPolicy_slim_TTT
+    policy_fn_2 = CnnPolicy_slim_TTT_2
+    size_board= 3
+    winning_length = 3
     env = TicTacToeXGameSpec(size_board, winning_length)
     learn(policy_fn,policy_fn_2, env, nsteps=size_board*size_board
-          ,nstack=1,  seed= 0,total_timesteps=10000000,load_model=False, model_path='./models/tic_tac_toe.cpkt',data_augmentation=False)
+          ,nstack=1,  seed= 0,total_timesteps=10000000,load_model=False, model_path='./models/tic_tac_toe.cpkt',data_augmentation=True)
     env.close()

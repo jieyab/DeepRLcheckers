@@ -12,7 +12,6 @@ from baselines.common import set_global_seeds, explained_variance
 
 
 class Model(object):
-
     def __init__(self, policy, ob_space, ac_space, nenvs, nsteps, nstack, num_procs,
                  ent_coef=0.1, vf_coef=0.5, max_grad_norm=0.05, lr=7e-4,
                  alpha=0.99, epsilon=1e-5, total_timesteps=int(80e6), lrschedule='linear'):
@@ -50,11 +49,11 @@ class Model(object):
 
         lr = Scheduler(v=lr, nvalues=total_timesteps, schedule=lrschedule)
 
-        def train(obs, states, rewards, masks, actions, values):
+        def train(obs, states, rewards, masks, actions, values, temp):
             advs = rewards - values
             for step in range(len(obs)):
                 cur_lr = lr.value()
-            td_map = {train_model.X: obs, A: actions, ADV: advs, R: rewards, LR: cur_lr}
+            td_map = {train_model.X: obs, A: actions, ADV: advs, R: rewards, LR: cur_lr, train_model.TEMP: temp}
             if states != []:
                 td_map[train_model.S] = states
                 td_map[train_model.M] = masks
@@ -88,7 +87,6 @@ class Model(object):
 
 
 class Runner(object):
-
     def __init__(self, env, model, nsteps=5, nstack=4, gamma=0.7):
         self.env = env
         self.model = model
@@ -134,13 +132,13 @@ class Runner(object):
         x = np.clip(x, 1e-20, 80.0)
         return np.exp(x) / np.sum(np.exp(x), axis=0)
 
-    def run(self):
+    def run(self, temp):
         mb_obs, mb_rewards, mb_actions, mb_values, mb_dones = [], [], [], [], []
         mb_states = self.states
         self.obs = self.obs * 0
         for n in range(self.nsteps):
             counter = n
-            actions, values, states, probs = self.model.step(self.obs, [], [])
+            actions, values, states, probs = self.model.step(self.obs, temp, [], [])
             probs = np.squeeze(probs)
             a_dist = self.softmax_b(probs)
             # print(probs)
@@ -199,10 +197,10 @@ class Runner(object):
         mb_masks = mb_masks.flatten()
         return mb_obs, mb_states, mb_rewards, mb_masks, mb_actions, mb_values
 
-    def test(self):
+    def test(self, temp):
         self.obs = self.obs * 0
         for n in range(self.nsteps):
-            actions, values, states, probs = self.model.step(self.obs, self.states, self.dones)
+            actions, values, states, probs = self.model.step(self.obs, temp, self.states, self.dones)
 
             probs = np.squeeze(probs)
             a_dist = self.softmax(probs)
@@ -224,7 +222,7 @@ class Runner(object):
                 break
 
 
-def train_data_augmentation(obs, states, rewards, masks, actions, values, model):
+def train_data_augmentation(obs, states, rewards, masks, actions, values, model, temp):
     policy_loss, value_loss, policy_entropy = [], [], []
     actions_in_board = np.array([np.zeros((len(obs[0]), len(obs[0]))) for _ in range(len(actions))])
     for i in range(len(actions)):
@@ -244,7 +242,7 @@ def train_data_augmentation(obs, states, rewards, masks, actions, values, model)
                     new_actions[i] = 3 * y + x
 
         pl, vl, pe = model.train(rot_obs, states, rewards, masks, new_actions,
-                                                              values)
+                                 values, temp)
         policy_loss.append(pl)
         value_loss.append(vl)
         policy_entropy.append(pe)
@@ -259,23 +257,24 @@ def train_data_augmentation(obs, states, rewards, masks, actions, values, model)
                     new_actions[i] = 3 * y + x
 
         pl, vl, pe = model.train(flip_obs, states, rewards, masks, new_actions,
-                                                              values)
+                                 values, temp)
 
         policy_loss.append(pl)
         value_loss.append(vl)
         policy_entropy.append(pe)
 
-
     return np.mean(pl), np.mean(vl), np.mean(pe)
 
-def train_without_data_augmentation(obs, states, rewards, masks, actions, values, model):
-    pl, vl, pe =model.train(obs, states, rewards, masks, actions, values)
+
+def train_without_data_augmentation(obs, states, rewards, masks, actions, values, model, temp):
+    pl, vl, pe = model.train(obs, states, rewards, masks, actions, values, temp)
 
     return pl, vl, pe
 
+
 def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_coef=0.5, ent_coef=0.01,
           max_grad_norm=0.5, lr=7e-4, lrschedule='linear', epsilon=1e-5, alpha=0.99, gamma=0.99, log_interval=1000,
-          load_model=False, model_path='',data_augmentation=True):
+          load_model=False, model_path='', data_augmentation=True):
     tf.reset_default_graph()
     set_global_seeds(seed)
 
@@ -287,6 +286,7 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
     summary_writer = tf.summary.FileWriter(statistics_path)
     run_test = 5000
     policy_entropy = 10
+    temp = np.ones(1)
 
     model = Model(policy=policy, ob_space=ob_space, ac_space=ac_space, nenvs=nenvs, nsteps=nsteps, nstack=nstack,
                   num_procs=num_procs, ent_coef=ent_coef, vf_coef=vf_coef,
@@ -305,7 +305,7 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
             env.print_stadistics()
         if (update % run_test < 1000) and (update % run_test > 0):
             # print("Aqui")
-            runner.test()
+            runner.test(temp)
 
             if ((update % run_test) == 999):
                 games_wonAI, games_wonRandom, games_finish_in_draw, illegal_games = env.get_stadistics()
@@ -318,7 +318,7 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
 
                 summary_writer.flush()
         else:
-            obs, states, rewards, masks, actions, values = runner.run()
+            obs, states, rewards, masks, actions, values = runner.run(temp)
             # print('obs',obs,'actions',actions)
             # print('values',values,'rewards',rewards,)
 
@@ -334,9 +334,11 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
             values = np.concatenate((values, np.zeros(dim_necesaria)), axis=0)
 
             if data_augmentation:
-                policy_loss, value_loss, policy_entropy = train_data_augmentation(obs, states, rewards, masks, actions, values, model)
+                policy_loss, value_loss, policy_entropy = train_data_augmentation(obs, states, rewards, masks, actions,
+                                                                                  values, model, temp)
             else:
-                policy_loss, value_loss, policy_entropy = train_without_data_augmentation(obs, states, rewards, masks, actions, values, model)
+                policy_loss, value_loss, policy_entropy = train_without_data_augmentation(obs, states, rewards, masks,
+                                                                                          actions, values, model, temp)
 
             # print(obs[1,:,:,0])
             # print(actions)
@@ -344,7 +346,7 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
 
             nseconds = time.time() - tstart
             fps = int((update * nbatch) / nseconds)
-            if update % log_interval == 0 or update == 1:
+            if update % log_interval == 999 or update == 1:
                 ev = explained_variance(values, rewards)
                 logger.record_tabular("nupdates", update)
                 logger.record_tabular("total_timesteps", update * nbatch)

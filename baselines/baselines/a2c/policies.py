@@ -177,6 +177,7 @@ class CnnPolicy_slim_TTT(object):
         ob_shape = (nbatch, nh, nw, nc*nstack)
         nact = ac_space
         X = tf.placeholder(tf.float32, ob_shape) #obs
+        TEMP = tf.placeholder(tf.float32, 1)
         with tf.variable_scope("model", reuse=reuse):
             conv1 = slim.conv2d(activation_fn=tf.nn.elu,
                                 inputs=X, num_outputs=32,
@@ -204,18 +205,15 @@ class CnnPolicy_slim_TTT(object):
         p0 = [pi]
         a0 = sample_without_exploration(pi)
         self.initial_state = [] #not stateful
-        def step(ob, *_args, **_kwargs):
-            a, v, pi = sess.run([a0, v0, p0], {X:ob})
+        def step(ob, temp, *_args, **_kwargs):
+            a, v, pi = sess.run([a0, v0, p0], {X:ob, TEMP:temp})
             return a, v, [], pi
 
         def value(ob, *_args, **_kwargs):
             return sess.run(v0, {X:ob})
 
-        def get_pi(ob, *_args, **_kwargs):
-            a, v, pi = sess.run([a0, v0, p0], {X:ob})
-            return a, v, [], pi
-
         self.X = X
+        self.TEMP = TEMP
         self.pi = pi
         self.vf = vf
         self.step = step
@@ -230,6 +228,7 @@ class CnnPolicy_slim_TTT_2(object):
         ob_shape = (nbatch, nh, nw, nc*nstack)
         nact = ac_space
         X = tf.placeholder(tf.float32, ob_shape) #obs
+        TEMP = tf.placeholder(tf.float32, 1)
         with tf.variable_scope("model_2", reuse=reuse):
             conv1 = slim.conv2d(activation_fn=tf.nn.elu,
                                      inputs=X, num_outputs=32,
@@ -238,33 +237,35 @@ class CnnPolicy_slim_TTT_2(object):
             #                         inputs=self.conv1, num_outputs=32,
             #                         kernel_size=[4, 4], stride=[2, 2], padding='VALID')
 
-            hidden = slim.fully_connected(slim.flatten(conv1), 512, activation_fn=tf.nn.relu)
-
+            hidden = slim.fully_connected(slim.flatten(conv1), 512, activation_fn=tf.nn.relu,
+                                          weights_regularizer=slim.l2_regularizer(0.001)
+                                          )
             pi = slim.fully_connected(hidden, nact,
-                                      activation_fn = tf.nn.softmax,
-                                      weights_initializer = normalized_columns_initializer(0.01),
-                                      biases_initializer = None)
+                                      activation_fn=None,
+                                      weights_initializer=normalized_columns_initializer(0.01),
+                                      biases_initializer=None,
+                                      weights_regularizer=slim.l2_regularizer(0.00001))
             vf = slim.fully_connected(hidden, 1,
-                                         activation_fn=None,
-                                         weights_initializer=normalized_columns_initializer(1.0),
-                                         biases_initializer=None)
+                                      activation_fn=None,
+                                      weights_initializer=normalized_columns_initializer(1.0),
+                                      biases_initializer=None,
+                                      weights_regularizer=slim.l2_regularizer(0.00001))
+            pi = tf.nn.softmax(pi)
 
         v0 = vf[:, 0]
         p0 = [pi]
         a0 = sample_without_exploration(pi)
-        self.initial_state = [] #not stateful
-        def step(ob, *_args, **_kwargs):
-            a, v, pi = sess.run([a0, v0, p0], {X:ob})
+        self.initial_state = []  # not stateful
+
+        def step(ob, temp, *_args, **_kwargs):
+            a, v, pi = sess.run([a0, v0, p0], {X: ob, TEMP: temp})
             return a, v, [], pi
 
         def value(ob, *_args, **_kwargs):
-            return sess.run(v0, {X:ob})
-
-        def get_pi(ob, *_args, **_kwargs):
-            a, v, pi = sess.run([a0, v0, p0], {X:ob})
-            return a, v, [], pi
+            return sess.run(v0, {X: ob})
 
         self.X = X
+        self.TEMP = TEMP
         self.pi = pi
         self.vf = vf
         self.step = step

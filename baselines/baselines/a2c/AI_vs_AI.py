@@ -16,35 +16,34 @@ from baselines.a2c.utils import Scheduler, make_path, find_trainable_variables
 from baselines.a2c.policies import CnnPolicy
 from baselines.a2c.utils import cat_entropy, mse
 
-class Model(object):
 
+class Model(object):
     def __init__(self, policy, ob_space, ac_space, nenvs, nsteps, nstack, num_procs,
-            ent_coef=0.1, vf_coef=0.5, max_grad_norm=0.5, lr=7e-4,
-            alpha=0.99, epsilon=1e-5, total_timesteps=int(80e6), lrschedule='linear'):
+                 ent_coef=0.1, vf_coef=0.5, max_grad_norm=0.5, lr=7e-4,
+                 alpha=0.99, epsilon=1e-5, total_timesteps=int(80e6), lrschedule='linear'):
         config = tf.ConfigProto(allow_soft_placement=True,
                                 intra_op_parallelism_threads=num_procs,
                                 inter_op_parallelism_threads=num_procs)
         config.gpu_options.allow_growth = True
         sess = tf.Session(config=config)
         nact = ac_space
-        nbatch = nenvs*nsteps
+        nbatch = nenvs * nsteps
 
         A = tf.placeholder(tf.int32, [nbatch])
         ADV = tf.placeholder(tf.float32, [nbatch])
         R = tf.placeholder(tf.float32, [nbatch])
         LR = tf.placeholder(tf.float32, [])
 
-
         step_model = policy(sess, ob_space, ac_space, nenvs, 1, nstack, reuse=False)
         train_model = policy(sess, ob_space, ac_space, nenvs, nsteps, nstack, reuse=True)
         q = tf.one_hot(A, nact, dtype=tf.float32)
         neglogpac = -tf.reduce_sum(tf.log((train_model.pi) + 1e-10) * q, [1])
 
-        #neglogpac = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi, labels=A)
+        # neglogpac = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi, labels=A)
         pg_loss = tf.reduce_mean(ADV * neglogpac)
         vf_loss = tf.reduce_mean(mse(tf.squeeze(train_model.vf), R))
         entropy = tf.reduce_mean(cat_entropy(train_model.pi))
-        loss = pg_loss - entropy*ent_coef + vf_loss * vf_coef
+        loss = pg_loss - entropy * ent_coef + vf_loss * vf_coef
 
         params = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, 'model')
         grads = tf.gradients(loss, params)
@@ -56,11 +55,11 @@ class Model(object):
 
         lr = Scheduler(v=lr, nvalues=total_timesteps, schedule=lrschedule)
 
-        def train(obs, states, rewards, masks, actions, values):
+        def train(obs, states, rewards, masks, actions, values, temp):
             advs = rewards - values
             for step in range(len(obs)):
                 cur_lr = lr.value()
-            td_map = {train_model.X:obs, A:actions, ADV:advs, R:rewards, LR:cur_lr}
+            td_map = {train_model.X: obs, A: actions, ADV: advs, R: rewards, LR: cur_lr, train_model.TEMP: temp}
             if states != []:
                 td_map[train_model.S] = states
                 td_map[train_model.M] = masks
@@ -72,7 +71,7 @@ class Model(object):
 
         def save(save_path):
             ps = sess.run(params)
-            #make_path(save_path)
+            # make_path(save_path)
             joblib.dump(ps, save_path)
 
         def load(load_path):
@@ -92,35 +91,34 @@ class Model(object):
         self.load = load
         tf.global_variables_initializer().run(session=sess)
 
-class Model_2(object):
 
+class Model_2(object):
     def __init__(self, policy, ob_space, ac_space, nenvs, nsteps, nstack, num_procs,
-            ent_coef=0.1, vf_coef=0.5, max_grad_norm=0.5, lr=7e-4,
-            alpha=0.99, epsilon=1e-5, total_timesteps=int(80e6), lrschedule='linear'):
+                 ent_coef=0.1, vf_coef=0.5, max_grad_norm=0.5, lr=7e-4,
+                 alpha=0.99, epsilon=1e-5, total_timesteps=int(80e6), lrschedule='linear'):
         config = tf.ConfigProto(allow_soft_placement=True,
                                 intra_op_parallelism_threads=num_procs,
                                 inter_op_parallelism_threads=num_procs)
         config.gpu_options.allow_growth = True
         sess = tf.Session(config=config)
         nact = ac_space
-        nbatch = nenvs*nsteps
+        nbatch = nenvs * nsteps
 
         A = tf.placeholder(tf.int32, [nbatch])
         ADV = tf.placeholder(tf.float32, [nbatch])
         R = tf.placeholder(tf.float32, [nbatch])
         LR = tf.placeholder(tf.float32, [])
 
-
         step_model = policy(sess, ob_space, ac_space, nenvs, 1, nstack, reuse=False)
         train_model = policy(sess, ob_space, ac_space, nenvs, nsteps, nstack, reuse=True)
         q = tf.one_hot(A, nact, dtype=tf.float32)
         neglogpac = -tf.reduce_sum(tf.log((train_model.pi) + 1e-10) * q, [1])
 
-        #neglogpac = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi, labels=A)
+        # neglogpac = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi, labels=A)
         pg_loss = tf.reduce_mean(ADV * neglogpac)
         vf_loss = tf.reduce_mean(mse(tf.squeeze(train_model.vf), R))
         entropy = tf.reduce_mean(cat_entropy(train_model.pi))
-        loss = pg_loss - entropy*ent_coef + vf_loss * vf_coef
+        loss = pg_loss - entropy * ent_coef + vf_loss * vf_coef
 
         params = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, 'model_2')
         grads = tf.gradients(loss, params)
@@ -132,11 +130,11 @@ class Model_2(object):
 
         lr = Scheduler(v=lr, nvalues=total_timesteps, schedule=lrschedule)
 
-        def train(obs, states, rewards, masks, actions, values):
+        def train(obs, states, rewards, masks, actions, values, temp):
             advs = rewards - values
             for step in range(len(obs)):
                 cur_lr = lr.value()
-            td_map = {train_model.X:obs, A:actions, ADV:advs, R:rewards, LR:cur_lr}
+            td_map = {train_model.X: obs, A: actions, ADV: advs, R: rewards, LR: cur_lr, train_model.TEMP: temp}
             if states != []:
                 td_map[train_model.S] = states
                 td_map[train_model.M] = masks
@@ -148,7 +146,7 @@ class Model_2(object):
 
         def save(save_path):
             ps = sess.run(params)
-            #make_path(save_path)
+            # make_path(save_path)
             joblib.dump(ps, save_path)
 
         def load(load_path):
@@ -168,8 +166,8 @@ class Model_2(object):
         self.load = load
         tf.global_variables_initializer().run(session=sess)
 
-class Runner(object):
 
+class Runner(object):
     def __init__(self, env, model, model_2, nsteps=5, nstack=4, gamma=0.7):
         self.env = env
         self.model = model
@@ -182,8 +180,8 @@ class Runner(object):
         self.nw = nw
         self.nc = nc
         self.nstack = nstack
-        self.batch_ob_shape = (nenv*nsteps, nh, nw, nc*nstack)
-        self.obs = np.zeros((nenv, nh, nw, nc*nstack), dtype=np.float32)
+        self.batch_ob_shape = (nenv * nsteps, nh, nw, nc * nstack)
+        self.obs = np.zeros((nenv, nh, nw, nc * nstack), dtype=np.float32)
         obs = env.reset()
         self.update_obs(obs)
         self.gamma = gamma
@@ -196,7 +194,6 @@ class Runner(object):
         self.reward_lossing = self.env.reward_lossing
         self.reward_illegal_move = self.env.reward_illegal_move
         self.reward_draw = self.env.reward_draw
-
 
     def update_obs(self, obs):
         # Do frame-stacking here instead of the FrameStack wrapper to reduce
@@ -229,23 +226,25 @@ class Runner(object):
     def softmax(self, x):
         x = np.clip(x, 1e-20, 80.0)
         return np.exp(x) / np.sum(np.exp(x), axis=0)
-    
 
-    def run(self):
-        mb_obs, mb_rewards, mb_actions, mb_values, mb_dones = [],[],[],[],[]
-        mb_obs_B, mb_rewards_B, mb_actions_B, mb_values_B, mb_dones_B = [],[],[],[],[]
+    def run(self, temp):
+        mb_obs, mb_rewards, mb_actions, mb_values, mb_dones = [], [], [], [], []
+        mb_obs_B, mb_rewards_B, mb_actions_B, mb_values_B, mb_dones_B = [], [], [], [], []
 
         mb_states = self.states
         self.obs = self.obs * 0
-        self.obs_B = self.obs*0
+        self.obs_B = self.obs * 0
 
         for n in range(self.nsteps):
             counter = n
             self.obs = self.obs_B
-            obs_play = self.obs_B *-1
-            _, values, states,probs = self.model.step(obs_play, [], [])
-            a_dist = np.squeeze(np.divide(probs,0.1))
-            a_dist = self.softmax_b(a_dist)
+            obs_play = self.obs_B * -1
+            _, values, states, probs = self.model.step(obs_play, temp, [], [])
+            # a_dist = np.squeeze(np.divide(probs, 0.1))
+            # a_dist = self.softmax_b(a_dist)
+            a_dist = np.squeeze(probs)
+            a_dist = self.get_legal_moves(a_dist)
+            a_dist = a_dist / np.sum(a_dist)
             a = np.random.choice(a_dist, p=a_dist)
             actions = [np.argmax(a_dist == a)]
 
@@ -261,12 +260,14 @@ class Runner(object):
             self.dones = dones
             for n, done in enumerate(dones):
                 if done:
-                    self.obs[n] = self.obs[n]*0
+                    self.obs[n] = self.obs[n] * 0
             self.update_obs(self.obs)
 
-            _, values_B, states_B, probs = self.model_2.step(obs_play, [], [])
+            _, values_B, states_B, probs = self.model_2.step(obs_play, temp, [], [])
+            #a_dist = self.softmax_b(np.divide(probs, 0.1))
             a_dist = np.squeeze(probs)
-            a_dist = self.softmax_b(np.divide(probs,0.1))
+            a_dist = self.get_legal_moves(a_dist)
+            a_dist = a_dist / np.sum(a_dist)
             a = np.random.choice(a_dist, p=a_dist)
             actions_B = [np.argmax(a_dist == a)]
 
@@ -324,9 +325,9 @@ class Runner(object):
         elif rewards_B[0] <= 1:
             mb_dones = mb_dones_B
 
-
         # batch of steps to batch of rollouts
-        mb_obs = np.asarray(mb_obs, dtype=np.float32).swapaxes(1, 0).reshape((self.nenv*(counter+1), self.nh, self.nw, self.nc*self.nstack))
+        mb_obs = np.asarray(mb_obs, dtype=np.float32).swapaxes(1, 0).reshape(
+            (self.nenv * (counter + 1), self.nh, self.nw, self.nc * self.nstack))
         mb_rewards = np.asarray(mb_rewards, dtype=np.float32).swapaxes(1, 0)
         mb_actions = np.asarray(mb_actions, dtype=np.int32).swapaxes(1, 0)
         mb_values = np.asarray(mb_values, dtype=np.float32).swapaxes(1, 0)
@@ -378,12 +379,12 @@ class Runner(object):
 
         return mb_obs, [], mb_rewards, mb_masks, mb_actions, mb_values, mb_obs_B, [], mb_rewards_B, mb_masks_B, mb_actions_B, mb_values_B
 
-    def test(self):
+    def test(self, temp):
         self.obs = self.obs * 0
         for n in range(self.nsteps):
             self.obs = self.obs_B
             obs_play = self.obs_B * -1
-            actions, values, states, probs = self.model.step(obs_play, self.states, self.dones)
+            actions, values, states, probs = self.model.step(obs_play, temp, [], [])
             a_dist = np.squeeze(probs)
             a_dist = self.get_legal_moves(a_dist)
             a_dist = a_dist / np.sum(a_dist)
@@ -397,20 +398,20 @@ class Runner(object):
 
             obs_play = obs * -1
 
-            actions_B, values_B, states_B, probs = self.model_2.step(obs_play, [], [])
+            actions_B, values_B, states_B, probs = self.model_2.step(obs_play, temp, [], [])
 
             a_dist = np.squeeze(probs)
             a_dist = self.get_legal_moves(a_dist)
             a_dist = a_dist / np.sum(a_dist)
             actions_B = [np.argmax(a_dist)]
 
-            self.obs_B, rewards_B, dones_B, _, illegal_B = self.env.step_vs(actions_B,'B')
+            self.obs_B, rewards_B, dones_B, _, illegal_B = self.env.step_vs(actions_B, 'B')
 
             if rewards_B != 0:
                 break
 
-def redimension_results(obs, states, rewards, masks, actions, values, env, nsteps):
 
+def redimension_results(obs, states, rewards, masks, actions, values, env, nsteps):
     dim_total = nsteps
     dim = obs.shape[0]
     dim_necesaria = dim_total - dim
@@ -422,7 +423,8 @@ def redimension_results(obs, states, rewards, masks, actions, values, env, nstep
 
     return obs, states, rewards, masks, actions, values
 
-def train_data_augmentation(obs, states, rewards, masks, actions, values, model):
+
+def train_data_augmentation(obs, states, rewards, masks, actions, values, model,temp):
     size = obs.shape[1]
     policy_loss, value_loss, policy_entropy = [], [], []
     actions_in_board = np.array([np.zeros((len(obs[0]), len(obs[0]))) for _ in range(len(actions))])
@@ -443,7 +445,7 @@ def train_data_augmentation(obs, states, rewards, masks, actions, values, model)
                     new_actions[i] = size * y + x
 
         pl, vl, pe = model.train(rot_obs, states, rewards, masks, new_actions,
-                                                              values)
+                                 values, temp)
         policy_loss.append(pl)
         value_loss.append(vl)
         policy_entropy.append(pe)
@@ -458,17 +460,17 @@ def train_data_augmentation(obs, states, rewards, masks, actions, values, model)
                     new_actions[i] = size * y + x
 
         pl, vl, pe = model.train(flip_obs, states, rewards, masks, new_actions,
-                                                              values)
+                                 values, temp)
 
         policy_loss.append(pl)
         value_loss.append(vl)
         policy_entropy.append(pe)
 
-
     return np.mean(pl), np.mean(vl), np.mean(pe)
 
-def train_without_data_augmentation(obs, states, rewards, masks, actions, values, model):
-    pl, vl, pe =model.train(obs, states, rewards, masks, actions, values)
+
+def train_without_data_augmentation(obs, states, rewards, masks, actions, values, model,temp):
+    pl, vl, pe = model.train(obs, states, rewards, masks, actions, values, temp)
     return pl, vl, pe
 
 
@@ -481,18 +483,21 @@ def learn(policy, policy_2, env, seed, nsteps=5, nstack=4, total_timesteps=int(8
     nenvs = env.num_envs
     ob_space = env.observation_space
     ac_space = env.action_space
-    num_procs = len(env.remotes) # HACK
+    num_procs = len(env.remotes)  # HACK
     statistics_path = ('./stadistics')
     summary_writer = tf.summary.FileWriter(statistics_path)
     run_test = 5000
+    temp = np.ones(1)
 
-    model = Model(policy=policy, ob_space=ob_space, ac_space=ac_space, nenvs=nenvs, nsteps=nsteps, nstack=nstack, num_procs=num_procs, ent_coef=ent_coef, vf_coef=vf_coef,
-        max_grad_norm=max_grad_norm, lr=lr, alpha=alpha, epsilon=epsilon, total_timesteps=total_timesteps, lrschedule=lrschedule)
+    model = Model(policy=policy, ob_space=ob_space, ac_space=ac_space, nenvs=nenvs, nsteps=nsteps, nstack=nstack,
+                  num_procs=num_procs, ent_coef=ent_coef, vf_coef=vf_coef,
+                  max_grad_norm=max_grad_norm, lr=lr, alpha=alpha, epsilon=epsilon, total_timesteps=total_timesteps,
+                  lrschedule=lrschedule)
 
     model_2 = Model_2(policy=policy_2, ob_space=ob_space, ac_space=ac_space, nenvs=nenvs, nsteps=nsteps,
-                     nstack=nstack, num_procs=num_procs, ent_coef=ent_coef, vf_coef=vf_coef,
-                     max_grad_norm=max_grad_norm, lr=lr, alpha=alpha, epsilon=epsilon,
-                     total_timesteps=total_timesteps, lrschedule=lrschedule)
+                      nstack=nstack, num_procs=num_procs, ent_coef=ent_coef, vf_coef=vf_coef,
+                      max_grad_norm=max_grad_norm, lr=lr, alpha=alpha, epsilon=epsilon,
+                      total_timesteps=total_timesteps, lrschedule=lrschedule)
 
     if load_model:
         # model_A.load('./models/model_A.cpkt')
@@ -501,19 +506,18 @@ def learn(policy, policy_2, env, seed, nsteps=5, nstack=4, total_timesteps=int(8
 
     runner = Runner(env, model, model_2, nsteps=nsteps, nstack=nstack, gamma=gamma)
 
-    nbatch = nenvs*nsteps
+    nbatch = nenvs * nsteps
     tstart = time.time()
-    for update in range(0, total_timesteps//nbatch+1):
+    for update in range(0, total_timesteps // nbatch + 1):
         if update % 1000 == 0:
             print('update', update)
             env.print_stadistics_vs()
             games_A, games_B, games_finish_in_draw, illegal_games = env.get_stadistics_vs()
 
-        if (update % run_test < 1000)  and (update % run_test > 0):
-            runner.test()
+        if (update % run_test < 1000) and (update % run_test > 0):
+            runner.test(temp)
 
             if ((update % run_test) == 1000):
-
                 summary = tf.Summary()
                 summary.value.add(tag='test/games_A', simple_value=float(games_A))
                 summary.value.add(tag='test/games_B', simple_value=float(games_B))
@@ -530,27 +534,34 @@ def learn(policy, policy_2, env, seed, nsteps=5, nstack=4, total_timesteps=int(8
                 model = aux
                 runner = Runner(env, model, model_2, nsteps=nsteps, nstack=nstack, gamma=gamma)
 
-            obs, states, rewards, masks, actions, values, obs_B, states_B, rewards_B, masks_B, actions_B, values_B = runner.run()
+            obs, states, rewards, masks, actions, values, obs_B, states_B, rewards_B, masks_B, actions_B, values_B = runner.run(
+                temp)
 
-            obs, states, rewards, masks, actions, values = redimension_results(obs, states, rewards, masks, actions, values,env, nsteps)
-            obs_B, states_B, rewards_B, masks_B, actions_B, values_B = redimension_results(obs_B, states_B, rewards_B, masks_B, actions_B, values_B,env, nsteps)
-
+            obs, states, rewards, masks, actions, values = redimension_results(obs, states, rewards, masks, actions,
+                                                                               values, env, nsteps)
+            obs_B, states_B, rewards_B, masks_B, actions_B, values_B = redimension_results(obs_B, states_B, rewards_B,
+                                                                                           masks_B, actions_B, values_B,
+                                                                                           env, nsteps)
 
             if data_augmentation:
                 policy_loss, value_loss, policy_entropy = train_data_augmentation(obs, states, rewards, masks, actions,
-                                                                                  values, model)
+                                                                                  values, model,temp)
                 policy_loss_B, value_loss_B, policy_entropy_B = train_data_augmentation(obs_B, states_B, rewards_B,
-                                                                                        masks_B, actions_B, values_B, model_2)
+                                                                                        masks_B, actions_B, values_B,
+                                                                                        model_2,temp)
             else:
-                policy_loss, value_loss, policy_entropy = train_without_data_augmentation(obs, states, rewards, masks, actions,
-                                                                                  values, model)
-                policy_loss_B, value_loss_B, policy_entropy_B = train_without_data_augmentation(obs_B, states_B, rewards_B,
-                                                                                        masks_B, actions_B, values_B, model_2)
+                policy_loss, value_loss, policy_entropy = train_without_data_augmentation(obs, states, rewards, masks,
+                                                                                          actions,
+                                                                                          values, model,temp)
+                policy_loss_B, value_loss_B, policy_entropy_B = train_without_data_augmentation(obs_B, states_B,
+                                                                                                rewards_B,
+                                                                                                masks_B, actions_B,
+                                                                                                values_B, model_2,temp)
 
             nseconds = time.time() - tstart
             fps = int((update * nbatch) / nseconds)
 
-            if update % log_interval == 1000 or update == 1:
+            if update % log_interval == 0:
                 ev = explained_variance(values, rewards)
                 ev_B = explained_variance(values_B, rewards_B)
                 logger.record_tabular("nupdates", update)
@@ -566,9 +577,7 @@ def learn(policy, policy_2, env, seed, nsteps=5, nstack=4, total_timesteps=int(8
                 logger.record_tabular("policy_loss_B", float(policy_loss_B))
                 logger.record_tabular("value_loss_B", float(value_loss_B))
                 logger.record_tabular("explained_variance_B", float(ev_B))
-
                 logger.dump_tabular()
-
 
                 summary = tf.Summary()
                 summary.value.add(tag='train_A/policy_entropy', simple_value=float(policy_entropy))
