@@ -19,6 +19,7 @@ import random
 from common.base_game_spec import BaseGameSpec
 from gym import spaces
 import numpy as np
+import datetime
 
 
 def _new_board(board_size):
@@ -281,7 +282,7 @@ class TicTacToeXGameSpec(BaseGameSpec):
         self.reward_winning = 0.5
         self.reward_lossing = -0.5
         self.reward_illegal_move = -1
-        self.reward_draw = -0.5
+        self.reward_draw = -0.3
 
         ##Our code
         self.observation_space = spaces.Box(low=-1, high=1, shape=(self._board_size, self._board_size, 1))
@@ -409,6 +410,10 @@ class TicTacToeXGameSpec(BaseGameSpec):
                     self.games_finish_in_draw += 1
                     reward[0] = self.reward_draw
 
+        # if ((self.games_won_A + self.games_won_B + self.games_finish_in_draw + self.illegal_games) % 999 == 0):
+        #     print(self.board_state[0, :, :, 0])
+        #     print(datetime.datetime.now().time())
+
         if reward[0] != 0:
             # print(self.board_state[0, :, :, 0])
             self.board_state = _new_board(self._board_size)
@@ -457,9 +462,13 @@ class TicTacToeXGameSpec(BaseGameSpec):
         reward = np.zeros(1)
         actions_nn = [int(actions_nn % self._board_size),
                       int(actions_nn / self._board_size)]                   # Convert move from number to X,Y
+        if (self.illegal_move(actions_nn)):
+            print('ILLEGALILLEGALILLEGALVILLEGALV')
+            illegal = True
 
         self.board_state = apply_move(self.board_state, actions_nn, token)  # Apply move to the board
         winner = has_winner(self.board_state, self._winning_length)         # Check for winner
+
 
         if winner[0]:
             reward[0] = self.reward_winning
@@ -477,10 +486,15 @@ class TicTacToeXGameSpec(BaseGameSpec):
 
         if ((self.games_won_A + self.games_won_B + self.games_finish_in_draw + self.illegal_games) % 999 == 0):
             print(self.board_state[0, :, :, 0])
+            print(datetime.datetime.now().time())
+
+
 
         if reward[0] != 0:
             # print(self.board_state[0, :, :, 0])
             self.board_state = _new_board(self._board_size)
+
+
 
         # if (((self.games_won_A + self.games_won_B + self.games_finish_in_draw + self.illegal_games) % 1000 == 0)
         #     and self.print):
