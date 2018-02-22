@@ -377,10 +377,12 @@ class TicTacToeXGameSpec(BaseGameSpec):
 
         if (self.illegal_move(actions_nn)):  # Check if the move was illegal
             self.illegal_games += 1
+            print(self.board_state[0, :, :, 0])
             self.board_state = self.new_board()
             self.print = True
             reward[0] = self.reward_illegal_move
             winner = np.ones((1), dtype=bool)
+
             return (self.board_state, reward, winner, 0, True)
 
         self.board_state = apply_move(self.board_state, actions_nn, 1)  # Apply move to the board

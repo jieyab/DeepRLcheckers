@@ -14,7 +14,7 @@ from baselines.common import set_global_seeds, explained_variance
 class Model(object):
     def __init__(self, policy, ob_space, ac_space, nenvs, nsteps, nstack, num_procs,
                  ent_coef=0.1, vf_coef=0.5, max_grad_norm=0.05, lr=7e-4,
-                 alpha=0.99, epsilon=1e-5, total_timesteps=int(80e6), lrschedule='linear'):
+                 alpha=0.99, epsilon=1e-5, total_timesteps=int(80e6), lrschedule='linear', summary_writter=''):
         config = tf.ConfigProto(allow_soft_placement=True,
                                 intra_op_parallelism_threads=num_procs,
                                 inter_op_parallelism_threads=num_procs)
@@ -84,6 +84,7 @@ class Model(object):
         self.save = save
         self.load = load
         tf.global_variables_initializer().run(session=sess)
+        summary_writter.add_graph(sess.graph)
 
 
 class Runner(object):
@@ -141,13 +142,10 @@ class Runner(object):
         for n in range(self.nsteps):
             counter = n
             actions, values, states, probs = self.model.step(self.obs, temp, [], [])
-            probs = np.squeeze(probs)
-            a_dist = self.softmax_b(probs)
-            # print(probs)
-            # probs = self.get_legal_moves(probs)
-            # print(a_dist)
-            # print('+-+-+-+-+-+-+-+-+-+-+-+-+-')
-            # a_dist = probs / np.sum(probs)
+            a_dist = np.squeeze(probs)
+            a_dist = np.clip(a_dist, 1e-20, 1)
+            a_dist = self.get_legal_moves(a_dist)
+            a_dist = a_dist / np.sum(a_dist)
             a = np.random.choice(a_dist, p=a_dist)
             actions = [np.argmax(a_dist == a)]
 
@@ -204,15 +202,10 @@ class Runner(object):
         for n in range(self.nsteps):
             actions, values, states, probs = self.model.step(self.obs, temp, self.states, self.dones)
 
-            probs = np.squeeze(probs)
-            a_dist = self.softmax(probs)
-            # print(probs)
-            # print(a_dist)
+            a_dist = np.squeeze(probs)
+            a_dist = np.clip(a_dist, 1e-20, 1)
             a_dist = self.get_legal_moves(a_dist)
-            # print(a_dist)
-            # print('+-+-+-+-+-+-+-+-+-+-+-+-+-')
-            # a_dist = probs / np.sum(probs)
-            # a = np.random.choice(a_dist, p=a_dist)
+            a_dist = a_dist / np.sum(a_dist)
             actions = [np.argmax(a_dist)]
             # print(actions, self.env.get_illegal_moves())
             obs, rewards, dones, _, illegal = self.env.step(actions)
@@ -252,6 +245,8 @@ def redimension_results(obs, states, rewards, masks, actions, values, env, nstep
 
 def train_data_augmentation(obs, states, rewards, masks, actions, values, model, temp):
     policy_loss, value_loss, policy_entropy = [], [], []
+    size = obs.shape[1]
+
     actions_in_board = np.array([np.zeros((len(obs[0]), len(obs[0]))) for _ in range(len(actions))])
     for i in range(len(actions)):
         actions_in_board[i, int(actions[i] % len(obs[0])), int(actions[i] / len(obs[0]))] = 1
@@ -267,7 +262,7 @@ def train_data_augmentation(obs, states, rewards, masks, actions, values, model,
             import itertools
             for x, y in itertools.product(range(len(obs[0])), range(len(obs[0]))):
                 if rot_actions[i, x, y] == 1:
-                    new_actions[i] = 3 * y + x
+                    new_actions[i] = size * y + x
 
         pl, vl, pe = model.train(rot_obs, states, rewards, masks, new_actions,
                                  values, temp)
@@ -282,7 +277,7 @@ def train_data_augmentation(obs, states, rewards, masks, actions, values, model,
             import itertools
             for x, y in itertools.product(range(len(obs[0])), range(len(obs[0]))):
                 if flip_actions[i, x, y] == 1:
-                    new_actions[i] = 3 * y + x
+                    new_actions[i] = size * y + x
 
         pl, vl, pe = model.train(flip_obs, states, rewards, masks, new_actions,
                                  values, temp)
@@ -302,7 +297,7 @@ def train_without_data_augmentation(obs, states, rewards, masks, actions, values
 
 def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_coef=0.5, ent_coef=0.01,
           max_grad_norm=0.5, lr=7e-4, lrschedule='linear', epsilon=1e-5, alpha=0.99, gamma=0.99, log_interval=1000,
-          load_model=False, model_path='', data_augmentation=True,TRAINING_BATCH=10):
+              load_model=False, model_path='', data_augmentation=True,TRAINING_BATCH=10):
     tf.reset_default_graph()
     set_global_seeds(seed)
 
@@ -313,12 +308,13 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
     statistics_path = ('./stadistics_random')
     summary_writer = tf.summary.FileWriter(statistics_path)
     run_test = 5000
-    temp = np.ones(1)*0.2
+    temp = np.ones(1)
+    temp_counter= 0
 
     model = Model(policy=policy, ob_space=ob_space, ac_space=ac_space, nenvs=nenvs, nsteps=nsteps, nstack=nstack,
                   num_procs=num_procs, ent_coef=ent_coef, vf_coef=vf_coef,
                   max_grad_norm=max_grad_norm, lr=lr, alpha=alpha, epsilon=epsilon, total_timesteps=total_timesteps,
-                  lrschedule=lrschedule)
+                  lrschedule=lrschedule, summary_writter=summary_writer)
 
     if load_model:
         model.load(model_path)
@@ -326,7 +322,14 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
 
     nbatch = nenvs * nsteps
     tstart = time.time()
+
     for update in range(0, total_timesteps // nbatch + 1):
+        if update % 30000 == 0:
+            temp = temp*((2) / (temp_counter+2))
+            print('-+-+-+-+-+-+-+-+--+-+-+-+-+-++---+-+-+-+-+--+-+-+-+--+--+-++++-+-++--+-+-++-+-+-++-+-')
+            print('temp:',temp)
+            temp_counter +=1
+
         if update % 1000 == 0:
             print('update', update)
             env.print_stadistics()
@@ -353,7 +356,7 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
                                                                                values, env, nsteps)
 
             size_batch = runner.put_in_batch(obs, states, rewards, masks, actions, values)
-            if size_batch == 10:
+            if size_batch == TRAINING_BATCH:
                 #print('Training batch')
                 batch = runner.get_batch()
 
