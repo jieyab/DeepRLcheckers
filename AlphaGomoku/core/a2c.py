@@ -88,6 +88,82 @@ class Model(object):
         tf.global_variables_initializer().run(session=sess)
 
 
+class Model2(object):
+    def __init__(self, policy, ob_space, ac_space, nenvs, nsteps, nstack, num_procs,
+                 ent_coef=0.1, vf_coef=0.5, max_grad_norm=0.05, lr=7e-4,
+                 alpha=0.99, epsilon=1e-5, total_timesteps=int(80e6), lrschedule='linear', summary_writter=''):
+        config = tf.ConfigProto(allow_soft_placement=True,
+                                intra_op_parallelism_threads=num_procs,
+                                inter_op_parallelism_threads=num_procs)
+        config.gpu_options.allow_growth = True
+        sess = tf.Session(config=config)
+        nact = ac_space
+        nbatch = nenvs * nsteps
+
+        A = tf.placeholder(tf.int32, [nbatch])
+        ADV = tf.placeholder(tf.float32, [nbatch])
+        R = tf.placeholder(tf.float32, [nbatch])
+        LR = tf.placeholder(tf.float32, [])
+
+        step_model = policy(sess, ob_space, ac_space, nenvs, 1, nstack, reuse=False)
+        train_model = policy(sess, ob_space, ac_space, nenvs, nsteps, nstack, reuse=True)
+        q = tf.one_hot(A, nact, dtype=tf.float32)
+        neglogpac = -tf.reduce_sum(tf.log((train_model.pi) + 1e-10) * q, [1])
+
+        # neglogpac = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi, labels=A)
+        pg_loss = tf.reduce_mean(ADV * neglogpac)
+        vf_loss = tf.reduce_mean(mse(tf.squeeze(train_model.vf), R))
+        entropy = tf.reduce_mean(cat_entropy(train_model.pi))
+        loss = pg_loss - entropy * ent_coef + vf_loss * vf_coef
+
+        params = find_trainable_variables("model")
+        grads = tf.gradients(loss, params)
+        if max_grad_norm is not None:
+            grads, grad_norm = tf.clip_by_global_norm(grads, max_grad_norm)
+        grads = list(zip(grads, params))
+        trainer = tf.train.RMSPropOptimizer(learning_rate=LR, decay=alpha, epsilon=epsilon)
+        _train = trainer.apply_gradients(grads)
+
+        lr = Scheduler(v=lr, nvalues=total_timesteps, schedule=lrschedule)
+
+        def train(obs, states, rewards, masks, actions, values, temp):
+            advs = rewards - values
+            for step in range(len(obs)):
+                cur_lr = lr.value()
+            td_map = {train_model.X: obs, A: actions, ADV: advs, R: rewards, LR: cur_lr, train_model.TEMP: temp}
+            if states != []:
+                td_map[train_model.S] = states
+                td_map[train_model.M] = masks
+            policy_loss, value_loss, policy_entropy, _ = sess.run(
+                [pg_loss, vf_loss, entropy, _train],
+                td_map
+            )
+            return policy_loss, value_loss, policy_entropy
+
+        def save(save_path):
+            ps = sess.run(params)
+            # make_path(save_path)
+            joblib.dump(ps, save_path)
+
+        def load(load_path):
+            loaded_params = joblib.load(load_path)
+            restores = []
+            for p, loaded_p in zip(params, loaded_params):
+                restores.append(p.assign(loaded_p))
+            ps = sess.run(restores)
+
+        self.train = train
+        self.train_model = train_model
+        self.step_model = step_model
+        self.step = step_model.step
+        self.value = step_model.value
+        self.initial_state = step_model.initial_state
+        self.save = save
+        self.load = load
+        tf.global_variables_initializer().run(session=sess)
+        summary_writter.add_graph(sess.graph)
+
+
 class Runner(object):
 
     def __init__(self, env, model, model2, nsteps=5, nstack=4, gamma=0.7):
@@ -115,8 +191,7 @@ class Runner(object):
         self.list_ai_board = []
         self.matrix_actions = np.zeros((nh, nh))
 
-
-        for i in range(nh*nh):
+        for i in range(nh * nh):
             actions = i
             xy = [int(actions % nh),
                   int(actions / nh)]
@@ -209,7 +284,7 @@ class Runner(object):
         mb_values = np.concatenate((mb_values, np.zeros(dim_necessary)), axis=0)
 
         policy_loss, value_loss, policy_entropy = model.train(mb_obs, mb_states, mb_rewards, mb_masks, mb_actions,
-                                                                   mb_values)
+                                                              mb_values)
         return float(policy_loss), float(value_loss), float(policy_entropy)
 
     def run(self):
@@ -218,7 +293,6 @@ class Runner(object):
         plus_state, minus_state, plus_action, minus_action = self.mcts.get_state(node)
         policy_loss, value_loss, policy_entropy = [], [], []
         policy_loss_2, value_loss_2, policy_entropy_2 = [], [], []
-
 
         # Train normal
         p1, v1, e1 = self.pad_training_data(plus_state, plus_action, reward, self.model)
@@ -231,7 +305,6 @@ class Runner(object):
         policy_entropy.append(e1)
         policy_entropy_2.append(e2_2)
 
-
         # Rotation ACLW 180
 
         rot_plus_action = copy.copy(plus_action)
@@ -240,9 +313,8 @@ class Runner(object):
         rot_matrix = np.rot90(self.matrix_actions, 2)
         rot_plus_state = copy.copy(plus_state)
         rot_minus_state = copy.copy(minus_state)
-        print(len(plus_state),len(minus_state))
+        print(len(plus_state), len(minus_state))
         for i in range(len(plus_action)):
-
             rot_plus_state[i] = np.rot90(plus_state[i], 2)
             rot_plus_action[i] = rot_matrix[int(plus_action[i] % self.nh),
                                             int(plus_action[i] / self.nh)]
@@ -262,19 +334,16 @@ class Runner(object):
         policy_entropy.append(e1)
         policy_entropy_2.append(e2_2)
 
-
         # Rotation ACLW 90
         rot_matrix = np.rot90(self.matrix_actions, 1)
 
-
         for i in range(len(plus_action)):
-            rot_plus_state[i][0,:,:,0] = np.rot90(plus_state[i][0,:,:,0], 1)
+            rot_plus_state[i][0, :, :, 0] = np.rot90(plus_state[i][0, :, :, 0], 1)
             rot_plus_action[i] = rot_matrix[int(plus_action[i] % self.nh),
                                             int(plus_action[i] / self.nh)]
 
         for i in range(len(minus_action)):
-
-            rot_minus_state[i][0,:,:,0] = np.rot90(minus_state[i][0,:,:,0], 1)
+            rot_minus_state[i][0, :, :, 0] = np.rot90(minus_state[i][0, :, :, 0], 1)
             rot_minus_action[i] = rot_matrix[int(minus_action[i] % self.nh),
                                              int(minus_action[i] / self.nh)]
 
@@ -297,7 +366,6 @@ class Runner(object):
                                             int(plus_action[i] / self.nh)]
 
         for i in range(len(minus_action)):
-
             rot_minus_state[i][0, :, :, 0] = np.rot90(minus_state[i][0, :, :, 0], 3)
             rot_minus_action[i] = rot_matrix[int(minus_action[i] % self.nh),
                                              int(minus_action[i] / self.nh)]
@@ -315,7 +383,8 @@ class Runner(object):
         self.mcts.exchange_models()
 
         logger.debug('* ' * 20 + 'run' + ' *' * 20)
-        return mean(policy_loss), mean(value_loss), mean(policy_entropy), mean(policy_loss_2), mean(value_loss_2), mean(policy_entropy_2)
+        return mean(policy_loss), mean(value_loss), mean(policy_entropy), mean(policy_loss_2), mean(value_loss_2), mean(
+            policy_entropy_2)
 
 
 def learn(policy, policy2, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_coef=0.5, ent_coef=0.01,
@@ -335,9 +404,9 @@ def learn(policy, policy2, env, seed, nsteps=5, nstack=4, total_timesteps=int(80
                   lrschedule=lrschedule)
 
     model2 = Model(policy=policy2, ob_space=ob_space, ac_space=ac_space, nenvs=nenvs, nsteps=nsteps, nstack=nstack,
-                  num_procs=num_procs, ent_coef=ent_coef, vf_coef=vf_coef, size=env.get_board_size(),
-                  max_grad_norm=max_grad_norm, lr=lr, alpha=alpha, epsilon=epsilon, total_timesteps=total_timesteps,
-                  lrschedule=lrschedule)
+                   num_procs=num_procs, ent_coef=ent_coef, vf_coef=vf_coef, size=env.get_board_size(),
+                   max_grad_norm=max_grad_norm, lr=lr, alpha=alpha, epsilon=epsilon, total_timesteps=total_timesteps,
+                   lrschedule=lrschedule)
 
     if load_model:
         model.load(model_path)
@@ -346,10 +415,10 @@ def learn(policy, policy2, env, seed, nsteps=5, nstack=4, total_timesteps=int(80
 
     nbatch = nenvs * nsteps
     tstart = time.time()
-    policy_loss_saver, value_loss_saver, policy_entropy_saver = [],[],[]
+    policy_loss_saver, value_loss_saver, policy_entropy_saver = [], [], []
     policy_loss_saver_2, value_loss_saver_2, policy_entropy_saver_2 = [], [], []
     for update in range(1, total_timesteps // nbatch + 1):
-        policy_loss, value_loss, policy_entropy, policy_loss_2, value_loss_2, policy_entropy_2  = runner.run()
+        policy_loss, value_loss, policy_entropy, policy_loss_2, value_loss_2, policy_entropy_2 = runner.run()
 
         policy_loss_saver.append(str(policy_loss))
         value_loss_saver.append(value_loss)
@@ -359,7 +428,6 @@ def learn(policy, policy2, env, seed, nsteps=5, nstack=4, total_timesteps=int(80
         policy_entropy_saver_2.append(policy_entropy_2)
         nseconds = time.time() - tstart
         fps = float((update * nbatch) / nseconds)
-
 
         if update % log_interval == 0 or update == 1:
             runner.mcts.print_statistic()
@@ -394,8 +462,8 @@ def learn(policy, policy2, env, seed, nsteps=5, nstack=4, total_timesteps=int(80
             # Second model
             PolicyLossFile = "../statistics/policy_loss_2.csv"
             with open(PolicyLossFile, 'w') as f:
-               writer = csv.writer(f, lineterminator='\n', delimiter=',')
-               writer.writerow(float(val) for val in policy_loss_saver_2)
+                writer = csv.writer(f, lineterminator='\n', delimiter=',')
+                writer.writerow(float(val) for val in policy_loss_saver_2)
 
             ValueLossFile = "../statistics/value_loss_2.csv"
             with open(ValueLossFile, 'w') as f:
@@ -406,7 +474,7 @@ def learn(policy, policy2, env, seed, nsteps=5, nstack=4, total_timesteps=int(80
             with open(PolicyEntropyFile, 'w') as f:
                 writer = csv.writer(f, lineterminator='\n', delimiter=',')
                 writer.writerow(float(val) for val in policy_entropy_saver_2)
-    
+
     runner.mcts.visualization()
     env.close()
 
@@ -421,16 +489,26 @@ def play(policy, policy2, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e
     ob_space = env.observation_space
     ac_space = env.action_space
     num_procs = len(env.remotes)  # HACK
+    statistics_path = ('./stadistics_random')
+    summary_writer = tf.summary.FileWriter(statistics_path)
 
-    model = Model(policy=policy, ob_space=ob_space, ac_space=ac_space, nenvs=nenvs, nsteps=nsteps, nstack=nstack,
-                  num_procs=num_procs, ent_coef=ent_coef, vf_coef=vf_coef, size=env.get_board_size(),
+    # model = Model(policy=policy, ob_space=ob_space, ac_space=ac_space, nenvs=nenvs, nsteps=nsteps, nstack=nstack,
+    #                num_procs=num_procs, ent_coef=ent_coef, vf_coef=vf_coef, size=env.get_board_size(),
+    #                max_grad_norm=max_grad_norm, lr=lr, alpha=alpha, epsilon=epsilon, total_timesteps=total_timesteps,
+    #                lrschedule=lrschedule)
+    model = Model2(policy=policy, ob_space=ob_space, ac_space=ac_space, nenvs=nenvs, nsteps=nsteps, nstack=nstack,
+                  num_procs=num_procs, ent_coef=ent_coef, vf_coef=vf_coef,
                   max_grad_norm=max_grad_norm, lr=lr, alpha=alpha, epsilon=epsilon, total_timesteps=total_timesteps,
-                  lrschedule=lrschedule)
+                  lrschedule=lrschedule, summary_writter=summary_writer)
 
-    model2 = Model(policy=policy2, ob_space=ob_space, ac_space=ac_space, nenvs=nenvs, nsteps=nsteps, nstack=nstack,
-                  num_procs=num_procs, ent_coef=ent_coef, vf_coef=vf_coef, size=env.get_board_size(),
-                  max_grad_norm=max_grad_norm, lr=lr, alpha=alpha, epsilon=epsilon, total_timesteps=total_timesteps,
-                  lrschedule=lrschedule)
+    # model2 = Model(policy=policy2, ob_space=ob_space, ac_space=ac_space, nenvs=nenvs, nsteps=nsteps, nstack=nstack,
+    #                num_procs=num_procs, ent_coef=ent_coef, vf_coef=vf_coef, size=env.get_board_size(),
+    #                max_grad_norm=max_grad_norm, lr=lr, alpha=alpha, epsilon=epsilon, total_timesteps=total_timesteps,
+    #                lrschedule=lrschedule)
+    model2 = Model2(policy=policy2, ob_space=ob_space, ac_space=ac_space, nenvs=nenvs, nsteps=nsteps, nstack=nstack,
+                   num_procs=num_procs, ent_coef=ent_coef, vf_coef=vf_coef,
+                   max_grad_norm=max_grad_norm, lr=lr, alpha=alpha, epsilon=epsilon, total_timesteps=total_timesteps,
+                   lrschedule=lrschedule, summary_writter=summary_writer)
 
     model.load(model_path)
     model2.load(model_path2)

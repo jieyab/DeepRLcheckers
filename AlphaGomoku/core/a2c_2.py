@@ -405,6 +405,7 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
                 summary_writer.flush()
 
             if (update % (log_interval * 10)) == 0:
+                print('Save check point')
                 model.save('../models/vs_tic_tac_toe.cpkt')
 
     env.close()

@@ -34,7 +34,7 @@ class MonteCarlo:
         self.model = model
         self.model2 = model2
         self._c_puct = 5
-        self._n_play_out = 20
+        self._n_play_out = 2000
 
         self.list_plus_board_states = []
         self.list_minus_board_states = []
@@ -174,9 +174,13 @@ class MonteCarlo:
         done = tt.has_winner(self.digraph.node[node]['state'], self.winning_length)
 
         if self.digraph.node[node]['side'] == 1:
-            actions, value, _, prob = self.model2.step(np.copy(self.digraph.node[node]['state']), [], done)
+            # actions, value, _, prob = self.model2.step(np.copy(self.digraph.node[node]['state']), [], done)
+            actions, value, _, prob = self.model2.step(np.copy(self.digraph.node[node]['state']),
+                                                       np.array(np.ones(1) * 0.01, dtype='float32'), [], [])
         else:
-            actions, value, _, prob = self.model.step(np.copy(self.digraph.node[node]['state']), [], done)
+            # actions, value, _, prob = self.model.step(np.copy(self.digraph.node[node]['state']), [], done)
+            actions, value, _, prob = self.model.step(np.copy(self.digraph.node[node]['state']),
+                                                      np.array(np.ones(1) * 0.01, dtype='float32'), [], [])
 
         dict_prob = tt.get_available_moves_with_prob(self.digraph.node[node]['state'], prob)
         logger.debug('dict_prob ', str(dict_prob))
