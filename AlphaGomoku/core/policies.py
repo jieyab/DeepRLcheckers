@@ -99,7 +99,7 @@ class CnnPolicy(object):
         ob_shape = (nbatch, nh, nw, nc * nstack)
         nact = size * size  # ac_space.n
         X = tf.placeholder(tf.float32, ob_shape)  # obs
-        with tf.variable_scope("model", reuse=reuse):
+        with tf.variable_scope("model", reusse=reuse):
             h = conv(tf.cast(X, tf.float32), 'c1', nf=32, rf=2, stride=1, init_scale=np.sqrt(2))
             h2 = conv(h, 'c2', nf=64, rf=2, stride=1, init_scale=np.sqrt(2))
             # h3 = conv(h2, 'c3', nf=64, rf=3, stride=1, init_scale=np.sqrt(2))

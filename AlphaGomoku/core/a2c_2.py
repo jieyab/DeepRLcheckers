@@ -9,7 +9,9 @@ from AlphaGomoku.common.misc_util import set_global_seeds, explained_variance
 from AlphaGomoku.core.utils_2 import Scheduler, find_trainable_variables
 from AlphaGomoku.core.utils_2 import cat_entropy, mse
 from AlphaGomoku.core.utils_2 import discount_with_dones
-
+import datetime
+import os
+import csv
 
 class Model(object):
     def __init__(self, policy, ob_space, ac_space, nenvs, nsteps, nstack, num_procs,
@@ -232,6 +234,12 @@ class Runner(object):
         self.batch.clear()
 
 
+def save_csv(file, data):
+    with open(file, 'w') as f:
+        writer = csv.writer(f, lineterminator='\n', delimiter=',')
+        writer.writerow(float(val) for val in data)
+
+
 def redimension_results(obs, states, rewards, masks, actions, values, env, nsteps):
     dim_total = nsteps
     dim = obs.shape[0]
@@ -299,7 +307,8 @@ def train_without_data_augmentation(obs, states, rewards, masks, actions, values
 
 def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_coef=0.5, ent_coef=0.01,
           max_grad_norm=0.5, lr=7e-4, lrschedule='linear', epsilon=1e-5, alpha=0.99, gamma=0.99, log_interval=1000,
-          load_model=False, model_path='', data_augmentation=True, TRAINING_BATCH=10):
+          load_model=False, model_path='', data_augmentation=True, BATCH_SIZE=10,
+          TEMP_CTE=2, TEMP_COUNTER=15000, RUN_TEST=5000):
     tf.reset_default_graph()
     set_global_seeds(seed)
 
@@ -307,11 +316,32 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
     ob_space = env.observation_space
     ac_space = env.action_space
     num_procs = len(env.remotes)  # HACK
-    statistics_path = ('./stadistics_random')
+    now = datetime.datetime.now()
+    temp_count = 0
+
+    counter_stadistics = 0
+    parameters = now.strftime("%d-%m-%Y_%H-%M-%S") + "_seed_" + str(
+        seed) + "_BATCH_" + str(BATCH_SIZE) + "_TEMP_" + str(TEMP_CTE) + "_DA_" + str(data_augmentation) + "_VF_" + str(
+        vf_coef)
+    statistics_path = "../stadistics/random/" + parameters
+    statistics_csv = statistics_path + "/csv/"
+
+    games_wonAI_test_saver, games_finish_in_draw_test_saver, games_wonRandom_test_saver, illegal_test_games_test_saver = [], [], [], []
+    games_wonAI_train_saver, games_finish_in_draw_train_saver, games_wonRandom_train_saver, illegal_test_games_train_saver = [], [], [], []
+    update_test, update_train = [],[]
+    policy_entropy_saver, policy_loss_saver, explained_variance_saver, value_loss_saver = [],[],[],[]
+    try:
+        os.stat(statistics_path)
+    except:
+        os.mkdir(statistics_path)
+
+    try:
+        os.stat(statistics_csv)
+    except:
+        os.mkdir(statistics_csv)
+
     summary_writer = tf.summary.FileWriter(statistics_path)
-    run_test = 5000
     temp = np.ones(1)
-    temp_counter = 0
 
     model = Model(policy=policy, ob_space=ob_space, ac_space=ac_space, nenvs=nenvs, nsteps=nsteps, nstack=nstack,
                   num_procs=num_procs, ent_coef=ent_coef, vf_coef=vf_coef,
@@ -326,20 +356,19 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
     tstart = time.time()
 
     for update in range(0, total_timesteps // nbatch + 1):
-        if update % 30000 == 0:
-            temp = temp * ((2) / (temp_counter + 2))
-            print('-+-+-+-+-+-+-+-+--+-+-+-+-+-++---+-+-+-+-+--+-+-+-+--+--+-++++-+-++--+-+-++-+-+-++-+-')
+        if update % TEMP_COUNTER == 0:
+            temp = temp * ((TEMP_CTE) / (temp_count + TEMP_CTE))
             print('temp:', temp)
-            temp_counter += 1
+            temp_count += 1
 
         if update % 1000 == 0:
             print('update', update)
             env.print_stadistics()
-        if (update % run_test < 1000) and (update % run_test > 0):
+        if (update % RUN_TEST < 1000) and (update % RUN_TEST > 0):
             # print("Aqui")
             runner.test(temp)
 
-            if ((update % run_test) == 999):
+            if ((update % RUN_TEST) == 999):
                 games_wonAI, games_wonRandom, games_finish_in_draw, illegal_games = env.get_stadistics()
                 summary = tf.Summary()
                 summary.value.add(tag='test/games_wonAI', simple_value=float(games_wonAI))
@@ -347,6 +376,18 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
                 summary.value.add(tag='test/games_finish_in_draw', simple_value=float(games_finish_in_draw))
                 summary.value.add(tag='test/illegal_games', simple_value=float(illegal_games))
                 summary_writer.add_summary(summary, update)
+
+                games_wonAI_test_saver.append(games_wonAI)
+                games_wonRandom_test_saver.append(games_wonRandom)
+                games_finish_in_draw_test_saver.append(games_finish_in_draw)
+                illegal_test_games_test_saver.append(illegal_games)
+                update_test.append(update)
+
+                save_csv(statistics_csv + 'games_wonAI_test.csv', games_wonAI_test_saver)
+                save_csv(statistics_csv + 'games_wonRandom_test.csv', games_wonRandom_test_saver)
+                save_csv(statistics_csv + 'games_finish_in_draw_test.csv', games_finish_in_draw_test_saver)
+                save_csv(statistics_csv + 'illegal_games_test.csv', illegal_test_games_test_saver)
+                save_csv(statistics_csv+ 'update_test.csv', update_test)
 
                 summary_writer.flush()
         else:
@@ -358,7 +399,7 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
                                                                                values, env, nsteps)
 
             size_batch = runner.put_in_batch(obs, states, rewards, masks, actions, values)
-            if size_batch == TRAINING_BATCH:
+            if size_batch == BATCH_SIZE:
                 # print('Training batch')
                 batch = runner.get_batch()
 
@@ -380,7 +421,9 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
                 fps = int((update * nbatch) / nseconds)
                 ev = explained_variance(values, rewards)
 
-                if update % (TRAINING_BATCH * 100) == 0:
+                counter_stadistics +=1
+                if counter_stadistics % 10 == 0:
+                    counter_stadistics = 0
                     logger.record_tabular("nupdates", update)
                     logger.record_tabular("total_timesteps", update * nbatch)
                     logger.record_tabular("fps", fps)
@@ -390,23 +433,49 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
                     logger.record_tabular("explained_variance", float(ev))
                     logger.dump_tabular()
 
-                games_wonAI, games_wonRandom, games_finish_in_draw, illegal_games = env.get_stadistics()
+                    games_wonAI, games_wonRandom, games_finish_in_draw, illegal_games = env.get_stadistics()
 
-                summary = tf.Summary()
-                summary.value.add(tag='train/policy_entropy', simple_value=float(policy_entropy))
-                summary.value.add(tag='train/policy_loss', simple_value=float(policy_loss))
-                summary.value.add(tag='train/explained_variance', simple_value=float(ev))
-                summary.value.add(tag='train/value_loss', simple_value=float(value_loss))
-                summary.value.add(tag='train/games_wonAI', simple_value=float(games_wonAI))
-                summary.value.add(tag='train/games_wonRandom', simple_value=float(games_wonRandom))
-                summary.value.add(tag='train/games_finish_in_draw', simple_value=float(games_finish_in_draw))
-                summary.value.add(tag='train/illegal_games', simple_value=float(illegal_games))
-                summary_writer.add_summary(summary, update)
-                summary_writer.flush()
 
-            if (update % (log_interval * 10)) == 0:
+
+                    summary = tf.Summary()
+                    summary.value.add(tag='train/policy_entropy', simple_value=float(policy_entropy))
+                    summary.value.add(tag='train/policy_loss', simple_value=float(policy_loss))
+                    summary.value.add(tag='train/explained_variance', simple_value=float(ev))
+                    summary.value.add(tag='train/value_loss', simple_value=float(value_loss))
+                    summary.value.add(tag='train/games_wonAI', simple_value=float(games_wonAI))
+                    summary.value.add(tag='train/games_wonRandom', simple_value=float(games_wonRandom))
+                    summary.value.add(tag='train/games_finish_in_draw', simple_value=float(games_finish_in_draw))
+                    summary.value.add(tag='train/illegal_games', simple_value=float(illegal_games))
+                    summary.value.add(tag='train/temp', simple_value=float(temp))
+                    summary_writer.add_summary(summary, update)
+                    summary_writer.flush()
+
+                    games_wonAI_train_saver.append(games_wonAI)
+                    games_wonRandom_train_saver.append(games_wonRandom)
+                    games_finish_in_draw_train_saver.append(games_finish_in_draw)
+                    illegal_test_games_train_saver.append(illegal_games)
+                    update_train.append(update)
+
+                    save_csv(statistics_csv + 'games_wonAI_train.csv', games_wonAI_test_saver)
+                    save_csv(statistics_csv + 'games_wonRandom_train.csv', games_wonRandom_test_saver)
+                    save_csv(statistics_csv + 'games_finish_in_draw_train.csv', games_finish_in_draw_test_saver)
+                    save_csv(statistics_csv + 'illegal_games_train.csv', illegal_test_games_test_saver)
+                    save_csv(statistics_csv + 'update_train.csv', update_train)
+
+                    policy_entropy_saver.append(policy_entropy)
+                    policy_loss_saver.append(policy_loss)
+                    value_loss.append(ev)
+                    value_loss_saver.append(value_loss)
+
+                    save_csv(statistics_csv + 'policy_entropy.csv', policy_entropy_saver)
+                    save_csv(statistics_csv + 'policy_loss.csv', policy_loss_saver)
+                    save_csv(statistics_csv + 'ev.csv', ev_saver)
+                    save_csv(statistics_csv + 'value_loss.csv', value_loss_saver)
+
+
+            if ((update % (log_interval * 1)) == 0):
                 print('Save check point')
-                model.save('../models/vs_tic_tac_toe.cpkt')
+                model.save('statistics_path' + 'model'+ parameters + '.cpkt')
 
     env.close()
 

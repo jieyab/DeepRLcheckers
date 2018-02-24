@@ -426,6 +426,7 @@ def learn(policy, policy2, env, seed, nsteps=5, nstack=4, total_timesteps=int(80
         policy_loss_saver_2.append(str(policy_loss_2))
         value_loss_saver_2.append(value_loss_2)
         policy_entropy_saver_2.append(policy_entropy_2)
+
         nseconds = time.time() - tstart
         fps = float((update * nbatch) / nseconds)
 

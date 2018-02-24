@@ -511,8 +511,9 @@ class TicTacToeXGameSpec(BaseGameSpec):
                     # print(self.board_state[0, :, :, 0])
 
         fin_state = np.copy(self.board_state)
+        print(self.board_state[0, :, :, 0])
         if reward[0] != 0:
-            # print(self.board_state[0, :, :, 0])
+            print(self.board_state[0, :, :, 0])
             self.board_state = new_board(self._board_size)
             self.print = True
 
