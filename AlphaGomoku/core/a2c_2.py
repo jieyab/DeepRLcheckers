@@ -465,7 +465,7 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
 
                     policy_entropy_saver.append(policy_entropy)
                     policy_loss_saver.append(policy_loss)
-                    value_loss.append(ev)
+                    ev_saver.append(ev)
                     value_loss_saver.append(value_loss)
 
                     save_csv(statistics_csv + 'policy_entropy.csv', policy_entropy_saver)
@@ -473,7 +473,7 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
                     save_csv(statistics_csv + 'ev.csv', ev_saver)
                     save_csv(statistics_csv + 'value_loss.csv', value_loss_saver)
 
-            if ((update % (log_interval * 1)) == 0):
+            if (update % (log_interval * 1)) == 0:
                 print('Save check point')
                 model.save('statistics_path' + 'model' + parameters + '.cpkt')
 
