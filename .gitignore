@@ -102,7 +102,9 @@ ENV/
 .idea/tasks.xml
 .idea/dictionaries
 .idea/vcs.xml
+.idea/misc.xml
 .idea/jsLibraryMappings.xml
+.idea/*
 
 # Sensitive or high-churn files:
 .idea/dataSources.ids
