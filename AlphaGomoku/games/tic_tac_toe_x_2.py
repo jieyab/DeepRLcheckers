@@ -347,13 +347,16 @@ class TicTacToeXGameSpec(BaseGameSpec):
         action_random = [int(action_random % self._board_size), int(action_random / self._board_size)]
         self.board_state = apply_move(self.board_state, action_random, -1)
 
-    def print_stadistics(self):
+    def print_stadistics(self, thread):
         self.print = False
         total = 1 + self.games_wonAI + self.games_wonRandom + self.games_finish_in_draw + self.illegal_games
+        print('- ' * 20)
+        print('Thread:', thread)
         print('AI wins in', (100 * self.games_wonAI) / total)
         print('Random player wins ', (100 * self.games_wonRandom) / total)
         print('Draws', (100 * self.games_finish_in_draw) / total)
         print('AI made', (100 * self.illegal_games / total), 'illegal moves')
+        print('- ' * 20)
 
         self.games_wonAI = 0
         self.games_wonRandom = 0
