@@ -15,9 +15,9 @@ def sample_without_exploration(logits):
 
 
 def cat_entropy(logits):
-    a0 = logits - tf.reduce_max(logits, 1, keepdims=True)
+    a0 = logits - tf.reduce_max(logits, 1, keep_dims=True)
     ea0 = tf.exp(a0)
-    z0 = tf.reduce_sum(ea0, 1, keepdims=True)
+    z0 = tf.reduce_sum(ea0, 1, keep_dims=True)
     p0 = ea0 / z0
     return tf.reduce_sum(p0 * (tf.log(z0) - a0), 1)
 
