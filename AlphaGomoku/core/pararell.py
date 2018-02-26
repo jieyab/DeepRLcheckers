@@ -1,4 +1,10 @@
 # !/usr/bin/env python
+
+import os
+import sys
+
+sys.path.append(os.path.join(os.path.dirname(__file__), '../../'))
+
 import threading
 import time
 import configparser
