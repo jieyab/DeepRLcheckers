@@ -7,11 +7,11 @@ from AlphaGomoku.core.policies import CnnPolicy_slim
 from AlphaGomoku.games.tic_tac_toe_x_2 import TicTacToeXGameSpec
 
 
-def worker(policy, sb, wl, seed, total_times, lm, model_path, da, bs, tc, tco):
+def worker(policy, sb, wl, seed, total_times, lm, model_path, da, bs, tc):
     env = TicTacToeXGameSpec(sb, wl)
-    learn(policy, env, nsteps=sb * wl, nstack=1, seed=seed, total_timesteps=total_times,
+    learn(policy, env, nsteps=sb * sb, nstack=1, seed=seed, total_timesteps=total_times,
           load_model=lm, model_path=model_path, data_augmentation=da,
-          BATCH_SIZE=bs, TEMP_CTE=tc, TEMP_COUNTER=tco)
+          BATCH_SIZE=bs, TEMP_CTE=tc)
 
 
 if __name__ == '__main__':
@@ -31,9 +31,8 @@ if __name__ == '__main__':
         da = config.getboolean(task, 'data_augmentation')
         bs = config.getint(task, 'BATCH_SIZE')
         tc = config.getint(task, 'TEMP_CTE')
-        tco = config.getint(task, 'TEMP_COUNTER')
         t = threading.Thread(target=worker, args=(policy_fn, sb, wl, seed, total_times, lm, model_path, da,
-                                                  bs, tc, tco))
+                                                  bs, tc))
         threads.append(t)
         time.sleep(3)
         t.start()
