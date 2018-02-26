@@ -33,10 +33,11 @@ class Model(object):
 
         step_model = policy(sess, ob_space, ac_space, nenvs, 1, nstack, reuse=False)
         train_model = policy(sess, ob_space, ac_space, nenvs, nsteps, nstack, reuse=True)
-        q = tf.one_hot(A, nact, dtype=tf.float32)
-        neglogpac = -tf.reduce_sum(tf.log((train_model.pi) + 1e-10) * q, [1])
+        #q = tf.one_hot(A, nact, dtype=tf.float32)
+        #neglogpac = -tf.reduce_sum(tf.log((train_model.pi) + 1e-10) * q, [1])
 
-        # neglogpac = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi, labels=A)
+        neglogpac = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi, labels=A)
+
         pg_loss = tf.reduce_mean(ADV * neglogpac)
         vf_loss = tf.reduce_mean(mse(tf.squeeze(train_model.vf), R))
         entropy = tf.reduce_mean(cat_entropy(train_model.pi))
@@ -124,11 +125,12 @@ class Runner(object):
             probs[i] = 0
         return probs
 
-    def softmax_b(self, x):
+    def softmax_b(self, x, temp):
         illegal_moves = self.env.get_illegal_moves()
         x = np.clip(x, 1e-20, 80.0)
         x = np.delete(x, illegal_moves)
         # print(x)
+        x = x/temp
         x = np.exp(x) / np.sum(np.exp(x), axis=0)
         for i in range(len(illegal_moves)):
             x = np.insert(x, illegal_moves[i], 0)
@@ -144,10 +146,10 @@ class Runner(object):
         self.obs = self.obs * 0
         for n in range(self.nsteps):
             counter = n
-            actions, values, states, probs = self.model.step(self.obs, temp, [], [])
+            actions, values, states, probs = self.model.step(self.obs, np.ones(1), [], [])
             a_dist = np.squeeze(probs)
             a_dist = np.clip(a_dist, 1e-20, 1)
-            a_dist = self.get_legal_moves(a_dist)
+            a_dist = self.softmax_b(a_dist, temp)
             a_dist = a_dist / np.sum(a_dist)
             a = np.random.choice(a_dist, p=a_dist)
             actions = [np.argmax(a_dist == a)]
@@ -203,11 +205,11 @@ class Runner(object):
     def test(self, temp):
         self.obs = self.obs * 0
         for n in range(self.nsteps):
-            actions, values, states, probs = self.model.step(self.obs, temp, self.states, self.dones)
+            actions, values, states, probs = self.model.step(self.obs, np.ones(1), self.states, self.dones)
 
             a_dist = np.squeeze(probs)
             a_dist = np.clip(a_dist, 1e-20, 1)
-            a_dist = self.get_legal_moves(a_dist)
+            a_dist = self.softmax_b(a_dist, temp)
             a_dist = a_dist / np.sum(a_dist)
             actions = [np.argmax(a_dist)]
             # print(actions, self.env.get_illegal_moves())
@@ -309,7 +311,7 @@ def train_without_data_augmentation(obs, states, rewards, masks, actions, values
 def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_coef=0.5, ent_coef=0.01,
           max_grad_norm=0.5, lr=7e-4, lrschedule='linear', epsilon=1e-5, alpha=0.99, gamma=0.99, log_interval=1000,
           load_model=False, model_path='', data_augmentation=True, BATCH_SIZE=10,
-          TEMP_CTE=2, TEMP_COUNTER=15000, RUN_TEST=5000):
+          TEMP_CTE=30000, RUN_TEST=5000):
     tf.reset_default_graph()
     set_global_seeds(seed)
 
@@ -318,12 +320,17 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
     ac_space = env.action_space
     num_procs = len(env.remotes)  # HACK
     now = datetime.datetime.now()
-    temp_count = 0
+    temp = np.ones(1)
 
     counter_stadistics = 0
     parameters = now.strftime("%d-%m-%Y_%H-%M-%S") + "_seed_" + str(
         seed) + "_BATCH_" + str(BATCH_SIZE) + "_TEMP_" + str(TEMP_CTE) + "_DA_" + str(data_augmentation) + "_VF_" + str(
         vf_coef)
+    statistics_path = "../statistics/random/"
+    try:
+        os.stat(statistics_path)
+    except:
+        os.mkdir(statistics_path)
     statistics_path = "../statistics/random/" + parameters
     statistics_csv = statistics_path + "/csv/"
 
@@ -358,18 +365,17 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
     tstart = time.time()
 
     for update in range(0, total_timesteps // nbatch + 1):
-        if update % TEMP_COUNTER == 0:
-            temp = temp * ((TEMP_CTE) / (temp_count + TEMP_CTE))
-            print('temp: ', temp)
-            temp_count += 1
 
         if update % 1000 == 0:
             print('update: ', update)
             import threading
             env.print_stadistics(threading.get_ident())
-        if (update % RUN_TEST < 1000) and (update % RUN_TEST > 0):
+        if (update % RUN_TEST < 1000) and (update % RUN_TEST > 0) and (update != 0):
             # print("Aqui")
+
             runner.test(temp)
+            temp = (0.8 * np.exp(-(update / TEMP_CTE)) + 0.2) * np.ones(1)
+
 
             if ((update % RUN_TEST) == 999):
                 games_wonAI, games_wonRandom, games_finish_in_draw, illegal_games = env.get_stadistics()
@@ -413,6 +419,7 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
                                                                                           actions,
                                                                                           values, model, temp)
                     else:
+
                         policy_loss, value_loss, policy_entropy = train_without_data_augmentation(obs, states, rewards,
                                                                                                   masks,
                                                                                                   actions, values,

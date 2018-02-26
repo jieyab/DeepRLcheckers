@@ -491,9 +491,9 @@ class TicTacToeXGameSpec(BaseGameSpec):
                 self.games_finish_in_draw += 1
                 reward[0] = self.reward_draw
 
-        if ((self.games_won_A + self.games_won_B + self.games_finish_in_draw + self.illegal_games) % 999 == 0):
-            print(self.board_state[0, :, :, 0])
-            print(datetime.datetime.now().time())
+        #if ((self.games_won_A + self.games_won_B + self.games_finish_in_draw + self.illegal_games) % 999 == 0):
+        #    print(self.board_state[0, :, :, 0])
+        #    print(datetime.datetime.now().time())
 
 
 

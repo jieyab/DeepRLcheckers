@@ -34,10 +34,10 @@ class Model(object):
 
         step_model = policy(sess, ob_space, ac_space, nenvs, 1, nstack, scope=scope, reuse=False)
         train_model = policy(sess, ob_space, ac_space, nenvs, nsteps, nstack, scope=scope, reuse=True)
-        q = tf.one_hot(A, nact, dtype=tf.float32)
-        neglogpac = -tf.reduce_sum(tf.log((train_model.pi) + 1e-10) * q, [1])
+        #q = tf.one_hot(A, nact, dtype=tf.float32)
+        #neglogpac = -tf.reduce_sum(tf.log((train_model.pi) + 1e-10) * q, [1])
 
-        # neglogpac = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi, labels=A)
+        neglogpac = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi, labels=A)
         pg_loss = tf.reduce_mean(ADV * neglogpac)
         vf_loss = tf.reduce_mean(mse(tf.squeeze(train_model.vf), R))
         entropy = tf.reduce_mean(cat_entropy(train_model.pi))
@@ -48,7 +48,10 @@ class Model(object):
         if max_grad_norm is not None:
             grads, grad_norm = tf.clip_by_global_norm(grads, max_grad_norm)
         grads = list(zip(grads, params))
-        trainer = tf.train.RMSPropOptimizer(learning_rate=LR, decay=alpha, epsilon=epsilon)
+        #trainer = tf.train.RMSPropOptimizer(learning_rate=, decay=alpha, epsilon=epsilon)
+        trainer = tf.train.AdamOptimizer(LR)
+
+
         _train = trainer.apply_gradients(grads)
 
         lr = Scheduler(v=lr, nvalues=total_timesteps, schedule=lrschedule)
@@ -164,7 +167,7 @@ class Runner(object):
         self.obs = self.obs * 0
         self.obs_B = self.obs * 0
 
-        for n in range(self.nsteps):
+        for n in range(self.obs.shape[1] * self.obs.shape[1]):
             counter = n
             self.obs = self.obs_B
             obs_play = self.obs_B * -1
@@ -307,49 +310,35 @@ class Runner(object):
 
         return mb_obs, [], mb_rewards, mb_masks, mb_actions, mb_values, mb_obs_B, [], mb_rewards_B, mb_masks_B, mb_actions_B, mb_values_B
 
-    def test(self, temp, NUMBER_TEST,summary_writer, env,update):
+    def test(self, temp, model, NUMBER_TEST, summary_writer, env, update):
         for i in range(NUMBER_TEST):
             self.obs = self.obs * 0
-            for n in range(self.nsteps):
-                self.obs = self.obs_B
-                obs_play = self.obs_B * -1
-                actions, values, states, probs = self.model.step(obs_play, temp, [], [])
+            for n in range(self.obs.shape[1]*self.obs.shape[1]):
+                actions, values, states, probs = model.step(self.obs, temp, self.states, self.dones)
+
                 a_dist = np.squeeze(probs)
                 a_dist = np.clip(a_dist, 1e-20, 1)
                 a_dist = self.get_legal_moves(a_dist)
                 a_dist = a_dist / np.sum(a_dist)
-
                 actions = [np.argmax(a_dist)]
+                # print(actions, self.env.get_illegal_moves())
+                obs, rewards, dones, _, illegal = self.env.step(actions)
 
-                obs, rewards, dones, _, illegal = self.env.step_vs(actions, self.player)
+                # print(illegal, )
+                self.obs = obs
 
-                if rewards != 0:
+                if dones[0] or illegal:
                     break
 
-                obs_play = obs * -1
-
-                actions_B, values_B, states_B, probs = self.model_2.step(obs_play, temp, [], [])
-
-                a_dist = np.squeeze(probs)
-                a_dist = np.clip(a_dist, 1e-20, 1)
-                a_dist = self.get_legal_moves(a_dist)
-                a_dist = a_dist / np.sum(a_dist)
-                actions_B = [np.argmax(a_dist)]
-
-                self.obs_B, rewards_B, dones_B, _, illegal_B = self.env.step_vs(actions_B, self.player_2)
-
-                if rewards_B != 0:
-                    break
-
-            games_A, games_B, games_finish_in_draw, illegal_games = env.get_stadistics_vs()
-
-            summary = tf.Summary()
-            summary.value.add(tag='test/games_A', simple_value=float(games_A))
-            summary.value.add(tag='test/games_B', simple_value=float(games_B))
-            summary.value.add(tag='test/games_finish_in_draw', simple_value=float(games_finish_in_draw))
-            summary.value.add(tag='test/illegal_games', simple_value=float(illegal_games))
-            summary_writer.add_summary(summary, update)
-            summary_writer.flush()
+        won_AI, won_random, draws, illegal_games = env.get_stadistics()
+        print('Result test'+ model.scope)
+        env.print_stadistics('AI_vs_AI mode')
+        summary = tf.Summary()
+        #summary.value.add(tag='test'+ self.model.scope+ '/won_AI' , simple_value=float(won_AI))
+        summary.value.add(tag='test/won_random_' + model.scope, simple_value=float(won_random))
+        #summary.value.add(tag='test/draws/'+ model.scope+ '/illegal_games', simple_value=float(illegal_games))
+        summary_writer.add_summary(summary, update)
+        summary_writer.flush()
 
     def put_in_batch(self, obs, states, reward, masks, actions, values, obs_B, states_B, rewards_B, masks_B,
                      actions_B, values_B):
@@ -434,38 +423,37 @@ def train_without_data_augmentation(obs, states, rewards, masks, actions, values
     return pl, vl, pe
 
 
-def print_logger(tstart, update, policy_entropy, policy_loss, value_loss, rewards, values, policy_entropy_B,
-                 policy_loss_B, value_loss_B, rewards_B, values_B):
-    nbatch = 1
-    nseconds = time.time() - tstart
-    fps = int((update * nbatch) / nseconds)
-    ev = explained_variance(values, rewards)
-    ev_B = explained_variance(values_B, rewards_B)
+def print_logger(update, policy_entropy, policy_loss, value_loss, policy_entropy_B, policy_loss_B, value_loss_B):
+    #nbatch = 1
+    #nseconds = time.time() - tstart
+    #fps = int((update * nbatch) / nseconds)
+    #ev = explained_variance(values, rewards)
+    #ev_B = explained_variance(values_B, rewards_B)
 
     print('update:', update)
     logger.record_tabular("nupdates", update)
-    logger.record_tabular("fps", fps)
+    #logger.record_tabular("fps", fps)
 
     logger.record_tabular("policy_entropy", float(policy_entropy))
     logger.record_tabular("policy_loss", float(policy_loss))
     logger.record_tabular("value_loss", float(value_loss))
-    logger.record_tabular("explained_variance", float(ev))
+    #logger.record_tabular("explained_variance", float(ev))
 
     logger.record_tabular("policy_entropy_B", float(policy_entropy_B))
     logger.record_tabular("policy_loss_B", float(policy_loss_B))
     logger.record_tabular("value_loss_B", float(value_loss_B))
-    logger.record_tabular("explained_variance_B", float(ev_B))
+    #logger.record_tabular("explained_variance_B", float(ev_B))
     logger.dump_tabular()
 
 def print_tensorboard_training(summary_writer,update,policy_entropy, policy_loss, value_loss, policy_entropy_B,
                                       policy_loss_B, value_loss_B, temp):
     summary = tf.Summary()
-    summary.value.add(tag='train_A/policy_entropy', simple_value=float(policy_entropy))
-    summary.value.add(tag='train_loss/policy_loss_A', simple_value=float(policy_loss))
-    summary.value.add(tag='train_loss/value_loss_A', simple_value=float(value_loss))
+    summary.value.add(tag='train_loss/policy_entropy', simple_value=float(policy_entropy))
+    summary.value.add(tag='train_loss/policy_loss', simple_value=float(policy_loss))
+    summary.value.add(tag='train_loss/value_loss', simple_value=float(value_loss))
 
-    summary.value.add(tag='train_B/policy_entropy', simple_value=float(policy_entropy_B))
-    summary.value.add(tag='train_loss/policy_loss', simple_value=float(policy_loss_B))
+    summary.value.add(tag='train_loss/policy_entropy_B', simple_value=float(policy_entropy_B))
+    summary.value.add(tag='train_loss/policy_loss_B', simple_value=float(policy_loss_B))
     summary.value.add(tag='train_loss/value_loss_B', simple_value=float(value_loss_B))
     summary.value.add(tag='train/temp', simple_value=float(temp))
 
@@ -482,44 +470,29 @@ def print_tensorboard_training_score(summary_writer,update,env):
     summary.value.add(tag='train/games_finish_in_draw', simple_value=float(games_finish_in_draw))
     summary_writer.add_summary(summary, update)
 
-def create_models(policy, ob_space, ac_space, nenvs, nsteps, nstack, num_procs, ent_coef, vf_coef,
+def create_models(NUMBER_OF_MODELS,policy, ob_space, ac_space, nenvs, nsteps, nstack, num_procs, ent_coef, vf_coef,
                            max_grad_norm, lr, alpha, epsilon, total_timesteps, lrschedule):
-    model_I = Model(policy=policy, scope='model_I', ob_space=ob_space, ac_space=ac_space, nenvs=nenvs, nsteps=nsteps, nstack=nstack,
+    models = []
+
+    for i in range(0,NUMBER_OF_MODELS):
+
+        model_name = 'model_holder_' + str(i)
+
+        models.append(Model(policy=policy, scope=model_name, ob_space=ob_space, ac_space=ac_space, nenvs=nenvs, nsteps=nsteps, nstack=nstack,
                     num_procs=num_procs, ent_coef=ent_coef, vf_coef=vf_coef,
                     max_grad_norm=max_grad_norm, lr=lr, alpha=alpha, epsilon=epsilon, total_timesteps=total_timesteps,
-                    lrschedule=lrschedule)
+                    lrschedule=lrschedule))
 
-    model_II = Model(policy=policy, scope='model_II', ob_space=ob_space, ac_space=ac_space, nenvs=nenvs, nsteps=nsteps, nstack=nstack,
-                     num_procs=num_procs, ent_coef=ent_coef, vf_coef=vf_coef,
-                     max_grad_norm=max_grad_norm, lr=lr, alpha=alpha, epsilon=epsilon, total_timesteps=total_timesteps,
-                     lrschedule=lrschedule)
-
-    model_III = Model(policy=policy, scope='model_III',  ob_space=ob_space, ac_space=ac_space, nenvs=nenvs, nsteps=nsteps, nstack=nstack,
-                      num_procs=num_procs, ent_coef=ent_coef, vf_coef=vf_coef,
-                      max_grad_norm=max_grad_norm, lr=lr, alpha=alpha, epsilon=epsilon, total_timesteps=total_timesteps,
-                      lrschedule=lrschedule)
-
-    model_IV = Model(policy=policy, scope='model_IV',  ob_space=ob_space, ac_space=ac_space, nenvs=nenvs, nsteps=nsteps, nstack=nstack,
-                     num_procs=num_procs, ent_coef=ent_coef, vf_coef=vf_coef,
-                     max_grad_norm=max_grad_norm, lr=lr, alpha=alpha, epsilon=epsilon, total_timesteps=total_timesteps,
-                     lrschedule=lrschedule)
-
-    model_V = Model(policy=policy, scope='model_V',  ob_space=ob_space, ac_space=ac_space, nenvs=nenvs, nsteps=nsteps, nstack=nstack,
-                    num_procs=num_procs, ent_coef=ent_coef, vf_coef=vf_coef,
-                    max_grad_norm=max_grad_norm, lr=lr, alpha=alpha, epsilon=epsilon, total_timesteps=total_timesteps,
-                    lrschedule=lrschedule)
-    models = [model_I, model_II, model_III, model_IV, model_V]
 
     return models
 
 def change_player(models,env):
-    pl1, pl2 = random.sample(range(1, len(models)), 2)
+    pl1, pl2 = random.sample(range(0, len(models)), 2)
     runner = Runner(env, models[pl1], 'A', models[pl2], 'B', nsteps=5, nstack=1, gamma=0.99)
     return runner, models[pl1], models[pl2]
 
 
 def train(temp, runner,model, model_2, data_augmentation,BATCH_SIZE,env,summary_writer, update, counter_stadistics,tstart,nsteps=5,):
-
     obs, states, rewards, masks, actions, values, obs_B, states_B, rewards_B, masks_B, actions_B, values_B = runner.run(
         temp)
 
@@ -558,17 +531,20 @@ def train(temp, runner,model, model_2, data_augmentation,BATCH_SIZE,env,summary_
                                                                                                 model_2, temp)
         runner.empty_batch()
 
-        counter_stadistics += 1
-        if counter_stadistics == 5:
-            print_logger(tstart, update, policy_entropy, policy_loss, value_loss, policy_entropy_B, policy_loss_B,
-                         value_loss_B)
-            print_tensorboard_training(summary_writer, update, policy_entropy, policy_entropy, policy_loss, value_loss,
+
+        print_tensorboard_training(summary_writer, update, policy_entropy, policy_loss, value_loss,
                               policy_entropy_B, policy_loss_B, value_loss_B, temp)
+        #        print_logger(update, policy_entropy, policy_loss, value_loss, policy_entropy_B, policy_loss_B, value_loss_B)
+
+
+
+
+
 
 
 def learn(policy, env, seed, nsteps, nstack=4, total_timesteps=int(80e6), vf_coef=0.5, ent_coef=0.01,
           max_grad_norm=0.5, lr=7e-4, lrschedule='linear', epsilon=1e-5, alpha=0.99, gamma=0.99, log_interval=1000,
-          load_model=False, model_path='', data_augmentation=True, BATCH_SIZE=10):
+          load_model=False, model_path='', data_augmentation=True, BATCH_SIZE=100,NUMBER_OF_MODELS=4):
     tf.reset_default_graph()
     set_global_seeds(seed)
 
@@ -578,25 +554,21 @@ def learn(policy, env, seed, nsteps, nstack=4, total_timesteps=int(80e6), vf_coe
     num_procs = len(env.remotes)  # HACK
     now = datetime.datetime.now()
 
-    RUN_TEST = 5000
-    temp = np.ones(1)
-    CHANGE_PLAYER = 100
+    CHANGE_PLAYER = 1000
     NUMBER_TEST = 1000
-    TEMP_CTE = 2
-    TEMP_COUNTER = 10000
-    temp_count = 0
+    TEMP_CTE = 20000
     counter_stadistics = 0
+    temp = np.ones(1)
 
     parameters = now.strftime("%d-%m-%Y_%H-%M-%S") + "_seed_" + str(
         seed) + "_BATCH_" + str(BATCH_SIZE) + "_TEMP_" + str(TEMP_CTE) + "_DA_" + str(data_augmentation) + "_VF_" + str(
-        vf_coef)
-    statistics_path = ('../stadistics/AI_vs_AI/' + parameters)
+        vf_coef) + '_num_players_' +str(NUMBER_OF_MODELS) + '_ADAM'
+    statistics_path = ('../stadistics/AI_vs_AI/' + parameters )
 
     summary_writer = tf.summary.FileWriter(statistics_path)
 
-    models = create_models(policy, ob_space, ac_space, nenvs, nsteps, nstack, num_procs, ent_coef, vf_coef,
+    models = create_models(NUMBER_OF_MODELS,policy, ob_space, ac_space, nenvs, nsteps, nstack, num_procs, ent_coef, vf_coef,
                            max_grad_norm, lr, alpha, epsilon, total_timesteps, lrschedule)
-
 
 
     if load_model:
@@ -616,17 +588,19 @@ def learn(policy, env, seed, nsteps, nstack=4, total_timesteps=int(80e6), vf_coe
 
     for update in range(0, total_timesteps // nbatch + 1):
 
-        if update % TEMP_COUNTER == 0:
-            temp_count += 1
-            temp = temp * (TEMP_CTE / (temp_count + TEMP_CTE)) + 0.2
-            print('temp:', temp)
+
+        # if update % TEMP_COUNTER == 0:
+        #     temp_count += 1
+        #     temp = temp * (TEMP_CTE / (temp_count + TEMP_CTE)) + 0.2
+        #     print('temp:', temp)
 
         if update % CHANGE_PLAYER == 0 and update != 0:
             env.print_stadistics_vs()
             print_tensorboard_training_score(summary_writer, update, env)
-
+            temp = (0.8 * np.exp(-(update / TEMP_CTE)) + 0.2) * np.ones(1)
             print('Testing players, update:', update)
-            runner.test(temp, NUMBER_TEST,summary_writer, env, update)
+            runner.test(temp, model,NUMBER_TEST,summary_writer, env, update)
+            runner.test(temp, model_2,NUMBER_TEST,summary_writer, env, update)
 
             runner, model, model_2 = change_player(models,env)
             print('Change players, new players', model.scope, 'A',model_2.scope,'B')

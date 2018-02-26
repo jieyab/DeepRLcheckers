@@ -1,20 +1,19 @@
 #!/usr/bin/env python
 from AlphaGomoku.core.a2c_2 import learn
-from AlphaGomoku.core.policies import CnnPolicy_slim
+from AlphaGomoku.core.policies import CnnPolicy_slim, CnnPolicy_slim_TTT
 from AlphaGomoku.games.tic_tac_toe_x_2 import TicTacToeXGameSpec
 
 if __name__ == '__main__':
-    policy_fn = CnnPolicy_slim
+    policy_fn = CnnPolicy_slim_TTT
     size_board = 5  # int(sys.argv[2])
     winning_length = 4
 
-    seed = 1
+    seed = 9
 
-    BATCH_SIZE = 500
-    TEMP_CTE = 2
-    TEMP_COUNTER = 10000
+    BATCH_SIZE = 256
+    TEMP_CTE = 30000
 
-    data_augmentation = True
+    data_augmentation = False
 
     # depth conv1 and depth conv2 and weights fc
     # data agumentation
@@ -23,4 +22,4 @@ if __name__ == '__main__':
     env = TicTacToeXGameSpec(size_board, winning_length)
     learn(policy_fn, env, nsteps=size_board * size_board, nstack=1, seed=seed, total_timesteps=10000000,
           load_model=False, model_path=model_path, data_augmentation=data_augmentation,
-          BATCH_SIZE=BATCH_SIZE, TEMP_CTE=TEMP_CTE, TEMP_COUNTER=TEMP_COUNTER)
+          BATCH_SIZE=BATCH_SIZE, TEMP_CTE=TEMP_CTE)
