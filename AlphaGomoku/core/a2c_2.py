@@ -328,6 +328,10 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
         vf_coef)
     statistics_path = "../statistics/random/"
     try:
+        os.stat("../statistics/")
+    except:
+        os.mkdir("../statistics/")
+    try:
         os.stat(statistics_path)
     except:
         os.mkdir(statistics_path)
