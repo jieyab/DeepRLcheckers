@@ -48,10 +48,8 @@ class Model(object):
         if max_grad_norm is not None:
             grads, grad_norm = tf.clip_by_global_norm(grads, max_grad_norm)
         grads = list(zip(grads, params))
-        #trainer = tf.train.RMSPropOptimizer(learning_rate=, decay=alpha, epsilon=epsilon)
-        trainer = tf.train.AdamOptimizer(LR)
-
-
+        trainer = tf.train.RMSPropOptimizer(learning_rate=, decay=alpha, epsilon=epsilon)
+        #trainer = tf.train.AdamOptimizer(LR)
         _train = trainer.apply_gradients(grads)
 
         lr = Scheduler(v=lr, nvalues=total_timesteps, schedule=lrschedule)
@@ -562,8 +560,8 @@ def learn(policy, env, seed, nsteps, nstack=4, total_timesteps=int(80e6), vf_coe
 
     parameters = now.strftime("%d-%m-%Y_%H-%M-%S") + "_seed_" + str(
         seed) + "_BATCH_" + str(BATCH_SIZE) + "_TEMP_" + str(TEMP_CTE) + "_DA_" + str(data_augmentation) + "_VF_" + str(
-        vf_coef) + '_num_players_' +str(NUMBER_OF_MODELS) + '_ADAM'
-    statistics_path = ('../stadistics/AI_vs_AI/' + parameters )
+        vf_coef) + '_num_players_' +str(NUMBER_OF_MODELS)
+    statistics_path = ('../statistics/AI_vs_AI/' + parameters )
 
     summary_writer = tf.summary.FileWriter(statistics_path)
 

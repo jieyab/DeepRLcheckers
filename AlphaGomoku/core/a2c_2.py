@@ -332,6 +332,7 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
     except:
         os.mkdir(statistics_path)
     statistics_path = "../statistics/random/" + parameters
+    model_path = statistics_path + "/model/"
     statistics_csv = statistics_path + "/csv/"
 
     games_wonAI_test_saver, games_finish_in_draw_test_saver, games_wonRandom_test_saver, illegal_test_games_test_saver = [], [], [], []
@@ -348,6 +349,11 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
         os.stat(statistics_csv)
     except:
         os.mkdir(statistics_csv)
+
+    try:
+        os.stat(model_path)
+    except:
+        os.mkdir(model_path)
 
     summary_writer = tf.summary.FileWriter(statistics_path)
     temp = np.ones(1)
@@ -480,9 +486,9 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
                     save_csv(statistics_csv + 'ev.csv', ev_saver)
                     save_csv(statistics_csv + 'value_loss.csv', value_loss_saver)
 
-            if (update % (log_interval * 1)) == 0:
+            if (update % (log_interval * 10)) == 0:
                 print('Save check point')
-                model.save('statistics_path' + 'model' + parameters + '.cpkt')
+                model.save(model_path +  parameters + '.cpkt')
 
     env.close()
 
