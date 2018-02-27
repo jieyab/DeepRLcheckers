@@ -11,10 +11,11 @@ if __name__ == '__main__':
 
     seed = 9
 
-    BATCH_SIZE = 256
+    BATCH_SIZE = 32
     TEMP_CTE = 30000
 
-    data_augmentation = False
+
+    data_augmentation = True
 
     # depth conv1 and depth conv2 and weights fc
     # data agumentation

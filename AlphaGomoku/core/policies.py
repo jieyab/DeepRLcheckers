@@ -383,16 +383,17 @@ class CnnPolicy_slim_2(object):
 class CnnPolicy_slim_scope(object):
 
     def __init__(self, sess, ob_space, ac_space, nenv, nsteps, nstack, scope,reuse=False):
-        nbatch = nenv * nsteps
+        nbatch = nenv * np.sqrt(nsteps)
         nh, nw, nc = ob_space.shape
         ob_shape = (nbatch, nh, nw, nc * nstack)
+        print(ob_shape)
         nact = ac_space
         X = tf.placeholder(tf.float32, ob_shape)  # obs
         TEMP = tf.placeholder(tf.float32, 1)
         with tf.variable_scope(scope, reuse=reuse):
             conv1 = slim.conv2d(activation_fn=tf.nn.relu,
                                 inputs=X, num_outputs=32,
-                                kernel_size=[4, 4], stride=[1, 1], padding='VALID',
+                                kernel_size=[5, 5], stride=[1, 1], padding='VALID',
                                 weights_regularizer =slim.l2_regularizer(0.0005))
             conv2 = slim.conv2d(activation_fn=tf.nn.relu,
                                 inputs=conv1, num_outputs=64,
@@ -410,7 +411,7 @@ class CnnPolicy_slim_scope(object):
                                       weights_initializer=normalized_columns_initializer(1.0),
                                       biases_initializer=None,
                                       weights_regularizer=slim.l2_regularizer(0.0005))
-        pi = tf.nn.softmax(pi / TEMP)
+        #pi = tf.nn.softmax(pi / TEMP)
         v0 = vf[:, 0]
         p0 = [pi]
         a0 = sample_without_exploration(pi)

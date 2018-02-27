@@ -221,10 +221,23 @@ class Runner(object):
             if dones[0] or illegal:
                 break
 
-    def put_in_batch(self, obs, states, reward, masks, actions, values):
 
+    def put_in_batch(self, obs, states, reward, masks, actions, values):
         size = len(self.batch)
-        self.batch.update({size: [obs, states, reward, masks, actions, values]})
+
+        number_slice = obs.shape[1]
+        obs_slice =np.vsplit(obs,number_slice)
+        reward_slice =np.hsplit(reward,number_slice)
+        masks_slice =np.hsplit(masks,number_slice)
+        actions_slice =np.hsplit(actions,number_slice)
+        values_slice=np.hsplit(values,number_slice)
+
+        for i in range(len(obs_slice)):
+            self.batch.update({size + i: [np.asarray(obs_slice[i]), [], np.asarray(reward_slice[i]), np.asarray(masks_slice[i]),
+                                          np.asarray(actions_slice[i]), np.asarray(values_slice[i])]})
+            if (masks_slice[i][0] == True and masks_slice[i][1] == True):
+                break
+
         return size
 
     def size_batch(self):
@@ -308,12 +321,13 @@ def train_without_data_augmentation(obs, states, rewards, masks, actions, values
     return pl, vl, pe
 
 
-def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_coef=0.5, ent_coef=0.01,
+def learn(policy, env, seed, nsteps, nstack=4, total_timesteps=int(80e6), vf_coef=0.5, ent_coef=0.01,
           max_grad_norm=0.5, lr=7e-4, lrschedule='linear', epsilon=1e-5, alpha=0.99, gamma=0.99, log_interval=1000,
           load_model=False, model_path='', data_augmentation=True, BATCH_SIZE=10,
           TEMP_CTE=30000, RUN_TEST=5000):
     tf.reset_default_graph()
     set_global_seeds(seed)
+    print('Data augmentation', data_augmentation)
 
     nenvs = env.num_envs
     ob_space = env.observation_space
@@ -321,6 +335,7 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
     num_procs = len(env.remotes)  # HACK
     now = datetime.datetime.now()
     temp = np.ones(1)
+    BATCH_SIZE = np.sqrt(nsteps) * BATCH_SIZE
 
     counter_stadistics = 0
     parameters = now.strftime("%d-%m-%Y_%H-%M-%S") + "_seed_" + str(
@@ -362,7 +377,7 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
     summary_writer = tf.summary.FileWriter(statistics_path)
     temp = np.ones(1)
 
-    model = Model(policy=policy, ob_space=ob_space, ac_space=ac_space, nenvs=nenvs, nsteps=nsteps, nstack=nstack,
+    model = Model(policy=policy, ob_space=ob_space, ac_space=ac_space, nenvs=nenvs, nsteps=np.sqrt(nsteps), nstack=nstack,
                   num_procs=num_procs, ent_coef=ent_coef, vf_coef=vf_coef,
                   max_grad_norm=max_grad_norm, lr=lr, alpha=alpha, epsilon=epsilon, total_timesteps=total_timesteps,
                   lrschedule=lrschedule, summary_writter=summary_writer)
@@ -418,10 +433,9 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
                                                                                values, env, nsteps)
 
             size_batch = runner.put_in_batch(obs, states, rewards, masks, actions, values)
-            if size_batch == BATCH_SIZE:
+            if size_batch >= BATCH_SIZE:
                 # print('Training batch')
                 batch = runner.get_batch()
-
                 for i in range(len(batch)):
                     obs, states, rewards, masks, actions, values = batch.get(i)
                     if data_augmentation:

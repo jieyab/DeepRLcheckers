@@ -6,9 +6,9 @@ from AlphaGomoku.games.tic_tac_toe_x_2 import TicTacToeXGameSpec
 
 if __name__ == '__main__':
     policy_fn = CnnPolicy_slim_scope
-    size_board = 5
-    winning_length = 4
-    NUMBER_OF_MODELS =2
+    size_board = 9
+    winning_length = 5
+    NUMBER_OF_MODELS = 2
 
     env = TicTacToeXGameSpec(size_board, winning_length)
     learn(policy_fn, env, nsteps=size_board * size_board
