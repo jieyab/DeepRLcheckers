@@ -8,6 +8,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '../../'))
 import threading
 import time
 import configparser
+import sys
 
 from AlphaGomoku.core.a2c_2 import learn
 from AlphaGomoku.core.policies import CnnPolicy_slim
@@ -26,9 +27,9 @@ if __name__ == '__main__':
 
     config = configparser.RawConfigParser()
     str_read = str(sys.argv[1])
-    print
-    config.read('configuration/train.cfg')
-
+    config_read = 'configuration/' + str_read
+    config.read(config_read)
+    print(config_read)
     threads = []
     for task in config.sections():
         sb = config.getint(task, 'size_board')

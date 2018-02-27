@@ -14,7 +14,6 @@ from AlphaGomoku.core.utils_2 import Scheduler
 from AlphaGomoku.core.utils_2 import cat_entropy, mse
 from AlphaGomoku.core.utils_2 import discount_with_dones
 
-
 class Model(object):
     def __init__(self, policy,scope, ob_space, ac_space, nenvs, nsteps, nstack, num_procs,
                  ent_coef=0.1, vf_coef=0.5, max_grad_norm=0.5, lr=7e-4,

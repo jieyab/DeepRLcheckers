@@ -325,7 +325,7 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
     counter_stadistics = 0
     parameters = now.strftime("%d-%m-%Y_%H-%M-%S") + "_seed_" + str(
         seed) + "_BATCH_" + str(BATCH_SIZE) + "_TEMP_" + str(TEMP_CTE) + "_DA_" + str(data_augmentation) + "_VF_" + str(
-        vf_coef)
+        vf_coef) + str(policy) + '5x5'
     statistics_path = "../statistics/random/"
     try:
         os.stat("../statistics/")
@@ -451,7 +451,7 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
                     logger.record_tabular("policy_loss", float(policy_loss))
                     logger.record_tabular("value_loss", float(value_loss))
                     logger.record_tabular("explained_variance", float(ev))
-                    logger.dump_tabular()
+                    #logger.dump_tabular()
 
                     games_wonAI, games_wonRandom, games_finish_in_draw, illegal_games = env.get_stadistics()
 

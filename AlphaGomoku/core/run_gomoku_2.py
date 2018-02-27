@@ -4,6 +4,7 @@ from AlphaGomoku.core.policies import CnnPolicy_slim, CnnPolicy_slim_TTT
 from AlphaGomoku.games.tic_tac_toe_x_2 import TicTacToeXGameSpec
 
 if __name__ == '__main__':
+
     policy_fn = CnnPolicy_slim_TTT
     size_board = 5  # int(sys.argv[2])
     winning_length = 4
