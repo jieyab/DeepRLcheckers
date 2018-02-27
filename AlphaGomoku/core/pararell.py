@@ -8,6 +8,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '../../'))
 import threading
 import time
 import configparser
+
 from AlphaGomoku.core.a2c_2 import learn
 from AlphaGomoku.core.policies import CnnPolicy_slim
 from AlphaGomoku.games.tic_tac_toe_x_2 import TicTacToeXGameSpec
@@ -24,6 +25,8 @@ if __name__ == '__main__':
     policy_fn = CnnPolicy_slim
 
     config = configparser.RawConfigParser()
+    str_read = str(sys.argv[1])
+    print
     config.read('configuration/train.cfg')
 
     threads = []

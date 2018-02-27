@@ -48,7 +48,7 @@ class Model(object):
         if max_grad_norm is not None:
             grads, grad_norm = tf.clip_by_global_norm(grads, max_grad_norm)
         grads = list(zip(grads, params))
-        trainer = tf.train.RMSPropOptimizer(learning_rate=, decay=alpha, epsilon=epsilon)
+        trainer = tf.train.RMSPropOptimizer(learning_rate=LR, decay=alpha, epsilon=epsilon)
         #trainer = tf.train.AdamOptimizer(LR)
         _train = trainer.apply_gradients(grads)
 
@@ -143,11 +143,12 @@ class Runner(object):
             probs[i] = 0
         return probs
 
-    def softmax_b(self, x):
+    def softmax_b(self, x, temp):
         illegal_moves = self.env.get_illegal_moves()
         x = np.clip(x, 1e-20, 80.0)
         x = np.delete(x, illegal_moves)
         # print(x)
+        x = x/temp
         x = np.exp(x) / np.sum(np.exp(x), axis=0)
         for i in range(len(illegal_moves)):
             x = np.insert(x, illegal_moves[i], 0)
@@ -169,10 +170,10 @@ class Runner(object):
             counter = n
             self.obs = self.obs_B
             obs_play = self.obs_B * -1
-            _, values, states, probs = self.model.step(obs_play, temp, [], [])
+            _, values, states, probs = self.model.step(obs_play,np.ones(1), [], [])
             a_dist = np.squeeze(probs)
             a_dist = np.clip(a_dist, 1e-20, 1)
-            a_dist = self.get_legal_moves(a_dist)
+            a_dist = self.softmax_b(a_dist, temp)
             a_dist = a_dist / np.sum(a_dist)
             a = np.random.choice(a_dist, p=a_dist)
             actions = [np.argmax(a_dist == a)]
@@ -192,10 +193,10 @@ class Runner(object):
                     self.obs[n] = self.obs[n] * 0
             self.update_obs(self.obs)
 
-            _, values_B, states_B, probs = self.model_2.step(obs_play, temp, [], [])
+            _, values_B, states_B, probs = self.model_2.step(obs_play, np.ones(1), [], [])
             a_dist = np.squeeze(probs)
             a_dist = np.clip(a_dist, 1e-20, 1)
-            a_dist = self.get_legal_moves(a_dist)
+            a_dist = self.softmax_b(a_dist, temp)
             a_dist = a_dist / np.sum(a_dist)
             a = np.random.choice(a_dist, p=a_dist)
             actions_B = [np.argmax(a_dist == a)]

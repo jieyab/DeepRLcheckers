@@ -12,6 +12,6 @@ if __name__ == '__main__':
 
     env = TicTacToeXGameSpec(size_board, winning_length)
     learn(policy_fn, env, nsteps=size_board * size_board
-          , nstack=1, seed=3, total_timesteps=10000000, load_model=False, model_path='./models/tic_tac_toe.cpkt',
-          data_augmentation=True, BATCH_SIZE=200,NUMBER_OF_MODELS = NUMBER_OF_MODELS)
+          , nstack=1, seed=99, total_timesteps=10000000, load_model=False, model_path='./models/tic_tac_toe.cpkt',
+          data_augmentation=True, BATCH_SIZE=20,NUMBER_OF_MODELS = NUMBER_OF_MODELS)
     env.close()
