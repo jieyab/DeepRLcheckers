@@ -14,6 +14,7 @@ player one has played there, -1 means the seconds player has played there. The a
 copy of a given state with a given move applied. This can be useful for doing min-max or monte carlo sampling.
 """
 import csv
+import math
 import itertools
 import random
 
@@ -110,6 +111,129 @@ def _has_winning_line(line, winning_length):
             # print(last_side)
             return last_side
     return 0
+
+
+def _possible_move(line, winning_length, side):
+    # print(line)
+    count = 0
+    tmp_start = 0
+    start = 0
+    end = 0
+    max_length = 0
+    temp = np.array(line)
+    # print("length of temp", len(temp))
+    for x in range(len(line)):
+        if temp.item(x) == side:
+            if count == 0:
+                tmp_start = x
+            count += 1
+        else:
+            count = 0
+
+        if count > max_length:
+            before_count = 0
+            after_count = 0
+            for i in reversed(range(tmp_start)):
+                if temp.item(i) == 0:
+                    before_count += 1
+                else:
+                    break
+
+            for i in range(x + 1, len(line)):
+                if temp.item(i) == 0:
+                    after_count += 1
+                else:
+                    break
+
+            if before_count + after_count + count >= winning_length and count > max_length:
+                max_length = count
+                start = tmp_start
+                end = x
+
+    if max_length == 0:
+        return 0, 0
+    else:
+        possible_moves = []
+        if start != 0:
+            if temp.item(start - 1) == 0:
+                possible_moves.append(start - 1)
+
+        if end != len(line) - 1:
+            if temp.item(end + 1) == 0:
+                possible_moves.append(end + 1)
+
+        return max_length, random.choice(possible_moves)
+
+
+def next_move_by_policy(board_state, winning_length, side):
+    if len(list(available_moves(board_state))) == len(board_state[0]) * len(board_state[0]):
+        return [random.randint(math.ceil(len(board_state[0]) / 2.0) - 1, math.floor(len(board_state[0]) / 2.0)) + 1,
+                random.randint(math.ceil(len(board_state[0]) / 2.0) - 1, math.floor(len(board_state[0]) / 2.0)) + 1]
+
+    board_state = board_state[0, :, :, 0]
+    board_width = len(board_state)
+    board_height = len(board_state[0])
+    new_length = 0
+    new_position = []
+
+    # check rows
+    for x in range(board_width):
+        max_length, position = _possible_move(board_state[x, :], winning_length, side)
+        if max_length > new_length:
+            new_length = max_length
+            new_position.clear()
+            new_position.append([x, position])
+        elif max_length == new_length:
+            new_position.append([x, position])
+
+    # check columns
+    for y in range(board_height):
+        max_length, position = _possible_move(board_state[:, y], winning_length, side)
+        if max_length > new_length:
+            new_length = max_length
+            new_position.clear()
+            new_position.append([position, y])
+        elif max_length == new_length:
+            new_position.append([position, y])
+
+    # Check diagonals
+    for d in range(0, (board_height - winning_length + 1)):
+        max_length, position = _possible_move(np.diagonal(board_state, d), winning_length, side)
+        if max_length > new_length:
+            new_length = max_length
+            new_position.clear()
+            new_position.append([position, position + d])
+        elif max_length == new_length:
+            new_position.append([position, position + d])
+
+    for d in range(1, (board_height - winning_length + 1)):
+        max_length, position = _possible_move(np.diagonal(board_state, -d), winning_length, side)
+        if max_length > new_length:
+            new_length = max_length
+            new_position.clear()
+            new_position.append([position + d, position])
+        elif max_length == new_length:
+            new_position.append([position + d, position])
+
+    for d in range(0, (board_height - winning_length + 1)):
+        max_length, position = _possible_move(np.diagonal(np.fliplr(board_state), d), winning_length, side)
+        if max_length > new_length:
+            new_length = max_length
+            new_position.clear()
+            new_position.append([position, len(board_state[0]) - 1 - position - d])
+        elif max_length == new_length:
+            new_position.append([position, len(board_state[0]) - 1 - position - d])
+
+    for d in range(1, (board_height - winning_length + 1)):
+        max_length, position = _possible_move(np.diagonal(np.fliplr(board_state), -d), winning_length, side)
+        if max_length > new_length:
+            new_length = max_length
+            new_position.clear()
+            new_position.append([position + d, len(board_state[0]) - position])
+        elif max_length == new_length:
+            new_position.append([position + d, len(board_state[0]) - position])
+
+    return random.choice(new_position)
 
 
 def has_winner(board_state, winning_length):
@@ -401,7 +525,7 @@ class TicTacToeXGameSpec(BaseGameSpec):
                 1 + self.games_wonAI + self.games_wonRandom + self.games_finish_in_draw + self.illegal_games))),
                     ' illegal moves')
         logger.warn('- ' * 40)
-        #save stat
+        # save stat
         AIresult = (100 * self.games_wonAI) / (
                 1 + self.games_wonAI + self.games_wonRandom + self.games_finish_in_draw + self.illegal_games)
         randomPlayerResult = (100 * self.games_wonRandom) / (
@@ -571,39 +695,51 @@ class TicTacToeXGameSpec(BaseGameSpec):
 
 
 if __name__ == '__main__':
-    import networkx as nx
+    # import networkx as nx
+    #
+    # digraph = nx.DiGraph()
+    # digraph.add_node(0,
+    #                  nw=0,
+    #                  nn=0,
+    #                  uct=0,
+    #                  expanded=False,
+    #                  state=new_board(3))
+    # digraph.add_node(1,
+    #                  nw=0,
+    #                  nn=0,
+    #                  uct=0,
+    #                  expanded=False,
+    #                  state=new_board(3))
+    # digraph.add_node(2,
+    #                  nw=0,
+    #                  nn=0,
+    #                  uct=0,
+    #                  expanded=False,
+    #                  state=new_board(3))
+    # digraph.add_edge(0, 1)
+    # digraph.add_edge(1, 2)
 
-    digraph = nx.DiGraph()
-    digraph.add_node(0,
-                     nw=0,
-                     nn=0,
-                     uct=0,
-                     expanded=False,
-                     state=new_board(3))
-    digraph.add_node(1,
-                     nw=0,
-                     nn=0,
-                     uct=0,
-                     expanded=False,
-                     state=new_board(3))
-    digraph.add_node(2,
-                     nw=0,
-                     nn=0,
-                     uct=0,
-                     expanded=False,
-                     state=new_board(3))
-    digraph.add_edge(0, 1)
-    digraph.add_edge(1, 2)
-    for key in digraph.predecessors(1):
-        print(key)
-        break
+    # for key in digraph.predecessors(1):
+    #     print(key)
+    #     break
     # for node in digraph.nodes():
     #     if np.array_equal(digraph.node[node]['state'], new_board(3)):
     #         print('Find!!!')
-    # b = new_board(3)
-    # c = apply_move(b, [1, 1], 1)
-    # d = apply_move(c, [1, 2], 1)
-    # e = apply_move(d, [0, 2], 1)
+    b = new_board(3)
+    print(b[0, :, :, 0])
+    print(next_move_by_policy(b, 3, 1))
+
+    c = apply_move(b, [1, 1], 1)
+    print(c[0, :, :, 0])
+    print(next_move_by_policy(c, 3, 1))
+
+    d = apply_move(np.copy(c), [1, 2], 1)
+    print(d[0, :, :, 0])
+    print(next_move_by_policy(d, 3, 1))
+
+    e = apply_move(c, [0, 2], 1)
+    print(e[0, :, :, 0])
+    print(next_move_by_policy(e, 3, 1))
     # # print(random_player(c, 1))
     # # print(list(available_moves(c)))
     # # play_game(random_player, random_player, 3, 3, log=True)
