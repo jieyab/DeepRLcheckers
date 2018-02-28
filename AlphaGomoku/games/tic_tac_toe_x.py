@@ -146,6 +146,7 @@ def _possible_move(line, winning_length, side):
                     break
 
             if before_count + after_count + count >= winning_length and count > max_length:
+                # print('start', tmp_start, 'end', x)
                 max_length = count
                 start = tmp_start
                 end = x
@@ -165,7 +166,7 @@ def _possible_move(line, winning_length, side):
         return max_length, random.choice(possible_moves)
 
 
-def next_move_by_policy(board_state, winning_length, side):
+def next_move_by_policy(board_state, winning_length, side, expert=True):
     from datetime import datetime
     random.seed(datetime.now())
     if len(list(available_moves(board_state))) == len(board_state[0]) * len(board_state[0]):
@@ -183,53 +184,94 @@ def next_move_by_policy(board_state, winning_length, side):
             if tuple(move) in list(available_moves(board_state)):
                 return move
 
+    original_state = np.copy(board_state)
     board_state = board_state[0, :, :, 0]
     board_width = len(board_state)
     board_height = len(board_state[0])
     new_length = 0
+    new_length_b = 0
     new_position = []
+    new_position_b = []
 
     # check rows
     for x in range(board_width):
         max_length, position = _possible_move(board_state[x, :], winning_length, side)
+        max_length_b, position_b = _possible_move(board_state[x, :], winning_length, -side)
+
         if max_length > new_length:
             new_length = max_length
             new_position.clear()
             new_position.append([x, position])
         elif max_length == new_length:
             new_position.append([x, position])
+
+        if max_length_b > new_length_b:
+            new_length_b = max_length_b
+            new_position_b.clear()
+            new_position_b.append([x, position_b])
+        elif max_length_b == new_length_b:
+            new_position_b.append([x, position_b])
 
     # check columns
     for y in range(board_height):
         max_length, position = _possible_move(board_state[:, y], winning_length, side)
+        max_length_b, position_b = _possible_move(board_state[:, y], winning_length, -side)
+
         if max_length > new_length:
             new_length = max_length
             new_position.clear()
             new_position.append([position, y])
         elif max_length == new_length:
             new_position.append([position, y])
+
+        if max_length_b > new_length_b:
+            new_length_b = max_length_b
+            new_position_b.clear()
+            new_position_b.append([position_b, y])
+        elif max_length_b == new_length_b:
+            new_position_b.append([position_b, y])
 
     # Check diagonals
     for d in range(0, (board_height - winning_length + 1)):
         max_length, position = _possible_move(np.diagonal(board_state, d), winning_length, side)
+        max_length_b, position_b = _possible_move(np.diagonal(board_state, d), winning_length, -side)
+
         if max_length > new_length:
             new_length = max_length
             new_position.clear()
             new_position.append([position, position + d])
         elif max_length == new_length:
             new_position.append([position, position + d])
+
+        if max_length_b > new_length_b:
+            new_length_b = max_length_b
+            new_position_b.clear()
+            new_position_b.append([position_b, position_b + d])
+        elif max_length_b == new_length_b:
+            new_position_b.append([position_b, position_b + d])
 
     for d in range(1, (board_height - winning_length + 1)):
         max_length, position = _possible_move(np.diagonal(board_state, -d), winning_length, side)
+        max_length_b, position_b = _possible_move(np.diagonal(board_state, -d), winning_length, -side)
+
         if max_length > new_length:
             new_length = max_length
             new_position.clear()
             new_position.append([position + d, position])
         elif max_length == new_length:
             new_position.append([position + d, position])
+
+        if max_length_b > new_length_b:
+            new_length_b = max_length_b
+            new_position_b.clear()
+            new_position_b.append([position_b + d, position_b])
+        elif max_length_b == new_length_b:
+            new_position_b.append([position_b + d, position_b])
 
     for d in range(0, (board_height - winning_length + 1)):
         max_length, position = _possible_move(np.diagonal(np.fliplr(board_state), d), winning_length, side)
+        max_length_b, position_b = _possible_move(np.diagonal(np.fliplr(board_state), d), winning_length, -side)
+
         if max_length > new_length:
             new_length = max_length
             new_position.clear()
@@ -237,19 +279,47 @@ def next_move_by_policy(board_state, winning_length, side):
         elif max_length == new_length:
             new_position.append([position, len(board_state[0]) - 1 - position - d])
 
+        if max_length_b > new_length_b:
+            new_length_b = max_length_b
+            new_position_b.clear()
+            # print(np.diagonal(np.fliplr(board_state), d))
+            # print('max_length_b', max_length_b, 'position_b', position_b)
+            new_position_b.append([position_b, len(board_state[0]) - 1 - position_b - d])
+        elif max_length_b == new_length_b:
+            new_position_b.append([position_b, len(board_state[0]) - 1 - position_b - d])
+
     for d in range(1, (board_height - winning_length + 1)):
         max_length, position = _possible_move(np.diagonal(np.fliplr(board_state), -d), winning_length, side)
+        max_length_b, position_b = _possible_move(np.diagonal(np.fliplr(board_state), -d), winning_length, -side)
+
         if max_length > new_length:
             new_length = max_length
             new_position.clear()
             new_position.append([position + d, len(board_state[0]) - 1 - position])
         elif max_length == new_length:
             new_position.append([position + d, len(board_state[0]) - 1 - position])
+
+        if max_length_b > new_length_b:
+            new_length_b = max_length_b
+            new_position_b.clear()
+            new_position_b.append([position_b + d, len(board_state[0]) - 1 - position_b])
+        elif max_length_b == new_length_b:
+            new_position_b.append([position_b + d, len(board_state[0]) - 1 - position_b])
+
+    if new_length == winning_length - 1:
+        return random.choice(new_position)
+
+    if expert:
+        if new_length_b >= winning_length - 2:
+            return random.choice(new_position_b)
 
     if new_length != 0:
         return random.choice(new_position)
     else:
-        return random.choice(list(available_moves(board_state)))
+        if new_length_b != 0:
+            return random.choice(new_position_b)
+        else:
+            return random.choice(list(available_moves(original_state)))
 
 
 def has_winner(board_state, winning_length):
@@ -756,6 +826,7 @@ if __name__ == '__main__':
     e = apply_move(c, [0, 2], 1)
     print(e[0, :, :, 0])
     print(next_move_by_policy(e, 3, 1))
+
     # # print(random_player(c, 1))
     # # print(list(available_moves(c)))
     # # play_game(random_player, random_player, 3, 3, log=True)
