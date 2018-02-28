@@ -69,6 +69,21 @@ def available_moves(board_state):
             yield (x, y)
 
 
+def available_moves_for_original(board_state):
+    """Get all legal moves for the current board_state. For Tic-tac-toe that is all positions that do not currently have
+    pieces played.
+
+    Args:
+        board_state: The board_state we want to check for valid moves.
+
+    Returns:
+        Generator of (int, int): All the valid moves that can be played in this position.
+    """
+    for x, y in itertools.product(range(len(board_state[0])), range(len(board_state[0]))):
+        if board_state[0, x, y, 0] == 0:
+            yield (x, y)
+
+
 def _has_winning_line(line, winning_length):
     count = 0
     last_side = 0
@@ -258,6 +273,7 @@ def random_player(board_state, _):
     moves = list(available_moves(board_state))
     return random.choice(moves)
 
+
 def _possible_move(line, winning_length, side):
     # print(line)
     count = 0
@@ -310,14 +326,67 @@ def _possible_move(line, winning_length, side):
         return max_length, random.choice(possible_moves)
 
 
-def next_move_by_policy(board_state, winning_length, side):
+def _possible_move(line, winning_length, side):
+    # print(line)
+    count = 0
+    tmp_start = 0
+    start = 0
+    end = 0
+    max_length = 0
+    temp = np.array(line)
+    # print("length of temp", len(temp))
+    for x in range(len(line)):
+        if temp.item(x) == side:
+            if count == 0:
+                tmp_start = x
+            count += 1
+        else:
+            count = 0
+
+        if count > max_length:
+            before_count = 0
+            after_count = 0
+            for i in reversed(range(tmp_start)):
+                if temp.item(i) == 0:
+                    before_count += 1
+                else:
+                    break
+
+            for i in range(x + 1, len(line)):
+                if temp.item(i) == 0:
+                    after_count += 1
+                else:
+                    break
+
+            if before_count + after_count + count >= winning_length and count > max_length:
+                # print('start', tmp_start, 'end', x)
+                max_length = count
+                start = tmp_start
+                end = x
+
+    if max_length == 0:
+        return 0, 0
+    else:
+        possible_moves = []
+        if start != 0:
+            if temp.item(start - 1) == 0:
+                possible_moves.append(start - 1)
+
+        if end != len(line) - 1:
+            if temp.item(end + 1) == 0:
+                possible_moves.append(end + 1)
+
+        return max_length, random.choice(possible_moves)
+
+
+def next_move_by_policy(board_state, winning_length, side, expert=True):
     from datetime import datetime
     random.seed(datetime.now())
     if len(list(available_moves(board_state))) == len(board_state[0]) * len(board_state[0]):
         move = [random.randint(math.floor(float((len(board_state[0]) - 1) / 2.0)) - 1,
-                math.ceil(float((len(board_state[0]) - 1) / 2.0)) + 1),
+                               math.ceil(float((len(board_state[0]) - 1) / 2.0)) + 1),
                 random.randint(math.floor(float((len(board_state[0]) - 1) / 2.0)) - 1,
-                math.ceil(float((len(board_state[0]) - 1) / 2.0)) + 1)]
+                               math.ceil(float((len(board_state[0]) - 1) / 2.0)) + 1)]
         return move
     elif len(list(available_moves(board_state))) == len(board_state[0]) * len(board_state[0]) - 1:
         while True:
@@ -328,53 +397,94 @@ def next_move_by_policy(board_state, winning_length, side):
             if tuple(move) in list(available_moves(board_state)):
                 return move
 
+    original_state = np.copy(board_state)
     board_state = board_state[0, :, :, 0]
     board_width = len(board_state)
     board_height = len(board_state[0])
     new_length = 0
+    new_length_b = 0
     new_position = []
+    new_position_b = []
 
     # check rows
     for x in range(board_width):
         max_length, position = _possible_move(board_state[x, :], winning_length, side)
+        max_length_b, position_b = _possible_move(board_state[x, :], winning_length, -side)
+
         if max_length > new_length:
             new_length = max_length
             new_position.clear()
             new_position.append([x, position])
         elif max_length == new_length:
             new_position.append([x, position])
+
+        if max_length_b > new_length_b:
+            new_length_b = max_length_b
+            new_position_b.clear()
+            new_position_b.append([x, position_b])
+        elif max_length_b == new_length_b:
+            new_position_b.append([x, position_b])
 
     # check columns
     for y in range(board_height):
         max_length, position = _possible_move(board_state[:, y], winning_length, side)
+        max_length_b, position_b = _possible_move(board_state[:, y], winning_length, -side)
+
         if max_length > new_length:
             new_length = max_length
             new_position.clear()
             new_position.append([position, y])
         elif max_length == new_length:
             new_position.append([position, y])
+
+        if max_length_b > new_length_b:
+            new_length_b = max_length_b
+            new_position_b.clear()
+            new_position_b.append([position_b, y])
+        elif max_length_b == new_length_b:
+            new_position_b.append([position_b, y])
 
     # Check diagonals
     for d in range(0, (board_height - winning_length + 1)):
         max_length, position = _possible_move(np.diagonal(board_state, d), winning_length, side)
+        max_length_b, position_b = _possible_move(np.diagonal(board_state, d), winning_length, -side)
+
         if max_length > new_length:
             new_length = max_length
             new_position.clear()
             new_position.append([position, position + d])
         elif max_length == new_length:
             new_position.append([position, position + d])
+
+        if max_length_b > new_length_b:
+            new_length_b = max_length_b
+            new_position_b.clear()
+            new_position_b.append([position_b, position_b + d])
+        elif max_length_b == new_length_b:
+            new_position_b.append([position_b, position_b + d])
 
     for d in range(1, (board_height - winning_length + 1)):
         max_length, position = _possible_move(np.diagonal(board_state, -d), winning_length, side)
+        max_length_b, position_b = _possible_move(np.diagonal(board_state, -d), winning_length, -side)
+
         if max_length > new_length:
             new_length = max_length
             new_position.clear()
             new_position.append([position + d, position])
         elif max_length == new_length:
             new_position.append([position + d, position])
+
+        if max_length_b > new_length_b:
+            new_length_b = max_length_b
+            new_position_b.clear()
+            new_position_b.append([position_b + d, position_b])
+        elif max_length_b == new_length_b:
+            new_position_b.append([position_b + d, position_b])
 
     for d in range(0, (board_height - winning_length + 1)):
         max_length, position = _possible_move(np.diagonal(np.fliplr(board_state), d), winning_length, side)
+        max_length_b, position_b = _possible_move(np.diagonal(np.fliplr(board_state), d), winning_length, -side)
+
         if max_length > new_length:
             new_length = max_length
             new_position.clear()
@@ -382,20 +492,50 @@ def next_move_by_policy(board_state, winning_length, side):
         elif max_length == new_length:
             new_position.append([position, len(board_state[0]) - 1 - position - d])
 
+        if max_length_b > new_length_b:
+            new_length_b = max_length_b
+            new_position_b.clear()
+            # print(np.diagonal(np.fliplr(board_state), d))
+            # print('max_length_b', max_length_b, 'position_b', position_b)
+            new_position_b.append([position_b, len(board_state[0]) - 1 - position_b - d])
+        elif max_length_b == new_length_b:
+            new_position_b.append([position_b, len(board_state[0]) - 1 - position_b - d])
+
     for d in range(1, (board_height - winning_length + 1)):
         max_length, position = _possible_move(np.diagonal(np.fliplr(board_state), -d), winning_length, side)
+        max_length_b, position_b = _possible_move(np.diagonal(np.fliplr(board_state), -d), winning_length, -side)
+
         if max_length > new_length:
             new_length = max_length
             new_position.clear()
             new_position.append([position + d, len(board_state[0]) - 1 - position])
         elif max_length == new_length:
             new_position.append([position + d, len(board_state[0]) - 1 - position])
+
+        if max_length_b > new_length_b:
+            new_length_b = max_length_b
+            new_position_b.clear()
+            new_position_b.append([position_b + d, len(board_state[0]) - 1 - position_b])
+        elif max_length_b == new_length_b:
+            new_position_b.append([position_b + d, len(board_state[0]) - 1 - position_b])
+
+    if new_length == winning_length - 1:
+        return random.choice(new_position)
+
+    if expert:
+        if new_length_b >= winning_length - 2:
+            return random.choice(new_position_b)
 
     if new_length != 0:
         return random.choice(new_position)
     else:
-        return random.choice(list(available_moves(board_state)))
-
+        if new_length_b != 0:
+            return random.choice(new_position_b)
+        else:
+            # print(board_state)
+            # print(original_state)
+            # print(list(available_moves_for_original(original_state)))
+            return random.choice(list(available_moves_for_original(original_state)))
 
 
 class TicTacToeXGameSpec(BaseGameSpec):
@@ -588,12 +728,10 @@ class TicTacToeXGameSpec(BaseGameSpec):
         draws = 100 * self.games_finish_in_draw / total
         illegal_games = 100 * self.illegal_games / total
 
-
         self.games_won_A = 0
         self.games_won_B = 0
         self.games_finish_in_draw = 0
         self.illegal_games = 0
-
 
         return won_A, won_B, draws, illegal_games
 
@@ -607,14 +745,13 @@ class TicTacToeXGameSpec(BaseGameSpec):
         actions_nn = actions_nn[0]
         reward = np.zeros(1)
         actions_nn = [int(actions_nn % self._board_size),
-                      int(actions_nn / self._board_size)]                   # Convert move from number to X,Y
+                      int(actions_nn / self._board_size)]  # Convert move from number to X,Y
         if (self.illegal_move(actions_nn)):
             print('ILLEGALILLEGALILLEGALVILLEGALV')
             illegal = True
 
         self.board_state = apply_move(self.board_state, actions_nn, token)  # Apply move to the board
-        winner = has_winner(self.board_state, self._winning_length)         # Check for winner
-
+        winner = has_winner(self.board_state, self._winning_length)  # Check for winner
 
         if winner[0]:
             reward[0] = self.reward_winning
@@ -622,25 +759,21 @@ class TicTacToeXGameSpec(BaseGameSpec):
                 self.games_won_A += 1
             if side == 'B':
                 self.games_won_B += 1
-                                                                            # print(self.board_state[0, :, :, 0], actions_nn,'win')
+                # print(self.board_state[0, :, :, 0], actions_nn,'win')
 
-        else:                                                               # If there is no winner check for draw and make random move
+        else:  # If there is no winner check for draw and make random move
             if len(self.available_moves_1()) == 0:
                 # print(self.board_state[0, :, :, 0], actions_nn,'draw')
                 self.games_finish_in_draw += 1
                 reward[0] = self.reward_draw
 
-        #if ((self.games_won_A + self.games_won_B + self.games_finish_in_draw + self.illegal_games) % 999 == 0):
+        # if ((self.games_won_A + self.games_won_B + self.games_finish_in_draw + self.illegal_games) % 999 == 0):
         #    print(self.board_state[0, :, :, 0])
         #    print(datetime.datetime.now().time())
-
-
 
         if reward[0] != 0:
             # print(self.board_state[0, :, :, 0])
             self.board_state = _new_board(self._board_size)
-
-
 
         # if (((self.games_won_A + self.games_won_B + self.games_finish_in_draw + self.illegal_games) % 1000 == 0)
         #     and self.print):
@@ -684,16 +817,18 @@ class TicTacToeXGameSpec(BaseGameSpec):
             # print('AI won')
 
         else:  # If there is no winner check for draw and make random move
-            if (len(self.available_moves_1()) == 0):
+            if len(self.available_moves_1()) == 0:
 
                 # print('Draw')
                 self.games_finish_in_draw += 1
                 reward[0] = self.reward_draw
 
             else:
-                #self.opponent_move()
-                print(self.board_state)
-                next_move_by_policy(self.board_state, self._winning_length, -1)
+                # self.opponent_move()
+                # print(self.board_state[0, :, :, 0])
+                move = next_move_by_policy(self.board_state, self._winning_length, -1)
+                self.board_state = apply_move(self.board_state, move, -1)  # Apply move to the board
+
                 winner = has_winner(self.board_state, self._winning_length)
                 if winner[0] == True:
                     reward[0] = self.reward_lossing
