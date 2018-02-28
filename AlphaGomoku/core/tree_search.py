@@ -1,6 +1,7 @@
 import math
 import operator
 import random
+import time
 
 import networkx as nx
 import numpy as np
@@ -249,6 +250,30 @@ class MonteCarlo:
         if isinstance(location, str):
             location = [int(n, 10) for n in location.split(",")]
         return tuple(location)
+
+    def self_play_with_simple_policy(self):
+        self.reset_game()
+        state = tt.new_board(self.board_size)
+        player_turn = 1
+
+        while True:
+            self.show_state(state)
+
+            if len(list(tt.available_moves(state))) == 0:
+                self.games_finish_in_draw += 1
+                print('End in draw')
+                return
+
+            win = tt.has_winner(state, self.winning_length)
+            if win[0]:
+                print(str(-player_turn) + ' player wins.')
+                return
+
+            move = tt.next_move_by_policy(state, self.winning_length, player_turn)
+            tt.apply_move(state, move, player_turn)
+            time.sleep(1)
+
+            player_turn = -player_turn
 
     def self_play(self):
         self.reset_game()

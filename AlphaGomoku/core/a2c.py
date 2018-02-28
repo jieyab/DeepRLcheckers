@@ -183,7 +183,10 @@ class Runner(object):
         self.update_obs(obs)
         self.gamma = gamma
         self.nsteps = nsteps
-        self.states = model.initial_state
+        if model is None:
+            self.states = None
+        else:
+            self.states = model.initial_state
         self.dones = [False for _ in range(nenv)]
 
         self.mcts = MonteCarlo(env, self.model, self.model2)
@@ -480,6 +483,23 @@ def learn(policy, policy2, env, seed, nsteps=5, nstack=4, total_timesteps=int(80
     env.close()
 
 
+def play_with_policy(policy, policy2, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_coef=0.5,
+                     ent_coef=0.01, max_grad_norm=0.5, lr=7e-4, lrschedule='linear', epsilon=1e-5, alpha=0.99,
+                     gamma=0.99, log_interval=20, model_path='', model_path2=''):
+    tf.reset_default_graph()
+    set_global_seeds(seed)
+
+    nenvs = env.num_envs
+    ob_space = env.observation_space
+    ac_space = env.action_space
+    num_procs = len(env.remotes)  # HACK
+    statistics_path = ('./stadistics_random')
+
+    runner = Runner(env, None, None, nsteps=nsteps, nstack=nstack, gamma=gamma)
+    runner.mcts.self_play_with_simple_policy()
+    env.close()
+
+
 def play(policy, policy2, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_coef=0.5, ent_coef=0.01,
          max_grad_norm=0.5, lr=7e-4, lrschedule='linear', epsilon=1e-5, alpha=0.99, gamma=0.99, log_interval=20,
          model_path='', model_path2=''):
@@ -498,18 +518,18 @@ def play(policy, policy2, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e
     #                max_grad_norm=max_grad_norm, lr=lr, alpha=alpha, epsilon=epsilon, total_timesteps=total_timesteps,
     #                lrschedule=lrschedule)
     model = Model2(policy=policy, ob_space=ob_space, ac_space=ac_space, nenvs=nenvs, nsteps=nsteps, nstack=nstack,
-                  num_procs=num_procs, ent_coef=ent_coef, vf_coef=vf_coef,
-                  max_grad_norm=max_grad_norm, lr=lr, alpha=alpha, epsilon=epsilon, total_timesteps=total_timesteps,
-                  lrschedule=lrschedule, summary_writter=summary_writer)
+                   num_procs=num_procs, ent_coef=ent_coef, vf_coef=vf_coef,
+                   max_grad_norm=max_grad_norm, lr=lr, alpha=alpha, epsilon=epsilon, total_timesteps=total_timesteps,
+                   lrschedule=lrschedule, summary_writter=summary_writer)
 
     # model2 = Model(policy=policy2, ob_space=ob_space, ac_space=ac_space, nenvs=nenvs, nsteps=nsteps, nstack=nstack,
     #                num_procs=num_procs, ent_coef=ent_coef, vf_coef=vf_coef, size=env.get_board_size(),
     #                max_grad_norm=max_grad_norm, lr=lr, alpha=alpha, epsilon=epsilon, total_timesteps=total_timesteps,
     #                lrschedule=lrschedule)
     model2 = Model2(policy=policy2, ob_space=ob_space, ac_space=ac_space, nenvs=nenvs, nsteps=nsteps, nstack=nstack,
-                   num_procs=num_procs, ent_coef=ent_coef, vf_coef=vf_coef,
-                   max_grad_norm=max_grad_norm, lr=lr, alpha=alpha, epsilon=epsilon, total_timesteps=total_timesteps,
-                   lrschedule=lrschedule, summary_writter=summary_writer)
+                    num_procs=num_procs, ent_coef=ent_coef, vf_coef=vf_coef,
+                    max_grad_norm=max_grad_norm, lr=lr, alpha=alpha, epsilon=epsilon, total_timesteps=total_timesteps,
+                    lrschedule=lrschedule, summary_writter=summary_writer)
 
     model.load(model_path)
     model2.load(model_path2)

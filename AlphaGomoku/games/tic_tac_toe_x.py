@@ -166,9 +166,22 @@ def _possible_move(line, winning_length, side):
 
 
 def next_move_by_policy(board_state, winning_length, side):
+    from datetime import datetime
+    random.seed(datetime.now())
     if len(list(available_moves(board_state))) == len(board_state[0]) * len(board_state[0]):
-        return [random.randint(math.ceil(len(board_state[0]) / 2.0) - 1, math.floor(len(board_state[0]) / 2.0)) + 1,
-                random.randint(math.ceil(len(board_state[0]) / 2.0) - 1, math.floor(len(board_state[0]) / 2.0)) + 1]
+        move = [random.randint(math.floor(float((len(board_state[0]) - 1) / 2.0)) - 1,
+                math.ceil(float((len(board_state[0]) - 1) / 2.0)) + 1),
+                random.randint(math.floor(float((len(board_state[0]) - 1) / 2.0)) - 1,
+                math.ceil(float((len(board_state[0]) - 1) / 2.0)) + 1)]
+        return move
+    elif len(list(available_moves(board_state))) == len(board_state[0]) * len(board_state[0]) - 1:
+        while True:
+            move = [random.randint(math.floor(float((len(board_state[0]) - 1) / 2.0)) - 1,
+                                   math.ceil(float((len(board_state[0]) - 1) / 2.0)) + 1),
+                    random.randint(math.floor(float((len(board_state[0]) - 1) / 2.0)) - 1,
+                                   math.ceil(float((len(board_state[0]) - 1) / 2.0)) + 1)]
+            if tuple(move) in list(available_moves(board_state)):
+                return move
 
     board_state = board_state[0, :, :, 0]
     board_width = len(board_state)
@@ -229,11 +242,14 @@ def next_move_by_policy(board_state, winning_length, side):
         if max_length > new_length:
             new_length = max_length
             new_position.clear()
-            new_position.append([position + d, len(board_state[0]) - position])
+            new_position.append([position + d, len(board_state[0]) - 1 - position])
         elif max_length == new_length:
-            new_position.append([position + d, len(board_state[0]) - position])
+            new_position.append([position + d, len(board_state[0]) - 1 - position])
 
-    return random.choice(new_position)
+    if new_length != 0:
+        return random.choice(new_position)
+    else:
+        return random.choice(list(available_moves(board_state)))
 
 
 def has_winner(board_state, winning_length):
