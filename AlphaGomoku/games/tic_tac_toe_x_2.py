@@ -307,58 +307,6 @@ def _possible_move(line, winning_length, side):
                     break
 
             if before_count + after_count + count >= winning_length and count > max_length:
-                max_length = count
-                start = tmp_start
-                end = x
-
-    if max_length == 0:
-        return 0, 0
-    else:
-        possible_moves = []
-        if start != 0:
-            if temp.item(start - 1) == 0:
-                possible_moves.append(start - 1)
-
-        if end != len(line) - 1:
-            if temp.item(end + 1) == 0:
-                possible_moves.append(end + 1)
-
-        return max_length, random.choice(possible_moves)
-
-
-def _possible_move(line, winning_length, side):
-    # print(line)
-    count = 0
-    tmp_start = 0
-    start = 0
-    end = 0
-    max_length = 0
-    temp = np.array(line)
-    # print("length of temp", len(temp))
-    for x in range(len(line)):
-        if temp.item(x) == side:
-            if count == 0:
-                tmp_start = x
-            count += 1
-        else:
-            count = 0
-
-        if count > max_length:
-            before_count = 0
-            after_count = 0
-            for i in reversed(range(tmp_start)):
-                if temp.item(i) == 0:
-                    before_count += 1
-                else:
-                    break
-
-            for i in range(x + 1, len(line)):
-                if temp.item(i) == 0:
-                    after_count += 1
-                else:
-                    break
-
-            if before_count + after_count + count >= winning_length and count > max_length:
                 # print('start', tmp_start, 'end', x)
                 max_length = count
                 start = tmp_start
