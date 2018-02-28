@@ -342,10 +342,28 @@ class Runner(object):
                      actions_B, values_B):
         size = len(self.batch)
 
-        self.batch.update({size: [obs, states, reward, masks, actions, values, obs_B, states_B, rewards_B, masks_B,
-                                  actions_B, values_B]})
-        size = len(self.batch)
+        number_slice = obs.shape[1]
+        obs_slice = np.vsplit(obs, number_slice)
+        reward_slice = np.hsplit(reward, number_slice)
+        masks_slice = np.hsplit(masks, number_slice)
+        actions_slice = np.hsplit(actions, number_slice)
+        values_slice = np.hsplit(values, number_slice)
 
+        obs_slice_B = np.vsplit(obs_B, number_slice)
+        reward_slice_B = np.hsplit(rewards_B, number_slice)
+        masks_slice_B = np.hsplit(masks_B, number_slice)
+        actions_slice_B = np.hsplit(actions_B, number_slice)
+        values_slice_B = np.hsplit(values_B, number_slice)
+
+        for i in range(len(obs_slice)):
+            self.batch.update(
+                {size + i: [np.asarray(obs_slice[i]), [], np.asarray(reward_slice[i]), np.asarray(masks_slice[i]),
+                            np.asarray(actions_slice[i]), np.asarray(values_slice[i]),
+                            np.asarray(obs_slice_B[i]), [], np.asarray(reward_slice_B[i]), np.asarray(masks_slice_B[i]),
+                            np.asarray(actions_slice_B[i]), np.asarray(values_slice_B[i])
+                            ]})
+            if (masks_slice[i][0] == True and masks_slice[i][1] == True):
+                break
         return size
 
     def size_batch(self):
@@ -412,8 +430,7 @@ def train_data_augmentation(obs, states, rewards, masks, actions, values, model,
         policy_loss.append(pl)
         value_loss.append(vl)
         policy_entropy.append(pe)
-
-    return np.mean(pl), np.mean(vl), np.mean(pe)
+    return np.mean(policy_loss), np.mean(value_loss), np.mean(policy_entropy)
 
 
 def train_without_data_augmentation(obs, states, rewards, masks, actions, values, model, temp):
@@ -476,7 +493,7 @@ def create_models(NUMBER_OF_MODELS,policy, ob_space, ac_space, nenvs, nsteps, ns
 
         model_name = 'model_holder_' + str(i)
 
-        models.append(Model(policy=policy, scope=model_name, ob_space=ob_space, ac_space=ac_space, nenvs=nenvs, nsteps=nsteps, nstack=nstack,
+        models.append(Model(policy=policy, scope=model_name, ob_space=ob_space, ac_space=ac_space, nenvs=nenvs, nsteps=np.sqrt(nsteps), nstack=nstack,
                     num_procs=num_procs, ent_coef=ent_coef, vf_coef=vf_coef,
                     max_grad_norm=max_grad_norm, lr=lr, alpha=alpha, epsilon=epsilon, total_timesteps=total_timesteps,
                     lrschedule=lrschedule))
