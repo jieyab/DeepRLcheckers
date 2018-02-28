@@ -15,6 +15,7 @@ copy of a given state with a given move applied. This can be useful for doing mi
 """
 import itertools
 import random
+import math
 
 from AlphaGomoku.common import logger
 from AlphaGomoku.games.base_game_spec import BaseGameSpec
@@ -63,7 +64,6 @@ def available_moves(board_state):
     Returns:
         Generator of (int, int): All the valid moves that can be played in this position.
     """
-    print('HOLAAAAA')
     for x, y in itertools.product(range(len(board_state)), range(len(board_state[0]))):
         if board_state[x][y] is 0:
             yield (x, y)
@@ -257,6 +257,145 @@ def random_player(board_state, _):
     """
     moves = list(available_moves(board_state))
     return random.choice(moves)
+
+def _possible_move(line, winning_length, side):
+    # print(line)
+    count = 0
+    tmp_start = 0
+    start = 0
+    end = 0
+    max_length = 0
+    temp = np.array(line)
+    # print("length of temp", len(temp))
+    for x in range(len(line)):
+        if temp.item(x) == side:
+            if count == 0:
+                tmp_start = x
+            count += 1
+        else:
+            count = 0
+
+        if count > max_length:
+            before_count = 0
+            after_count = 0
+            for i in reversed(range(tmp_start)):
+                if temp.item(i) == 0:
+                    before_count += 1
+                else:
+                    break
+
+            for i in range(x + 1, len(line)):
+                if temp.item(i) == 0:
+                    after_count += 1
+                else:
+                    break
+
+            if before_count + after_count + count >= winning_length and count > max_length:
+                max_length = count
+                start = tmp_start
+                end = x
+
+    if max_length == 0:
+        return 0, 0
+    else:
+        possible_moves = []
+        if start != 0:
+            if temp.item(start - 1) == 0:
+                possible_moves.append(start - 1)
+
+        if end != len(line) - 1:
+            if temp.item(end + 1) == 0:
+                possible_moves.append(end + 1)
+
+        return max_length, random.choice(possible_moves)
+
+
+def next_move_by_policy(board_state, winning_length, side):
+    from datetime import datetime
+    random.seed(datetime.now())
+    if len(list(available_moves(board_state))) == len(board_state[0]) * len(board_state[0]):
+        move = [random.randint(math.floor(float((len(board_state[0]) - 1) / 2.0)) - 1,
+                math.ceil(float((len(board_state[0]) - 1) / 2.0)) + 1),
+                random.randint(math.floor(float((len(board_state[0]) - 1) / 2.0)) - 1,
+                math.ceil(float((len(board_state[0]) - 1) / 2.0)) + 1)]
+        return move
+    elif len(list(available_moves(board_state))) == len(board_state[0]) * len(board_state[0]) - 1:
+        while True:
+            move = [random.randint(math.floor(float((len(board_state[0]) - 1) / 2.0)) - 1,
+                                   math.ceil(float((len(board_state[0]) - 1) / 2.0)) + 1),
+                    random.randint(math.floor(float((len(board_state[0]) - 1) / 2.0)) - 1,
+                                   math.ceil(float((len(board_state[0]) - 1) / 2.0)) + 1)]
+            if tuple(move) in list(available_moves(board_state)):
+                return move
+
+    board_state = board_state[0, :, :, 0]
+    board_width = len(board_state)
+    board_height = len(board_state[0])
+    new_length = 0
+    new_position = []
+
+    # check rows
+    for x in range(board_width):
+        max_length, position = _possible_move(board_state[x, :], winning_length, side)
+        if max_length > new_length:
+            new_length = max_length
+            new_position.clear()
+            new_position.append([x, position])
+        elif max_length == new_length:
+            new_position.append([x, position])
+
+    # check columns
+    for y in range(board_height):
+        max_length, position = _possible_move(board_state[:, y], winning_length, side)
+        if max_length > new_length:
+            new_length = max_length
+            new_position.clear()
+            new_position.append([position, y])
+        elif max_length == new_length:
+            new_position.append([position, y])
+
+    # Check diagonals
+    for d in range(0, (board_height - winning_length + 1)):
+        max_length, position = _possible_move(np.diagonal(board_state, d), winning_length, side)
+        if max_length > new_length:
+            new_length = max_length
+            new_position.clear()
+            new_position.append([position, position + d])
+        elif max_length == new_length:
+            new_position.append([position, position + d])
+
+    for d in range(1, (board_height - winning_length + 1)):
+        max_length, position = _possible_move(np.diagonal(board_state, -d), winning_length, side)
+        if max_length > new_length:
+            new_length = max_length
+            new_position.clear()
+            new_position.append([position + d, position])
+        elif max_length == new_length:
+            new_position.append([position + d, position])
+
+    for d in range(0, (board_height - winning_length + 1)):
+        max_length, position = _possible_move(np.diagonal(np.fliplr(board_state), d), winning_length, side)
+        if max_length > new_length:
+            new_length = max_length
+            new_position.clear()
+            new_position.append([position, len(board_state[0]) - 1 - position - d])
+        elif max_length == new_length:
+            new_position.append([position, len(board_state[0]) - 1 - position - d])
+
+    for d in range(1, (board_height - winning_length + 1)):
+        max_length, position = _possible_move(np.diagonal(np.fliplr(board_state), -d), winning_length, side)
+        if max_length > new_length:
+            new_length = max_length
+            new_position.clear()
+            new_position.append([position + d, len(board_state[0]) - 1 - position])
+        elif max_length == new_length:
+            new_position.append([position + d, len(board_state[0]) - 1 - position])
+
+    if new_length != 0:
+        return random.choice(new_position)
+    else:
+        return random.choice(list(available_moves(board_state)))
+
 
 
 class TicTacToeXGameSpec(BaseGameSpec):
@@ -518,6 +657,66 @@ class TicTacToeXGameSpec(BaseGameSpec):
 
     def dimensions(self):
         return self._board_size
+
+    def step_smart(self, actions_nn):
+        # print(actions_nn)
+        actions_nn = actions_nn[0]
+        reward = np.zeros(1)
+        actions_nn = [int(actions_nn % self._board_size),
+                      int(actions_nn / self._board_size)]  # Convert move from number to X,Y
+
+        if (self.illegal_move(actions_nn)):  # Check if the move was illegal
+            self.illegal_games += 1
+            print(self.board_state[0, :, :, 0])
+            self.board_state = self.new_board()
+            self.print = True
+            reward[0] = self.reward_illegal_move
+            winner = np.ones((1), dtype=bool)
+
+            return (self.board_state, reward, winner, 0, True)
+
+        self.board_state = apply_move(self.board_state, actions_nn, 1)  # Apply move to the board
+        winner = has_winner(self.board_state, self._winning_length)  # Check for winner
+
+        if winner[0] == True:
+            reward[0] = self.reward_winning
+            self.games_wonAI += 1
+            # print('AI won')
+
+        else:  # If there is no winner check for draw and make random move
+            if (len(self.available_moves_1()) == 0):
+
+                # print('Draw')
+                self.games_finish_in_draw += 1
+                reward[0] = self.reward_draw
+
+            else:
+                #self.opponent_move()
+                print(self.board_state)
+                next_move_by_policy(self.board_state, self._winning_length, -1)
+                winner = has_winner(self.board_state, self._winning_length)
+                if winner[0] == True:
+                    reward[0] = self.reward_lossing
+                    self.games_wonRandom += 1
+
+                if (len(self.available_moves_1()) == 0):
+                    # print('Draw')
+                    self.games_finish_in_draw += 1
+                    reward[0] = self.reward_draw
+
+        # if ((self.games_won_A + self.games_won_B + self.games_finish_in_draw + self.illegal_games) % 999 == 0):
+        #     print(self.board_state[0, :, :, 0])
+        #     print(datetime.datetime.now().time())
+
+        if reward[0] != 0:
+            # print(self.board_state[0, :, :, 0])
+            self.board_state = _new_board(self._board_size)
+            self.print = True
+
+            # if (((self.games_wonAI + self.games_wonRandom + self.games_finish_in_draw + self.illegal_games) % 999 == 0) and self.print):
+            # self.print_stadistics()
+
+        return self.board_state, reward, winner, 0, False
 
 
 if __name__ == '__main__':

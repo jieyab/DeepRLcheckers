@@ -9,7 +9,7 @@ if __name__ == '__main__':
     size_board = 5  # int(sys.argv[2])
     winning_length = 4
 
-    seed = 9
+    seed = 2
 
     BATCH_SIZE = 32
     TEMP_CTE = 30000

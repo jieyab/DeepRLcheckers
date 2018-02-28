@@ -8,8 +8,8 @@ if __name__ == '__main__':
     policy_fn = CnnPolicy_slim_scope
     size_board = 9
     winning_length = 5
-    NUMBER_OF_MODELS = 2
-
+    NUMBER_OF_MODELS = 45
+    print(size_board,winning_length,NUMBER_OF_MODELS,CnnPolicy_slim_scope)
     env = TicTacToeXGameSpec(size_board, winning_length)
     learn(policy_fn, env, nsteps=size_board * size_board
           , nstack=1, seed=99, total_timesteps=10000000, load_model=False, model_path='./models/tic_tac_toe.cpkt',

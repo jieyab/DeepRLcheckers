@@ -158,7 +158,7 @@ class Runner(object):
             mb_actions.append(actions)
             mb_values.append(values)
             mb_dones.append(self.dones)
-            obs, rewards, dones, _, illegal = self.env.step(actions)
+            obs, rewards, dones, _, illegal = self.env.step_smart(actions)
             if illegal:
                 counter = 0
                 mb_obs, mb_rewards, mb_actions, mb_values, mb_dones = [], [], [], [], []
@@ -488,10 +488,10 @@ def learn(policy, env, seed, nsteps, nstack=4, total_timesteps=int(80e6), vf_coe
                     illegal_test_games_train_saver.append(illegal_games)
                     update_train.append(update)
 
-                    save_csv(statistics_csv + 'games_wonAI_train.csv', games_wonAI_test_saver)
-                    save_csv(statistics_csv + 'games_wonRandom_train.csv', games_wonRandom_test_saver)
-                    save_csv(statistics_csv + 'games_finish_in_draw_train.csv', games_finish_in_draw_test_saver)
-                    save_csv(statistics_csv + 'illegal_games_train.csv', illegal_test_games_test_saver)
+                    save_csv(statistics_csv + 'games_wonAI_train.csv', games_wonAI_train_saver)
+                    save_csv(statistics_csv + 'games_wonRandom_train.csv', games_wonRandom_train_saver)
+                    save_csv(statistics_csv + 'games_finish_in_draw_train.csv', games_finish_in_draw_train_saver)
+                    save_csv(statistics_csv + 'illegal_games_train.csv', illegal_test_games_train_saver)
                     save_csv(statistics_csv + 'update_train.csv', update_train)
 
                     policy_entropy_saver.append(policy_entropy)
