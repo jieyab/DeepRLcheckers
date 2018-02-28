@@ -158,7 +158,7 @@ class Runner(object):
             mb_actions.append(actions)
             mb_values.append(values)
             mb_dones.append(self.dones)
-            obs, rewards, dones, _, illegal = self.env.step(actions)
+            obs, rewards, dones, _, illegal = self.env.step_smart(actions)
             if illegal:
                 counter = 0
                 mb_obs, mb_rewards, mb_actions, mb_values, mb_dones = [], [], [], [], []
