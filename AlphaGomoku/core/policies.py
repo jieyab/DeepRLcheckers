@@ -399,6 +399,7 @@ class CnnPolicy_slim_scope(object):
                                 kernel_size=[2, 2], stride=[1, 1], padding='VALID',
                                 weights_regularizer =slim.l2_regularizer(0.0005))
 
+
             hidden = slim.fully_connected(slim.flatten(conv2), 512, activation_fn=tf.nn.relu)
             pi = slim.fully_connected(hidden, nact,
                                       activation_fn=None,
