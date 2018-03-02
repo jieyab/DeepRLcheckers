@@ -10,24 +10,24 @@ import time
 import configparser
 import sys
 
-from AlphaGomoku.core.a2c_2 import learn
+from AlphaGomoku.core.AI_vs_AI_2 import learn
 from AlphaGomoku.core.policies import CnnPolicy_slim_scope5x5
 from AlphaGomoku.games.tic_tac_toe_x_2 import TicTacToeXGameSpec
 
 
-def worker(policy, sb, wl, seed, total_times, lm, model_path, da, bs, tc,ex):
-    env = TicTacToeXGameSpec(sb, wl,ex)
+def worker(policy, sb, wl, seed, total_times, lm, model_path, da, bs, tc, nb, ex):
+    env = TicTacToeXGameSpec(sb, wl, ex)
     learn(policy, env, nsteps=sb * sb, nstack=1, seed=seed, total_timesteps=total_times,
           load_model=lm, model_path=model_path, data_augmentation=da,
-          BATCH_SIZE=bs, TEMP_CTE=tc, expert=ex)
+          BATCH_SIZE=bs, TEMP_CTE=tc, NUMBER_OF_MODELS=nb, expert=ex)
 
 
 if __name__ == '__main__':
     policy_fn = CnnPolicy_slim_scope5x5
 
     config = configparser.RawConfigParser()
-    #str_read = 'config' #str(sys.argv[1])
-    config_read = 'configuration/train.cfg'
+    str_read = str(sys.argv[1])
+    config_read = 'configuration/' + str_read
     config.read(config_read)
     print(config_read)
     threads = []

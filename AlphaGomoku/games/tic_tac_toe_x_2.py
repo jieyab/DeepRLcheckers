@@ -327,7 +327,7 @@ def _possible_move(line, winning_length, side):
         return max_length, random.choice(possible_moves)
 
 
-def next_move_by_policy(board_state, winning_length, side, expert=True):
+def next_move_by_policy(board_state, winning_length, side, expert=False):
     from datetime import datetime
     random.seed(datetime.now())
     if len(list(available_moves(board_state))) == len(board_state[0]) * len(board_state[0]):
@@ -739,7 +739,7 @@ class TicTacToeXGameSpec(BaseGameSpec):
     def dimensions(self):
         return self._board_size
 
-    def step_smart(self, actions_nn):
+    def step_smart(self, actions_nn, expert):
         # print(actions_nn)
         actions_nn = actions_nn[0]
         reward = np.zeros(1)
@@ -762,6 +762,7 @@ class TicTacToeXGameSpec(BaseGameSpec):
         if winner[0] == True:
             reward[0] = self.reward_winning
             self.games_wonAI += 1
+            #print(self.board_state[0, :, :, 0])
             # print('AI won')
 
         else:  # If there is no winner check for draw and make random move
@@ -774,7 +775,7 @@ class TicTacToeXGameSpec(BaseGameSpec):
             else:
                 # self.opponent_move()
                 # print(self.board_state[0, :, :, 0])
-                move = next_move_by_policy(self.board_state, self._winning_length, -1)
+                move = next_move_by_policy(self.board_state, self._winning_length, -1, expert)
                 self.board_state = apply_move(self.board_state, move, -1)  # Apply move to the board
 
                 winner = has_winner(self.board_state, self._winning_length)
@@ -792,7 +793,7 @@ class TicTacToeXGameSpec(BaseGameSpec):
         #     print(datetime.datetime.now().time())
 
         if reward[0] != 0:
-            # print(self.board_state[0, :, :, 0])
+            #print(self.board_state[0, :, :, 0])
             self.board_state = _new_board(self._board_size)
             self.print = True
 

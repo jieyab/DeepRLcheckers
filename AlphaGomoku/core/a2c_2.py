@@ -31,8 +31,8 @@ class Model(object):
         R = tf.placeholder(tf.float32, [nbatch])
         LR = tf.placeholder(tf.float32, [])
 
-        step_model = policy(sess, ob_space, ac_space, nenvs, 1, nstack, reuse=False)
-        train_model = policy(sess, ob_space, ac_space, nenvs, nsteps, nstack, reuse=True)
+        step_model = policy(sess, ob_space, ac_space, nenvs, 1, nstack, scope="model",reuse=False)
+        train_model = policy(sess, ob_space, ac_space, nenvs, nsteps, nstack,scope="model", reuse=True)
         #q = tf.one_hot(A, nact, dtype=tf.float32)
         #neglogpac = -tf.reduce_sum(tf.log((train_model.pi) + 1e-10) * q, [1])
 
@@ -312,7 +312,7 @@ def train_data_augmentation(obs, states, rewards, masks, actions, values, model,
         value_loss.append(vl)
         policy_entropy.append(pe)
 
-    return np.mean(pl), np.mean(vl), np.mean(pe)
+    return np.mean(policy_loss), np.mean(value_loss), np.mean(policy_entropy)
 
 
 def train_without_data_augmentation(obs, states, rewards, masks, actions, values, model, temp):
@@ -325,6 +325,8 @@ def learn(policy, env, seed, nsteps, nstack=4, total_timesteps=int(80e6), vf_coe
           max_grad_norm=0.5, lr=7e-4, lrschedule='linear', epsilon=1e-5, alpha=0.99, gamma=0.99, log_interval=1000,
           load_model=False, model_path='', data_augmentation=True, BATCH_SIZE=10,
           TEMP_CTE=30000, RUN_TEST=5000):
+
+
     tf.reset_default_graph()
     set_global_seeds(seed)
     print('Data augmentation', data_augmentation)
@@ -335,13 +337,14 @@ def learn(policy, env, seed, nsteps, nstack=4, total_timesteps=int(80e6), vf_coe
     num_procs = len(env.remotes)  # HACK
     now = datetime.datetime.now()
     temp = np.ones(1)
-    BATCH_SIZE = np.sqrt(nsteps) * BATCH_SIZE
 
     counter_stadistics = 0
     parameters = now.strftime("%d-%m-%Y_%H-%M-%S") + "_seed_" + str(
         seed) + "_BATCH_" + str(BATCH_SIZE) + "_TEMP_" + str(TEMP_CTE) + "_DA_" + str(data_augmentation) + "_VF_" + str(
-        vf_coef) + str(policy) + '5x5'
+        vf_coef) + str(policy) + str(np.sqrt(nsteps))+ 'x'+ str(np.sqrt(nsteps))
     statistics_path = "../statistics/random/"
+    BATCH_SIZE = np.sqrt(nsteps) * BATCH_SIZE
+
     try:
         os.stat("../statistics/")
     except:
@@ -434,20 +437,30 @@ def learn(policy, env, seed, nsteps, nstack=4, total_timesteps=int(80e6), vf_coe
             if size_batch >= BATCH_SIZE:
                 # print('Training batch')
                 batch = runner.get_batch()
+                policy_loss_sv, value_loss_sv, policy_entropy_sv = [], [], []
+
                 for i in range(len(batch)):
                     obs, states, rewards, masks, actions, values = batch.get(i)
                     if data_augmentation:
-                        policy_loss, value_loss, policy_entropy = train_data_augmentation(obs, states, rewards, masks,
+                        pl, vl, pe = train_data_augmentation(obs, states, rewards, masks,
                                                                                           actions,
                                                                                           values, model, temp)
+                        policy_loss_sv.append(pl)
+                        value_loss_sv.append(vl)
+                        policy_entropy_sv.append(pe)
                     else:
 
-                        policy_loss, value_loss, policy_entropy = train_without_data_augmentation(obs, states, rewards,
+                        pl, vl, pe= train_without_data_augmentation(obs, states, rewards,
                                                                                                   masks,
                                                                                                   actions, values,
                                                                                                   model,
                                                                                                   temp)
+                        policy_loss_sv.append(pl)
+                        value_loss_sv.append(vl)
+                        policy_entropy_sv.append(pe)
+
                 runner.empty_batch()
+                policy_loss, value_loss, policy_entropy = np.mean(policy_loss_sv), np.mean(value_loss_sv), np.mean(policy_entropy_sv)
                 # print('batch trained')
                 nseconds = time.time() - tstart
                 fps = int((update * nbatch) / nseconds)

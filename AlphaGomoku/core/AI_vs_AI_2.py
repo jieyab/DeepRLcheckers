@@ -7,6 +7,7 @@ import tensorflow as tf
 import datetime
 import os
 import random
+import csv
 
 from AlphaGomoku.common import logger
 from AlphaGomoku.common.misc_util import set_global_seeds, explained_variance
@@ -317,10 +318,10 @@ class Runner(object):
                 a_dist = np.squeeze(probs)
                 a_dist = np.clip(a_dist, 1e-20, 1)
                 a_dist = self.get_legal_moves(a_dist)
-                a_dist = a_dist / np.sum(a_dist)
+                #a_dist = a_dist / np.sum(a_dist)
                 actions = [np.argmax(a_dist)]
                 # print(actions, self.env.get_illegal_moves())
-                obs, rewards, dones, _, illegal = self.env.step_smart(actions)
+                obs, rewards, dones, _, illegal = self.env.step(actions)
 
                 # print(illegal, )
                 self.obs = obs
@@ -329,14 +330,75 @@ class Runner(object):
                     break
 
         won_AI, won_random, draws, illegal_games = env.get_stadistics()
-        print('Result test'+ model.scope)
+        print('Result test random'+ model.scope)
         env.print_stadistics('AI_vs_AI mode')
         summary = tf.Summary()
         #summary.value.add(tag='test'+ self.model.scope+ '/won_AI' , simple_value=float(won_AI))
-        summary.value.add(tag='test/won_random_' + model.scope, simple_value=float(won_random))
+        summary.value.add(tag='test_random/won_' + model.scope, simple_value=float(won_random))
         #summary.value.add(tag='test/draws/'+ model.scope+ '/illegal_games', simple_value=float(illegal_games))
         summary_writer.add_summary(summary, update)
         summary_writer.flush()
+
+        for i in range(NUMBER_TEST):
+            self.obs = self.obs * 0
+            for n in range(self.obs.shape[1]*self.obs.shape[1]):
+                actions, values, states, probs = model.step(self.obs, temp, self.states, self.dones)
+
+                a_dist = np.squeeze(probs)
+                a_dist = np.clip(a_dist, 1e-20, 1)
+                a_dist = self.get_legal_moves(a_dist)
+                #a_dist = a_dist / np.sum(a_dist)
+                actions = [np.argmax(a_dist)]
+                # print(actions, self.env.get_illegal_moves())
+                obs, rewards, dones, _, illegal = self.env.step_smart(actions,False)
+
+                # print(illegal, )
+                self.obs = obs
+
+                if dones[0] or illegal:
+                    break
+
+        won_AI, won_random, draws, illegal_games = env.get_stadistics()
+        print('Result test false expert '+ model.scope)
+        env.print_stadistics('AI_vs_AI mode')
+        summary = tf.Summary()
+        #summary.value.add(tag='test'+ self.model.scope+ '/won_AI' , simple_value=float(won_AI))
+        summary.value.add(tag='test_false_expert/won_' + model.scope, simple_value=float(won_random))
+        #summary.value.add(tag='test/draws/'+ model.scope+ '/illegal_games', simple_value=float(illegal_games))
+        summary_writer.add_summary(summary, update)
+        summary_writer.flush()
+
+        for i in range(NUMBER_TEST):
+            self.obs = self.obs * 0
+            for n in range(self.obs.shape[1]*self.obs.shape[1]):
+                actions, values, states, probs = model.step(self.obs, temp, self.states, self.dones)
+
+                a_dist = np.squeeze(probs)
+                a_dist = np.clip(a_dist, 1e-20, 1)
+                a_dist = self.get_legal_moves(a_dist)
+                #a_dist = a_dist / np.sum(a_dist)
+                actions = [np.argmax(a_dist)]
+                # print(actions, self.env.get_illegal_moves())
+                obs, rewards, dones, _, illegal = self.env.step_smart(actions, True)
+
+                # print(illegal, )
+                self.obs = obs
+
+                if dones[0] or illegal:
+                    break
+
+        won_AI, won_random, draws, illegal_games = env.get_stadistics()
+        print('Result test true True '+ model.scope)
+        env.print_stadistics('AI_vs_AI mode')
+        summary = tf.Summary()
+        #summary.value.add(tag='test'+ self.model.scope+ '/won_AI' , simple_value=float(won_AI))
+        summary.value.add(tag='test_true_expert/won_' + model.scope, simple_value=float(won_random))
+        #summary.value.add(tag='test/draws/'+ model.scope+ '/illegal_games', simple_value=float(illegal_games))
+        summary_writer.add_summary(summary, update)
+
+
+        summary_writer.flush()
+
 
     def put_in_batch(self, obs, states, reward, masks, actions, values, obs_B, states_B, rewards_B, masks_B,
                      actions_B, values_B):
@@ -374,6 +436,11 @@ class Runner(object):
 
     def empty_batch(self):
         self.batch.clear()
+
+    def save_csv(self, file, data):
+        with open(file, 'w') as f:
+            writer = csv.writer(f, lineterminator='\n', delimiter=',')
+            writer.writerow(float(val) for val in data)
 
 
 def redimension_results(obs, states, rewards, masks, actions, values, env, nsteps):
@@ -506,6 +573,10 @@ def change_player(models,env):
     runner = Runner(env, models[pl1], 'A', models[pl2], 'B', nsteps=5, nstack=1, gamma=0.99)
     return runner, models[pl1], models[pl2]
 
+def save_csv(file, data):
+    with open(file, 'w') as f:
+        writer = csv.writer(f, lineterminator='\n', delimiter=',')
+        writer.writerow(float(val) for val in data)
 
 def train(temp, runner,model, model_2, data_augmentation,BATCH_SIZE,env,summary_writer, update, counter_stadistics,tstart,nsteps=5,):
     obs, states, rewards, masks, actions, values, obs_B, states_B, rewards_B, masks_B, actions_B, values_B = runner.run(
@@ -521,31 +592,53 @@ def train(temp, runner,model, model_2, data_augmentation,BATCH_SIZE,env,summary_
                                      masks_B, actions_B, values_B)
     if size_batch == BATCH_SIZE:
         batch = runner.get_batch()
+        policy_loss_sv, value_loss_sv, policy_entropy_sv = [], [], []
+        policy_loss_sv_B, value_loss_sv_B, policy_entropy_sv_B = [], [], []
         for i in range(len(batch)):
             obs, states, rewards, masks, actions, values, obs_B, states_B, rewards_B, masks_B, actions_B, values_B = batch.get(
                 i)
+
+
             if data_augmentation:
-                policy_loss, value_loss, policy_entropy = train_data_augmentation(obs, states, rewards, masks,
+                pl, vl, pe = train_data_augmentation(obs, states, rewards, masks,
                                                                                   actions,
                                                                                   values, model, temp)
-                policy_loss_B, value_loss_B, policy_entropy_B = train_data_augmentation(obs_B, states_B,
+                pl_B, vl_B, pe_B = train_data_augmentation(obs_B, states_B,
                                                                                         rewards_B,
                                                                                         masks_B, actions_B,
                                                                                         values_B,
                                                                                         model_2, temp)
+
+                policy_loss_sv.append(pl)
+                value_loss_sv.append(vl)
+                policy_entropy_sv.append(pe)
+
+                policy_loss_sv_B.append(pl_B)
+                value_loss_sv_B.append(vl_B)
+                policy_entropy_sv_B.append(pe_B)
             else:
-                policy_loss, value_loss, policy_entropy = train_without_data_augmentation(obs, states, rewards,
+                pl, vl, pe = train_without_data_augmentation(obs, states, rewards,
                                                                                           masks,
                                                                                           actions,
                                                                                           values, model, temp)
-                policy_loss_B, value_loss_B, policy_entropy_B = train_without_data_augmentation(obs_B, states_B,
+                pl_B, vl_B, pe_B = train_without_data_augmentation(obs_B, states_B,
                                                                                                 rewards_B,
                                                                                                 masks_B,
                                                                                                 actions_B,
                                                                                                 values_B,
                                                                                                 model_2, temp)
-        runner.empty_batch()
+                policy_loss_sv.append(pl)
+                value_loss_sv.append(vl)
+                policy_entropy_sv.append(pe)
 
+                policy_loss_sv_B.append(pl_B)
+                value_loss_sv_B.append(vl_B)
+                policy_entropy_sv_B.append(pe_B)
+        runner.empty_batch()
+        policy_loss, value_loss, policy_entropy = np.mean(policy_loss_sv), np.mean(value_loss_sv), np.mean(
+            policy_entropy_sv)
+        policy_loss_B, value_loss_B, policy_entropy_B = np.mean(policy_loss_sv_B), np.mean(value_loss_sv_B), np.mean(
+            policy_entropy_sv_B)
 
         print_tensorboard_training(summary_writer, update, policy_entropy, policy_loss, value_loss,
                               policy_entropy_B, policy_loss_B, value_loss_B, temp)
@@ -559,7 +652,7 @@ def train(temp, runner,model, model_2, data_augmentation,BATCH_SIZE,env,summary_
 
 def learn(policy, env, seed, nsteps, nstack=4, total_timesteps=int(80e6), vf_coef=0.5, ent_coef=0.01,
           max_grad_norm=0.5, lr=7e-4, lrschedule='linear', epsilon=1e-5, alpha=0.99, gamma=0.99, log_interval=1000,
-          load_model=False, model_path='', data_augmentation=True, BATCH_SIZE=100,NUMBER_OF_MODELS=4):
+          load_model=False, model_path='', data_augmentation=True, BATCH_SIZE=100,NUMBER_OF_MODELS=4,expert=True):
     tf.reset_default_graph()
     set_global_seeds(seed)
 
@@ -569,22 +662,26 @@ def learn(policy, env, seed, nsteps, nstack=4, total_timesteps=int(80e6), vf_coe
     num_procs = len(env.remotes)  # HACK
     now = datetime.datetime.now()
 
-    CHANGE_PLAYER = 1000
+    CHANGE_PLAYER = 4000
     NUMBER_TEST = 1000
     TEMP_CTE = 20000
     counter_stadistics = 0
     temp = np.ones(1)
 
     parameters = now.strftime("%d-%m-%Y_%H-%M-%S") + "_seed_" + str(
-        seed) + "_BATCH_" + str(BATCH_SIZE) + "_TEMP_" + str(TEMP_CTE) + "_DA_" + str(data_augmentation) + "_VF_" + str(
-        vf_coef) + '_num_players_' +str(NUMBER_OF_MODELS)
+        seed) + "_BATCH_" + str(BATCH_SIZE) + "_TEMP_" + str(TEMP_CTE) + "_DA_" + str(data_augmentation) + str(np.sqrt(nsteps))+ 'x'+ str(np.sqrt(nsteps)) + '_expert_' + str(expert) + '_num_players_' +str(NUMBER_OF_MODELS)
     statistics_path = ('../statistics/AI_vs_AI/' + parameters )
+
+    models_path= statistics_path + '/model/'
+    statistics_csv = statistics_path + "/csv/"
+
 
     summary_writer = tf.summary.FileWriter(statistics_path)
 
     models = create_models(NUMBER_OF_MODELS,policy, ob_space, ac_space, nenvs, nsteps, nstack, num_procs, ent_coef, vf_coef,
                            max_grad_norm, lr, alpha, epsilon, total_timesteps, lrschedule)
 
+    BATCH_SIZE = np.sqrt(nsteps) * BATCH_SIZE
 
     if load_model:
         # model_A.load('./models/model_A.cpkt')
@@ -600,7 +697,10 @@ def learn(policy, env, seed, nsteps, nstack=4, total_timesteps=int(80e6), vf_coe
         os.stat(statistics_path)
     except:
         os.mkdir(statistics_path)
-
+    try:
+        os.stat(models_path)
+    except:
+        os.mkdir(models_path)
     for update in range(0, total_timesteps // nbatch + 1):
 
 
@@ -625,13 +725,10 @@ def learn(policy, env, seed, nsteps, nstack=4, total_timesteps=int(80e6), vf_coe
             train(temp, runner, model, model_2, data_augmentation, BATCH_SIZE, env, summary_writer, update,
                   counter_stadistics, tstart, nsteps=nsteps)
 
-        # if (update % (log_interval * 1)) == 0 and update != 0:
-        #     print('Save check point')
-        #     #model.save(statistics_path + '/model_A_' + parameters + '.cpkt')
-        #     #model_2.save(statistics_path + '/model_B_' + parameters + '.cpkt')
-
-        # if (update % RUN_TEST == 0) and update != 0:
-        #     runner.test(temp)
+        if (update % (log_interval * 10)) == 0 and update != 0:
+             print('Save check point')
+             for mod in models:
+                 mod.save(models_path + parameters + '_' + str(mod.scope) )
 
 
 if __name__ == '__main__':
