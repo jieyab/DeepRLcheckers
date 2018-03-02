@@ -572,7 +572,7 @@ class CnnPolicy_slim_scope9x9_1x1(object):
                                 weights_regularizer =slim.l2_regularizer(0.0005))
 
             conv3 = slim.conv2d(activation_fn=tf.nn.relu,
-                                inputs=conv2, num_outputs=64,
+                                inputs=conv2, num_outputs=6,
                                 kernel_size=[1, 1], stride=[1, 1], padding='VALID',
                                 weights_regularizer=slim.l2_regularizer(0.0005))
 

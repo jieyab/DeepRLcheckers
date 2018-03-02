@@ -671,7 +671,7 @@ def learn(policy, env, seed, nsteps, nstack=4, total_timesteps=int(80e6), vf_coe
     temp = np.ones(1)
 
     parameters = now.strftime("%d-%m-%Y_%H-%M-%S") + "_seed_" + str(
-        seed) + "_BATCH_" + str(BATCH_SIZE) + "_TEMP_" + str(TEMP_CTE) + "_DA_" + str(data_augmentation) + str(np.sqrt(nsteps))+ 'x'+ str(np.sqrt(nsteps)) +'_num_players_' +str(NUMBER_OF_MODELS)
+        seed) + "_BATCH_" + str(BATCH_SIZE) + "_TEMP_" + str(TEMP_CTE) + "_DA_" + str(data_augmentation) + str(np.sqrt(nsteps))+ 'x'+ str(np.sqrt(nsteps)) +'_num_players_' +str(NUMBER_OF_MODELS) + str(policy)
     statistics_path = ('../statistics/AI_vs_AI/' + parameters )
 
     models_path= statistics_path + '/model/'

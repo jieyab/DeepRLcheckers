@@ -158,7 +158,7 @@ class Runner(object):
             mb_actions.append(actions)
             mb_values.append(values)
             mb_dones.append(self.dones)
-            obs, rewards, dones, _, illegal = self.env.step_smart(actions)
+            obs, rewards, dones, _, illegal = self.env.step_smart(actions, False)
             if illegal:
                 counter = 0
                 mb_obs, mb_rewards, mb_actions, mb_values, mb_dones = [], [], [], [], []
@@ -213,7 +213,7 @@ class Runner(object):
             a_dist = a_dist / np.sum(a_dist)
             actions = [np.argmax(a_dist)]
             # print(actions, self.env.get_illegal_moves())
-            obs, rewards, dones, _, illegal = self.env.step_smart(actions)
+            obs, rewards, dones, _, illegal = self.env.step_smart(actions, True)
 
             # print(illegal, )
             self.obs = obs
@@ -344,7 +344,7 @@ def learn(policy, env, seed, nsteps, nstack=4, total_timesteps=int(80e6), vf_coe
         vf_coef) + str(policy) + str(np.sqrt(nsteps))+ 'x'+ str(np.sqrt(nsteps))
     statistics_path = "../statistics/random/"
     BATCH_SIZE = np.sqrt(nsteps) * BATCH_SIZE
-
+    model_path_load = model_path
     try:
         os.stat("../statistics/")
     except:
@@ -386,7 +386,7 @@ def learn(policy, env, seed, nsteps, nstack=4, total_timesteps=int(80e6), vf_coe
                   lrschedule=lrschedule, summary_writter=summary_writer)
 
     if load_model:
-        model.load(model_path)
+        model.load(model_path_load)
     runner = Runner(env, model, nsteps=nsteps, nstack=nstack, gamma=gamma)
 
     nbatch = nenvs * nsteps
@@ -520,7 +520,6 @@ def learn(policy, env, seed, nsteps, nstack=4, total_timesteps=int(80e6), vf_coe
                 model.save(model_path +  parameters + '.cpkt')
 
     env.close()
-
 
 if __name__ == '__main__':
     pass

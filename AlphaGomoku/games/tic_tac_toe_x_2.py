@@ -511,7 +511,7 @@ class TicTacToeXGameSpec(BaseGameSpec):
         self.reward_winning = 0.5
         self.reward_lossing = -0.5
         self.reward_illegal_move = -1
-        self.reward_draw = -0.5
+        self.reward_draw = -0.6
 
         ##Our code
         self.observation_space = spaces.Box(low=-1, high=1, shape=(self._board_size, self._board_size, 1))
@@ -595,8 +595,8 @@ class TicTacToeXGameSpec(BaseGameSpec):
 
         won_AI = 100 * self.games_wonAI / total
         won_random = 100 * self.games_wonRandom / total
-        draws = self.games_finish_in_draw / total
-        illegal_games = self.illegal_games / total
+        draws =100* self.games_finish_in_draw / total
+        illegal_games = 100*self.illegal_games / total
 
         return won_AI, won_random, draws, illegal_games
 
@@ -793,7 +793,7 @@ class TicTacToeXGameSpec(BaseGameSpec):
         #     print(datetime.datetime.now().time())
 
         if reward[0] != 0:
-            #print(self.board_state[0, :, :, 0])
+            print(self.board_state[0, :, :, 0])
             self.board_state = _new_board(self._board_size)
             self.print = True
 
