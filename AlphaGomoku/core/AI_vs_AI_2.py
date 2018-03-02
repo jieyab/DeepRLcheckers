@@ -590,7 +590,8 @@ def train(temp, runner,model, model_2, data_augmentation,BATCH_SIZE,env,summary_
 
     size_batch = runner.put_in_batch(obs, states, rewards, masks, actions, values, obs_B, states_B, rewards_B,
                                      masks_B, actions_B, values_B)
-    if size_batch == BATCH_SIZE:
+
+    if size_batch >= BATCH_SIZE:
         batch = runner.get_batch()
         policy_loss_sv, value_loss_sv, policy_entropy_sv = [], [], []
         policy_loss_sv_B, value_loss_sv_B, policy_entropy_sv_B = [], [], []
@@ -634,6 +635,7 @@ def train(temp, runner,model, model_2, data_augmentation,BATCH_SIZE,env,summary_
                 policy_loss_sv_B.append(pl_B)
                 value_loss_sv_B.append(vl_B)
                 policy_entropy_sv_B.append(pe_B)
+
         runner.empty_batch()
         policy_loss, value_loss, policy_entropy = np.mean(policy_loss_sv), np.mean(value_loss_sv), np.mean(
             policy_entropy_sv)
@@ -652,7 +654,7 @@ def train(temp, runner,model, model_2, data_augmentation,BATCH_SIZE,env,summary_
 
 def learn(policy, env, seed, nsteps, nstack=4, total_timesteps=int(80e6), vf_coef=0.5, ent_coef=0.01,
           max_grad_norm=0.5, lr=7e-4, lrschedule='linear', epsilon=1e-5, alpha=0.99, gamma=0.99, log_interval=1000,
-          load_model=False, model_path='', data_augmentation=True, BATCH_SIZE=100,NUMBER_OF_MODELS=4,expert=True):
+          load_model=False, model_path='', data_augmentation=True, BATCH_SIZE=100,NUMBER_OF_MODELS=4):
     tf.reset_default_graph()
     set_global_seeds(seed)
 
@@ -669,7 +671,7 @@ def learn(policy, env, seed, nsteps, nstack=4, total_timesteps=int(80e6), vf_coe
     temp = np.ones(1)
 
     parameters = now.strftime("%d-%m-%Y_%H-%M-%S") + "_seed_" + str(
-        seed) + "_BATCH_" + str(BATCH_SIZE) + "_TEMP_" + str(TEMP_CTE) + "_DA_" + str(data_augmentation) + str(np.sqrt(nsteps))+ 'x'+ str(np.sqrt(nsteps)) + '_expert_' + str(expert) + '_num_players_' +str(NUMBER_OF_MODELS)
+        seed) + "_BATCH_" + str(BATCH_SIZE) + "_TEMP_" + str(TEMP_CTE) + "_DA_" + str(data_augmentation) + str(np.sqrt(nsteps))+ 'x'+ str(np.sqrt(nsteps)) +'_num_players_' +str(NUMBER_OF_MODELS)
     statistics_path = ('../statistics/AI_vs_AI/' + parameters )
 
     models_path= statistics_path + '/model/'
@@ -682,6 +684,7 @@ def learn(policy, env, seed, nsteps, nstack=4, total_timesteps=int(80e6), vf_coe
                            max_grad_norm, lr, alpha, epsilon, total_timesteps, lrschedule)
 
     BATCH_SIZE = np.sqrt(nsteps) * BATCH_SIZE
+
 
     if load_model:
         # model_A.load('./models/model_A.cpkt')
@@ -724,6 +727,7 @@ def learn(policy, env, seed, nsteps, nstack=4, total_timesteps=int(80e6), vf_coe
         else:
             train(temp, runner, model, model_2, data_augmentation, BATCH_SIZE, env, summary_writer, update,
                   counter_stadistics, tstart, nsteps=nsteps)
+
 
         if (update % (log_interval * 10)) == 0 and update != 0:
              print('Save check point')
