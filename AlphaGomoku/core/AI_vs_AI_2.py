@@ -666,7 +666,7 @@ def learn(policy, env, seed, nsteps, nstack=4, total_timesteps=int(80e6), vf_coe
 
     CHANGE_PLAYER = 4000
     NUMBER_TEST = 1000
-    TEMP_CTE = 20000
+    TEMP_CTE = 40000
     counter_stadistics = 0
     temp = np.ones(1)
 
@@ -715,7 +715,7 @@ def learn(policy, env, seed, nsteps, nstack=4, total_timesteps=int(80e6), vf_coe
         if update % CHANGE_PLAYER == 0 and update != 0:
             env.print_stadistics_vs()
             print_tensorboard_training_score(summary_writer, update, env)
-            temp = (0.8 * np.exp(-(update / TEMP_CTE)) + 0.2) * np.ones(1)
+            temp = (0.8 * np.exp(-(update / TEMP_CTE)) + 0.1) * np.ones(1)
             print('Testing players, update:', update)
             runner.test(temp, model,NUMBER_TEST,summary_writer, env, update)
             runner.test(temp, model_2,NUMBER_TEST,summary_writer, env, update)

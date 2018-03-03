@@ -446,16 +446,16 @@ class CnnPolicy_slim_scope5x5_1x1(object):
         TEMP = tf.placeholder(tf.float32, 1)
         with tf.variable_scope(scope, reuse=reuse):
             conv1 = slim.conv2d(activation_fn=tf.nn.relu,
-                                inputs=X, num_outputs=32,
+                                inputs=X, num_outputs=64,
                                 kernel_size=[4, 4], stride=[1, 1], padding='VALID',
                                 weights_regularizer =slim.l2_regularizer(0.0005))
             conv2 = slim.conv2d(activation_fn=tf.nn.relu,
-                                inputs=conv1, num_outputs=64,
+                                inputs=conv1, num_outputs=128,
                                 kernel_size=[2, 2], stride=[1, 1], padding='VALID',
                                 weights_regularizer =slim.l2_regularizer(0.0005))
 
             conv3 = slim.conv2d(activation_fn=tf.nn.relu,
-                                inputs=conv2, num_outputs=64,
+                                inputs=conv2, num_outputs=128,
                                 kernel_size=[1, 1], stride=[1, 1], padding='VALID',
                                 weights_regularizer=slim.l2_regularizer(0.0005))
 
@@ -507,11 +507,11 @@ class CnnPolicy_slim_scope9x9(object):
         TEMP = tf.placeholder(tf.float32, 1)
         with tf.variable_scope(scope, reuse=reuse):
             conv1 = slim.conv2d(activation_fn=tf.nn.relu,
-                                inputs=X, num_outputs=32,
+                                inputs=X, num_outputs=64,
                                 kernel_size=[5, 5], stride=[1, 1], padding='VALID',
                                 weights_regularizer =slim.l2_regularizer(0.0005))
             conv2 = slim.conv2d(activation_fn=tf.nn.relu,
-                                inputs=conv1, num_outputs=64,
+                                inputs=conv1, num_outputs=128,
                                 kernel_size=[4, 4], stride=[1, 1], padding='VALID',
                                 weights_regularizer =slim.l2_regularizer(0.0005))
 
@@ -563,16 +563,16 @@ class CnnPolicy_slim_scope9x9_1x1(object):
         TEMP = tf.placeholder(tf.float32, 1)
         with tf.variable_scope(scope, reuse=reuse):
             conv1 = slim.conv2d(activation_fn=tf.nn.relu,
-                                inputs=X, num_outputs=64,
+                                inputs=X, num_outputs=128,
                                 kernel_size=[5, 5], stride=[1, 1], padding='VALID',
                                 weights_regularizer =slim.l2_regularizer(0.0005))
             conv2 = slim.conv2d(activation_fn=tf.nn.relu,
-                                inputs=conv1, num_outputs=128,
+                                inputs=conv1, num_outputs=256,
                                 kernel_size=[4, 4], stride=[1, 1], padding='VALID',
                                 weights_regularizer =slim.l2_regularizer(0.0005))
 
             conv3 = slim.conv2d(activation_fn=tf.nn.relu,
-                                inputs=conv2, num_outputs=6,
+                                inputs=conv2, num_outputs=128,
                                 kernel_size=[1, 1], stride=[1, 1], padding='VALID',
                                 weights_regularizer=slim.l2_regularizer(0.0005))
 
