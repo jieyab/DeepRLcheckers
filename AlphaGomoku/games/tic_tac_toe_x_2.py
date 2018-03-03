@@ -793,7 +793,7 @@ class TicTacToeXGameSpec(BaseGameSpec):
         #     print(datetime.datetime.now().time())
 
         if reward[0] != 0:
-            print(self.board_state[0, :, :, 0])
+            #print(self.board_state[0, :, :, 0])
             self.board_state = _new_board(self._board_size)
             self.print = True
 
