@@ -433,17 +433,17 @@ def learn(policy, env, seed, nsteps, nstack=4, total_timesteps=int(80e6), vf_coe
     tstart = time.time()
 
     for update in range(0, total_timesteps // nbatch + 1):
-        if update % 1000 == 0:
+        if update % 200 == 0:
             print('update: ', update)
             import threading
             env.print_stadistics(threading.get_ident())
 
-        if (update % RUN_TEST < 100) and (update % RUN_TEST > 0) and (update != 0):
+        if (update % RUN_TEST < 1000) and (update % RUN_TEST > 0) and (update != 0):
             # print("Aqui")
             runner.test(np.ones(1))
             temp = (0.8 * np.exp(-(update / TEMP_CTE)) + 0.2) * np.ones(1)
 
-            if (update % RUN_TEST) == 99:
+            if (update % RUN_TEST) == 999:
                 games_wonAI, games_wonRandom, games_finish_in_draw, illegal_games = env.get_stadistics()
                 summary = tf.Summary()
                 summary.value.add(tag='test/games_wonAI', simple_value=float(games_wonAI))
