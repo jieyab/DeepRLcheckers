@@ -683,6 +683,25 @@ class TicTacToeXGameSpec(BaseGameSpec):
 
         return won_A, won_B, draws, illegal_games
 
+    def current_state(self, state, action, side):
+        """return the board state from the perspective of the current player
+        shape: 4*width*height"""
+
+        square_state = np.zeros((4, len(state[0]), len(state[0])))
+
+        for x, y in itertools.product(range(len(state[0])), range(len(state[0]))):
+            if state[x, y, 0] == side:
+                square_state[0][x, y] = 1.0
+            elif state[x, y, 0] == -side:
+                square_state[1][x, y] = 1.0
+
+        if action >= 0:
+            square_state[2][int(action % len(state[0])), int(action / len(state[0]))] = 1
+        if side == 1:
+            square_state[3][:, :] = 1.0
+
+        return square_state
+
     def step_vs(self, actions_nn, side, clear_last_obs=True):
         if side == 'A':
             token = 1

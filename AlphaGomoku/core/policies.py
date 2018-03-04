@@ -441,6 +441,7 @@ class CnnPolicy_slim_scope5x5_1x1(object):
         nbatch = nenv * nsteps
         nh, nw, nc = ob_space.shape
         ob_shape = (nbatch, nh, nw, nc * nstack)
+        print(ob_shape)
         nact = ac_space
         X = tf.placeholder(tf.float32, ob_shape)  # obs
         TEMP = tf.placeholder(tf.float32, 1)

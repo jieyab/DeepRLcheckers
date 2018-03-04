@@ -240,7 +240,7 @@ class Runner(object):
         for i in range(len(obs)):
             self.batch.update(
                 {size + i: [np.asarray(obs[i]), [], np.asarray(reward[i]), np.asarray(masks[i]),
-                            np.asarray(actions[i]), np.asarray(values[i])]})
+                            np.asarray(actions[i]), np.asarray(values[i]), 1 if i / 2 == 0 else -1]})
 
         return size
 
@@ -260,7 +260,8 @@ class Runner(object):
         for i in range(len(obs_slice)):
             self.batch.update(
                 {size + i: [np.asarray(obs_slice[i]), [], np.asarray(reward_slice[i]), np.asarray(masks_slice[i]),
-                            np.asarray(actions_slice[i]), np.asarray(values_slice[i])]})
+                            np.asarray(actions_slice[i]), np.asarray(values_slice[i]),
+                            1 if (i * number_slice) % 2 == 0 else -1]})
             if masks_slice[i][0] is True and masks_slice[i][1] is True:
                 break
 
@@ -300,20 +301,26 @@ def train_data_augmentation(obs, states, rewards, masks, actions, values, model,
     policy_loss, value_loss, policy_entropy = [], [], []
     size = obs.shape[1]
 
-    actions_in_board = np.array([np.zeros((len(obs[0]), len(obs[0]))) for _ in range(len(actions))])
+    actions_in_board = np.array([np.zeros((len(obs[0, 0]), len(obs[0, 0]))) for _ in range(len(actions))])
     for i in range(len(actions)):
-        actions_in_board[i, int(actions[i] % len(obs[0])), int(actions[i] / len(obs[0]))] = 1
+        actions_in_board[i, int(actions[i] % len(obs[0, 0])), int(actions[i] / len(obs[0, 0]))] = 1
     new_actions = np.array([0 for _ in range(len(actions))])
     # print(actions_in_board)
 
     for i in [1, 2, 3, 4]:
         # rotate counterclockwise
-        rot_obs = np.array([np.rot90(s, i) for s in obs])
+        print(obs)
+        rot_obs = []
+        for j in range(len(obs)):
+            rot_obs.append(np.array([np.rot90(s, i) for s in obs[j]]))
+        rot_obs = np.array(rot_obs)
+        print(rot_obs)
+
         rot_actions = np.array([np.rot90(s, i) for s in actions_in_board])
         new_actions.fill(0)
         for i in range(len(actions)):
             import itertools
-            for x, y in itertools.product(range(len(obs[0])), range(len(obs[0]))):
+            for x, y in itertools.product(range(len(obs[0, 0])), range(len(obs[0, 0]))):
                 if rot_actions[i, x, y] == 1:
                     new_actions[i] = size * y + x
 
@@ -323,12 +330,16 @@ def train_data_augmentation(obs, states, rewards, masks, actions, values, model,
         value_loss.append(vl)
         policy_entropy.append(pe)
 
-        flip_obs = np.array([np.fliplr(s) for s in rot_obs])
+        flip_obs = []
+        for j in range(len(obs)):
+            flip_obs.append(np.array([np.fliplr(s) for s in rot_obs[j]]))
+        flip_obs = np.array(rot_obs)
+
         flip_actions = np.array([np.fliplr(s) for s in rot_actions])
         new_actions.fill(0)
         for i in range(len(actions)):
             import itertools
-            for x, y in itertools.product(range(len(obs[0])), range(len(obs[0]))):
+            for x, y in itertools.product(range(len(obs[0, 0])), range(len(obs[0, 0]))):
                 if flip_actions[i, x, y] == 1:
                     new_actions[i] = size * y + x
 
@@ -456,21 +467,36 @@ def learn(policy, env, seed, nsteps, nstack=4, total_timesteps=int(80e6), vf_coe
             # print('obs', obs[:, :, :, 0], 'actions', actions)
             # print('values', values, 'rewards', rewards)
 
-            # obs, states, rewards, masks, actions, values = redimension_results(obs, states, rewards, masks, actions,
-            #                                                                    values, env, nsteps)
+            obs, states, rewards, masks, actions, values = redimension_results(obs, states, rewards, masks, actions,
+                                                                               values, env, nsteps)
             # print('obs', obs[:, :, :, 0], 'actions', actions)
             # print('values', values, 'rewards', rewards)
 
-            size_batch = runner.put_in_batch_normally(obs, states, rewards, masks, actions, values)
+            size_batch = runner.put_in_batch(obs, states, rewards, masks, actions, values)
             if size_batch >= BATCH_SIZE:
                 # print('Training batch')
                 batch = runner.get_batch()
                 policy_loss_sv, value_loss_sv, policy_entropy_sv = [], [], []
 
                 for i in range(len(batch)):
-                    obs, states, rewards, masks, actions, values = batch.get(i)
-                    print(obs)
-                    print(actions)
+                    obs, states, rewards, masks, actions, values, side = batch.get(i)
+                    new_obs = None
+
+                    for j in range(len(actions)):
+                        n_obs = runner.env.current_state(obs[j], actions[j], side)
+                        side = -side
+                        item = np.array([n_obs])
+
+                        if j != 0 and len(list(env.available_moves(obs[j]))) == len(obs[j]) * len(obs[j]):
+                            break
+
+                        if new_obs is not None:
+                            new_obs = np.concatenate((new_obs, item), axis=0)
+                        else:
+                            new_obs = item
+
+                    print(new_obs)
+                    obs = new_obs
 
                     if data_augmentation:
                         pl, vl, pe = train_data_augmentation(obs, states, rewards, masks,
