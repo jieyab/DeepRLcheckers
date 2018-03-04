@@ -1,12 +1,17 @@
 #!/usr/bin/env python
+import os
+import sys
+
+sys.path.append(os.path.join(os.path.dirname(__file__), '../../'))
+
 from AlphaGomoku.core.a2c_ni import learn
 from AlphaGomoku.core.policies import *
 from AlphaGomoku.games.tic_tac_toe_x_2 import TicTacToeXGameSpec
 
 if __name__ == '__main__':
     policy_fn = CnnPolicy_ni
-    size_board = 5
-    winning_length = 4
+    size_board = 8
+    winning_length = 5
 
     seed = 5
 
