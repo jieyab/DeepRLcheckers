@@ -683,7 +683,7 @@ class TicTacToeXGameSpec(BaseGameSpec):
 
         return won_A, won_B, draws, illegal_games
 
-    def step_vs(self, actions_nn, side):
+    def step_vs(self, actions_nn, side, clear_last_obs=True):
         if side == 'A':
             token = 1
 
@@ -721,13 +721,17 @@ class TicTacToeXGameSpec(BaseGameSpec):
 
         if reward[0] != 0:
             # print(self.board_state[0, :, :, 0])
-            self.board_state = _new_board(self._board_size)
+            if clear_last_obs:
+                self.board_state = _new_board(self._board_size)
 
         # if (((self.games_won_A + self.games_won_B + self.games_finish_in_draw + self.illegal_games) % 1000 == 0)
         #     and self.print):
         #     self.print_stadistics_vs()
 
         return self.board_state, reward, winner, 0, False
+
+    def clear_board(self):
+        self.board_state = _new_board(self._board_size)
 
     def get_illegal_moves(self):
         illegal_moves = list(range(self._board_size * self._board_size))
