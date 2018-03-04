@@ -252,7 +252,7 @@ class Runner(object):
 
         if rewards[0] >= 1:
             mb_dones_B = mb_dones
-        elif rewards_B[0] <= 1:
+        elif rewards[0] <= 1:
             mb_dones = mb_dones_B
 
         # batch of steps to batch of rollouts
@@ -403,8 +403,8 @@ class Runner(object):
     def put_in_batch(self, obs, states, reward, masks, actions, values, obs_B, states_B, rewards_B, masks_B,
                      actions_B, values_B):
         size = len(self.batch)
-
         number_slice = obs.shape[1]
+
         obs_slice = np.vsplit(obs, number_slice)
         reward_slice = np.hsplit(reward, number_slice)
         masks_slice = np.hsplit(masks, number_slice)
@@ -573,6 +573,12 @@ def change_player(models,env):
     runner = Runner(env, models[pl1], 'A', models[pl2], 'B', nsteps=5, nstack=1, gamma=0.99)
     return runner, models[pl1], models[pl2]
 
+def change_player_keep_one(models,env):
+    aux = random.sample(range(1, len(models)), 1)
+    pl1, pl2 = random.sample([[0],aux],2)
+    runner = Runner(env, models[pl1[0]], 'A', models[pl2[0]], 'B', nsteps=5, nstack=1, gamma=0.99)
+    return runner, models[pl1[0]], models[pl2[0]]
+
 def save_csv(file, data):
     with open(file, 'w') as f:
         writer = csv.writer(f, lineterminator='\n', delimiter=',')
@@ -639,6 +645,7 @@ def train(temp, runner,model, model_2, data_augmentation,BATCH_SIZE,env,summary_
         runner.empty_batch()
         policy_loss, value_loss, policy_entropy = np.mean(policy_loss_sv), np.mean(value_loss_sv), np.mean(
             policy_entropy_sv)
+
         policy_loss_B, value_loss_B, policy_entropy_B = np.mean(policy_loss_sv_B), np.mean(value_loss_sv_B), np.mean(
             policy_entropy_sv_B)
 
@@ -666,7 +673,7 @@ def learn(policy, env, seed, nsteps, nstack=4, total_timesteps=int(80e6), vf_coe
 
     CHANGE_PLAYER = 4000
     NUMBER_TEST = 1000
-    TEMP_CTE = 40000
+    TEMP_CTE = 10000
     counter_stadistics = 0
     temp = np.ones(1)
 
@@ -691,7 +698,7 @@ def learn(policy, env, seed, nsteps, nstack=4, total_timesteps=int(80e6), vf_coe
         # model_B.load('./models/model_B.cpkt')
         print('Model loaded')
 
-    runner, model, model_2 = change_player(models, env)
+    runner, model, model_2 = change_player_keep_one(models, env)
     print('Loaded players', model.scope, 'A', model_2.scope, 'B')
 
     nbatch = nenvs * nsteps
@@ -715,12 +722,12 @@ def learn(policy, env, seed, nsteps, nstack=4, total_timesteps=int(80e6), vf_coe
         if update % CHANGE_PLAYER == 0 and update != 0:
             env.print_stadistics_vs()
             print_tensorboard_training_score(summary_writer, update, env)
-            temp = (0.8 * np.exp(-(update / TEMP_CTE)) + 0.1) * np.ones(1)
+            temp = (0.9 * np.exp(-(update / TEMP_CTE)) + 0.1) * np.ones(1)
             print('Testing players, update:', update)
             runner.test(temp, model,NUMBER_TEST,summary_writer, env, update)
             runner.test(temp, model_2,NUMBER_TEST,summary_writer, env, update)
 
-            runner, model, model_2 = change_player(models,env)
+            runner, model, model_2 = change_player_keep_one(models,env)
             print('Change players, new players', model.scope, 'A',model_2.scope,'B')
 
 

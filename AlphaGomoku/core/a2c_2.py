@@ -213,7 +213,7 @@ class Runner(object):
             a_dist = a_dist / np.sum(a_dist)
             actions = [np.argmax(a_dist)]
             # print(actions, self.env.get_illegal_moves())
-            obs, rewards, dones, _, illegal = self.env.step_smart(actions, True)
+            obs, rewards, dones, _, illegal = self.env.step_smart(actions, False)
 
             # print(illegal, )
             self.obs = obs

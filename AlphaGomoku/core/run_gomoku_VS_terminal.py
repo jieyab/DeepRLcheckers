@@ -23,7 +23,7 @@ if __name__ == '__main__':
     NUMBER_OF_MODELS = int(sys.argv[4])
     BATCH_SIZE = int(sys.argv[5])
     seed = int(sys.argv[6])
-    print('policy', policy_fn, 'size_board', size_board, 'winning_length', winning_length, 'NUMBER_OF_MODELS',
+    print('________________________policy', policy_fn, 'size_board', size_board, 'winning_length', winning_length, 'NUMBER_OF_MODELS',
           NUMBER_OF_MODELS, 'batch size', BATCH_SIZE, 'seed', seed)
     env = TicTacToeXGameSpec(size_board, winning_length)
     learn(policy_fn, env, nsteps=size_board * size_board

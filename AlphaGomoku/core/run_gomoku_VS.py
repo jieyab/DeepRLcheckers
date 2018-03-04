@@ -9,7 +9,7 @@ if __name__ == '__main__':
     policy_fn = CnnPolicy_slim_scope5x5_1x1
     size_board = 5
     winning_length = 4
-    NUMBER_OF_MODELS = 2
+    NUMBER_OF_MODELS = 4
     BATCH_SIZE = 256
     seed = 10
     print(size_board,winning_length,NUMBER_OF_MODELS,policy_fn)
