@@ -144,10 +144,11 @@ class Runner(object):
         mb_obs, mb_rewards, mb_actions, mb_values, mb_dones = [], [], [], [], []
         mb_states = self.states
         self.obs = self.obs * 0
+        t_obs = np.array([self.env.current_state(self.obs[-1], 0, 1)])
         side = 'A'
         for n in range(self.nsteps):
             counter = n
-            actions, values, states, probs = self.model.step(self.obs, np.ones(1), [], [])
+            actions, values, states, probs = self.model.step(t_obs, np.ones(1), [], [])
             a_dist = np.squeeze(probs)
             a_dist = np.clip(a_dist, 1e-20, 1)
             a_dist = self.softmax_b(a_dist, temp)
@@ -199,7 +200,8 @@ class Runner(object):
         mb_dones = np.asarray(mb_dones, dtype=np.bool).swapaxes(1, 0)
         mb_masks = mb_dones[:, :-1]
         mb_dones = mb_dones[:, 1:]
-        last_values = self.model.value(self.obs, temp, [], []).tolist()
+        t_obs = np.array([self.env.current_state(self.obs[-1], 0, 1)])
+        last_values = self.model.value(t_obs, temp, [], []).tolist()
         # discount/bootstrap off value fn
         for n, (rewards, dones, value) in enumerate(zip(mb_rewards, mb_dones, last_values)):
             rewards = rewards.tolist()
@@ -218,7 +220,8 @@ class Runner(object):
     def test(self, temp):
         self.obs = self.obs * 0
         for n in range(self.nsteps):
-            actions, values, states, probs = self.model.step(self.obs, np.ones(1), self.states, self.dones)
+            t_obs = np.array([self.env.current_state(self.obs[-1], 0, 1)])
+            actions, values, states, probs = self.model.step(t_obs, np.ones(1), self.states, self.dones)
 
             a_dist = np.squeeze(probs)
             a_dist = np.clip(a_dist, 1e-20, 1)
@@ -309,12 +312,12 @@ def train_data_augmentation(obs, states, rewards, masks, actions, values, model,
 
     for i in [1, 2, 3, 4]:
         # rotate counterclockwise
-        print(obs)
+        # print(obs)
         rot_obs = []
         for j in range(len(obs)):
             rot_obs.append(np.array([np.rot90(s, i) for s in obs[j]]))
         rot_obs = np.array(rot_obs)
-        print(rot_obs)
+        # print(rot_obs)
 
         rot_actions = np.array([np.rot90(s, i) for s in actions_in_board])
         new_actions.fill(0)
@@ -435,12 +438,12 @@ def learn(policy, env, seed, nsteps, nstack=4, total_timesteps=int(80e6), vf_coe
             import threading
             env.print_stadistics(threading.get_ident())
 
-        if (update % RUN_TEST < 1000) and (update % RUN_TEST > 0) and (update != 0):
+        if (update % RUN_TEST < 100) and (update % RUN_TEST > 0) and (update != 0):
             # print("Aqui")
             runner.test(np.ones(1))
             temp = (0.8 * np.exp(-(update / TEMP_CTE)) + 0.2) * np.ones(1)
 
-            if ((update % RUN_TEST) == 999):
+            if (update % RUN_TEST) == 99:
                 games_wonAI, games_wonRandom, games_finish_in_draw, illegal_games = env.get_stadistics()
                 summary = tf.Summary()
                 summary.value.add(tag='test/games_wonAI', simple_value=float(games_wonAI))
@@ -495,7 +498,7 @@ def learn(policy, env, seed, nsteps, nstack=4, total_timesteps=int(80e6), vf_coe
                         else:
                             new_obs = item
 
-                    print(new_obs)
+                    # print(new_obs)
                     obs = new_obs
 
                     if data_augmentation:

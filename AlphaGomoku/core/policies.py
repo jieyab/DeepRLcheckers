@@ -171,7 +171,6 @@ class CnnPolicy2(object):
 
 class CnnPolicy_slim_TTT(object):
 
-
     def __init__(self, sess, ob_space, ac_space, nenv, nsteps, nstack, reuse=False):
         nbatch = nenv * nsteps
         nh, nw, nc = ob_space.shape
@@ -184,7 +183,7 @@ class CnnPolicy_slim_TTT(object):
                                 inputs=X, num_outputs=32,
                                 kernel_size=[3, 3], stride=[1, 1], padding='VALID',
                                 weights_regularizer=slim.l2_regularizer(0.01))
-            #conv2 = slim.conv2d(activation_fn=tf.nn.elu,
+            # conv2 = slim.conv2d(activation_fn=tf.nn.elu,
             #                    inputs=conv1, num_outputs=64,
             #                    kernel_size=[2, 2], stride=[1, 1], padding='VALID')
 
@@ -199,7 +198,7 @@ class CnnPolicy_slim_TTT(object):
                                       weights_initializer=normalized_columns_initializer(1.0),
                                       biases_initializer=None,
                                       weights_regularizer=slim.l2_regularizer(0.01))
-        #pi = tf.nn.softmax(pi / TEMP)
+        # pi = tf.nn.softmax(pi / TEMP)
         v0 = vf[:, 0]
         p0 = [pi]
         a0 = sample_without_exploration(pi)
@@ -300,7 +299,7 @@ class CnnPolicy_slim(object):
                                       activation_fn=None,
                                       weights_initializer=normalized_columns_initializer(1.0),
                                       biases_initializer=None)
-        #pi = tf.nn.softmax(pi / TEMP)
+        # pi = tf.nn.softmax(pi / TEMP)
         v0 = vf[:, 0]
         p0 = [pi]
         a0 = sample_without_exploration(pi)
@@ -349,13 +348,13 @@ class CnnPolicy_slim_2(object):
                                       activation_fn=None,
                                       weights_initializer=normalized_columns_initializer(0.01),
                                       biases_initializer=None,
-                                      weights_regularizer =slim.l2_regularizer(0.00005))
+                                      weights_regularizer=slim.l2_regularizer(0.00005))
             vf = slim.fully_connected(hidden, 1,
                                       activation_fn=None,
                                       weights_initializer=normalized_columns_initializer(1.0),
                                       biases_initializer=None,
                                       weights_regularizer=slim.l2_regularizer(0.00005))
-        #pi = tf.nn.softmax(pi / TEMP)
+        # pi = tf.nn.softmax(pi / TEMP)
         v0 = vf[:, 0]
         p0 = [pi]
         a0 = sample_without_exploration(pi)
@@ -382,7 +381,7 @@ class CnnPolicy_slim_2(object):
 
 class CnnPolicy_slim_scope5x5(object):
 
-    def __init__(self, sess, ob_space, ac_space, nenv, nsteps, nstack, scope,reuse=False):
+    def __init__(self, sess, ob_space, ac_space, nenv, nsteps, nstack, scope, reuse=False):
         nbatch = nenv * nsteps
         nh, nw, nc = ob_space.shape
         ob_shape = (nbatch, nh, nw, nc * nstack)
@@ -393,25 +392,24 @@ class CnnPolicy_slim_scope5x5(object):
             conv1 = slim.conv2d(activation_fn=tf.nn.relu,
                                 inputs=X, num_outputs=32,
                                 kernel_size=[4, 4], stride=[1, 1], padding='VALID',
-                                weights_regularizer =slim.l2_regularizer(0.0005))
+                                weights_regularizer=slim.l2_regularizer(0.0005))
             conv2 = slim.conv2d(activation_fn=tf.nn.relu,
                                 inputs=conv1, num_outputs=64,
                                 kernel_size=[2, 2], stride=[1, 1], padding='VALID',
-                                weights_regularizer =slim.l2_regularizer(0.0005))
-
+                                weights_regularizer=slim.l2_regularizer(0.0005))
 
             hidden = slim.fully_connected(slim.flatten(conv2), 512, activation_fn=tf.nn.relu)
             pi = slim.fully_connected(hidden, nact,
                                       activation_fn=None,
                                       weights_initializer=normalized_columns_initializer(0.01),
                                       biases_initializer=None,
-                                      weights_regularizer =slim.l2_regularizer(0.0005))
+                                      weights_regularizer=slim.l2_regularizer(0.0005))
             vf = slim.fully_connected(hidden, 1,
                                       activation_fn=None,
                                       weights_initializer=normalized_columns_initializer(1.0),
                                       biases_initializer=None,
                                       weights_regularizer=slim.l2_regularizer(0.0005))
-        #pi = tf.nn.softmax(pi / TEMP)
+        # pi = tf.nn.softmax(pi / TEMP)
         v0 = vf[:, 0]
         p0 = [pi]
         a0 = sample_without_exploration(pi)
@@ -435,9 +433,10 @@ class CnnPolicy_slim_scope5x5(object):
         self.step = step
         self.value = value
 
+
 class CnnPolicy_slim_scope5x5_1x1(object):
 
-    def __init__(self, sess, ob_space, ac_space, nenv, nsteps, nstack, scope,reuse=False):
+    def __init__(self, sess, ob_space, ac_space, nenv, nsteps, nstack, scope, reuse=False):
         nbatch = nenv * nsteps
         nh, nw, nc = ob_space.shape
         ob_shape = (nbatch, nh, nw, nc * nstack)
@@ -449,30 +448,29 @@ class CnnPolicy_slim_scope5x5_1x1(object):
             conv1 = slim.conv2d(activation_fn=tf.nn.relu,
                                 inputs=X, num_outputs=64,
                                 kernel_size=[4, 4], stride=[1, 1], padding='VALID',
-                                weights_regularizer =slim.l2_regularizer(0.0005))
+                                weights_regularizer=slim.l2_regularizer(0.0005))
             conv2 = slim.conv2d(activation_fn=tf.nn.relu,
                                 inputs=conv1, num_outputs=128,
                                 kernel_size=[2, 2], stride=[1, 1], padding='VALID',
-                                weights_regularizer =slim.l2_regularizer(0.0005))
+                                weights_regularizer=slim.l2_regularizer(0.0005))
 
             conv3 = slim.conv2d(activation_fn=tf.nn.relu,
                                 inputs=conv2, num_outputs=128,
                                 kernel_size=[1, 1], stride=[1, 1], padding='VALID',
                                 weights_regularizer=slim.l2_regularizer(0.0005))
 
-
             hidden = slim.fully_connected(slim.flatten(conv3), 512, activation_fn=tf.nn.relu)
             pi = slim.fully_connected(hidden, nact,
                                       activation_fn=None,
                                       weights_initializer=normalized_columns_initializer(0.01),
                                       biases_initializer=None,
-                                      weights_regularizer =slim.l2_regularizer(0.0005))
+                                      weights_regularizer=slim.l2_regularizer(0.0005))
             vf = slim.fully_connected(hidden, 1,
                                       activation_fn=None,
                                       weights_initializer=normalized_columns_initializer(1.0),
                                       biases_initializer=None,
                                       weights_regularizer=slim.l2_regularizer(0.0005))
-        #pi = tf.nn.softmax(pi / TEMP)
+        # pi = tf.nn.softmax(pi / TEMP)
         v0 = vf[:, 0]
         p0 = [pi]
         a0 = sample_without_exploration(pi)
@@ -497,9 +495,72 @@ class CnnPolicy_slim_scope5x5_1x1(object):
         self.value = value
 
 
+class CnnPolicy_ni(object):
+
+    def __init__(self, sess, ob_space, ac_space, nenv, nsteps, nstack, scope, reuse=False):
+        nbatch = nenv * nsteps
+        nh, nw, nc = ob_space.shape
+        # ob_shape = (nbatch, nh, nw, nc * nstack)
+        nact = ac_space
+
+        self.X = tf.placeholder(tf.float32, shape=[None, 4, nh, nw])
+        self.X_reshaped = tf.reshape(self.X, [-1, nh, nw, 4])
+        self.TEMP = tf.placeholder(tf.float32, 1)
+
+        with tf.variable_scope(scope, reuse=reuse):
+            conv1 = slim.conv2d(activation_fn=tf.nn.relu,
+                                inputs=self.X_reshaped, num_outputs=32,
+                                kernel_size=[3, 3], stride=[1, 1], padding='same')
+            conv2 = slim.conv2d(activation_fn=tf.nn.relu,
+                                inputs=conv1, num_outputs=64,
+                                kernel_size=[3, 3], stride=[1, 1], padding='same')
+            conv3 = slim.conv2d(activation_fn=tf.nn.relu,
+                                inputs=conv2, num_outputs=128,
+                                kernel_size=[3, 3], stride=[1, 1], padding='same')
+
+            action_conv = slim.conv2d(activation_fn=tf.nn.relu,
+                                inputs=conv3, num_outputs=4,
+                                kernel_size=[1, 1], stride=[1, 1], padding='same')
+
+            action_conv_flat = tf.reshape(action_conv, [-1, 4 * nh * nw])
+            hidden = slim.fully_connected(action_conv_flat, nh * nw, activation_fn=tf.nn.relu)
+
+            pi = slim.fully_connected(hidden, nact,
+                                      activation_fn=None,
+                                      weights_initializer=normalized_columns_initializer(0.01),
+                                      biases_initializer=None,
+                                      weights_regularizer=slim.l2_regularizer(0.0005))
+            vf = slim.fully_connected(hidden, 1,
+                                      activation_fn=None,
+                                      weights_initializer=normalized_columns_initializer(1.0),
+                                      biases_initializer=None,
+                                      weights_regularizer=slim.l2_regularizer(0.0005))
+        # pi = tf.nn.softmax(pi / TEMP)
+        v0 = vf[:, 0]
+        p0 = [pi]
+        a0 = sample_without_exploration(pi)
+        self.initial_state = []  # not stateful
+
+        def step(ob, temp, *_args, **_kwargs):
+            a, v, pi = sess.run([a0, v0, p0], {self.X: ob, self.TEMP: temp})
+            return a, v, [], pi
+
+        def value(ob, temp, *_args, **_kwargs):
+            return sess.run(v0, {self.X: ob, self.TEMP: temp})
+
+        def get_pi(ob, *_args, **_kwargs):
+            a, v, pi = sess.run([a0, v0, p0], {self.X: ob})
+            return a, v, [], pi
+
+        self.pi = pi
+        self.vf = vf
+        self.step = step
+        self.value = value
+
+
 class CnnPolicy_slim_scope9x9(object):
 
-    def __init__(self, sess, ob_space, ac_space, nenv, nsteps, nstack, scope,reuse=False):
+    def __init__(self, sess, ob_space, ac_space, nenv, nsteps, nstack, scope, reuse=False):
         nbatch = nenv * nsteps
         nh, nw, nc = ob_space.shape
         ob_shape = (nbatch, nh, nw, nc * nstack)
@@ -510,30 +571,29 @@ class CnnPolicy_slim_scope9x9(object):
             conv1 = slim.conv2d(activation_fn=tf.nn.relu,
                                 inputs=X, num_outputs=64,
                                 kernel_size=[5, 5], stride=[1, 1], padding='VALID',
-                                weights_regularizer =slim.l2_regularizer(0.0005))
+                                weights_regularizer=slim.l2_regularizer(0.0005))
             conv2 = slim.conv2d(activation_fn=tf.nn.relu,
                                 inputs=conv1, num_outputs=128,
                                 kernel_size=[2, 2], stride=[1, 1], padding='VALID',
-                                weights_regularizer =slim.l2_regularizer(0.0005))
+                                weights_regularizer=slim.l2_regularizer(0.0005))
 
             conv3 = slim.conv2d(activation_fn=tf.nn.relu,
                                 inputs=conv2, num_outputs=256,
                                 kernel_size=[2, 2], stride=[1, 1], padding='VALID',
                                 weights_regularizer=slim.l2_regularizer(0.0005))
 
-
             hidden = slim.fully_connected(slim.flatten(conv3), 512, activation_fn=tf.nn.relu)
             pi = slim.fully_connected(hidden, nact,
                                       activation_fn=None,
                                       weights_initializer=normalized_columns_initializer(0.01),
                                       biases_initializer=None,
-                                      weights_regularizer =slim.l2_regularizer(0.0005))
+                                      weights_regularizer=slim.l2_regularizer(0.0005))
             vf = slim.fully_connected(hidden, 1,
                                       activation_fn=None,
                                       weights_initializer=normalized_columns_initializer(1.0),
                                       biases_initializer=None,
                                       weights_regularizer=slim.l2_regularizer(0.0005))
-        #pi = tf.nn.softmax(pi / TEMP)
+        # pi = tf.nn.softmax(pi / TEMP)
         v0 = vf[:, 0]
         p0 = [pi]
         a0 = sample_without_exploration(pi)
@@ -560,7 +620,7 @@ class CnnPolicy_slim_scope9x9(object):
 
 class CnnPolicy_slim_scope9x9_1x1(object):
 
-    def __init__(self, sess, ob_space, ac_space, nenv, nsteps, nstack, scope,reuse=False):
+    def __init__(self, sess, ob_space, ac_space, nenv, nsteps, nstack, scope, reuse=False):
         nbatch = nenv * nsteps
         nh, nw, nc = ob_space.shape
         ob_shape = (nbatch, nh, nw, nc * nstack)
@@ -571,11 +631,11 @@ class CnnPolicy_slim_scope9x9_1x1(object):
             conv1 = slim.conv2d(activation_fn=tf.nn.relu,
                                 inputs=X, num_outputs=64,
                                 kernel_size=[5, 5], stride=[1, 1], padding='VALID',
-                                weights_regularizer =slim.l2_regularizer(0.0005))
+                                weights_regularizer=slim.l2_regularizer(0.0005))
             conv2 = slim.conv2d(activation_fn=tf.nn.relu,
                                 inputs=conv1, num_outputs=128,
                                 kernel_size=[2, 2], stride=[1, 1], padding='VALID',
-                                weights_regularizer =slim.l2_regularizer(0.0005))
+                                weights_regularizer=slim.l2_regularizer(0.0005))
 
             conv3 = slim.conv2d(activation_fn=tf.nn.relu,
                                 inputs=conv2, num_outputs=256,
@@ -587,19 +647,18 @@ class CnnPolicy_slim_scope9x9_1x1(object):
                                 kernel_size=[1, 1], stride=[1, 1], padding='VALID',
                                 weights_regularizer=slim.l2_regularizer(0.0005))
 
-
             hidden = slim.fully_connected(slim.flatten(conv4), 512, activation_fn=tf.nn.relu)
             pi = slim.fully_connected(hidden, nact,
                                       activation_fn=None,
                                       weights_initializer=normalized_columns_initializer(0.01),
                                       biases_initializer=None,
-                                      weights_regularizer =slim.l2_regularizer(0.0005))
+                                      weights_regularizer=slim.l2_regularizer(0.0005))
             vf = slim.fully_connected(hidden, 1,
                                       activation_fn=None,
                                       weights_initializer=normalized_columns_initializer(1.0),
                                       biases_initializer=None,
                                       weights_regularizer=slim.l2_regularizer(0.0005))
-        #pi = tf.nn.softmax(pi / TEMP)
+        # pi = tf.nn.softmax(pi / TEMP)
         v0 = vf[:, 0]
         p0 = [pi]
         a0 = sample_without_exploration(pi)
