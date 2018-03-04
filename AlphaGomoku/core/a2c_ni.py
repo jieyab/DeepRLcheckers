@@ -365,7 +365,7 @@ def train_without_data_augmentation(obs, states, rewards, masks, actions, values
 def learn(policy, env, seed, nsteps, nstack=4, total_timesteps=int(80e6), vf_coef=0.5, ent_coef=0.01,
           max_grad_norm=0.5, lr=7e-4, lrschedule='linear', epsilon=1e-5, alpha=0.99, gamma=0.99, log_interval=1000,
           load_model=False, model_path='', data_augmentation=True, BATCH_SIZE=10,
-          TEMP_CTE=30000, RUN_TEST=5000):
+          TEMP_CTE=30000, RUN_TEST=2000):
     tf.reset_default_graph()
     set_global_seeds(seed)
     print('Data augmentation', data_augmentation)
@@ -431,20 +431,27 @@ def learn(policy, env, seed, nsteps, nstack=4, total_timesteps=int(80e6), vf_coe
 
     nbatch = nenvs * nsteps
     tstart = time.time()
+    games_wonAI, games_wonRandom, games_finish_in_draw, illegal_games, total = 0, 0, 0, 0, 0
 
     for update in range(0, total_timesteps // nbatch + 1):
-        if update % 200 == 0:
+        if update % 100 == 0:
+            for _ in range(50):
+                runner.test(np.ones(1))
+            ai, ran, draw, ill, tot = env.get_stadistics2()
+            games_wonAI += ai
+            games_wonRandom += ran
+            games_finish_in_draw += draw
+            illegal_games += ill
+            total += tot
             print('update: ', update)
             import threading
             env.print_stadistics(threading.get_ident())
 
         if (update % RUN_TEST < 1000) and (update % RUN_TEST > 0) and (update != 0):
             # print("Aqui")
-            runner.test(np.ones(1))
             temp = (0.8 * np.exp(-(update / TEMP_CTE)) + 0.2) * np.ones(1)
 
             if (update % RUN_TEST) == 999:
-                games_wonAI, games_wonRandom, games_finish_in_draw, illegal_games = env.get_stadistics()
                 summary = tf.Summary()
                 summary.value.add(tag='test/games_wonAI', simple_value=float(games_wonAI))
                 summary.value.add(tag='test/games_wonRandom', simple_value=float(games_wonRandom))
@@ -452,10 +459,10 @@ def learn(policy, env, seed, nsteps, nstack=4, total_timesteps=int(80e6), vf_coe
                 summary.value.add(tag='test/illegal_games', simple_value=float(illegal_games))
                 summary_writer.add_summary(summary, update)
 
-                games_wonAI_test_saver.append(games_wonAI)
-                games_wonRandom_test_saver.append(games_wonRandom)
-                games_finish_in_draw_test_saver.append(games_finish_in_draw)
-                illegal_test_games_test_saver.append(illegal_games)
+                games_wonAI_test_saver.append(games_wonAI * 100.0 / total)
+                games_wonRandom_test_saver.append(games_wonRandom * 100.0 / total)
+                games_finish_in_draw_test_saver.append(games_finish_in_draw * 100.0 / total)
+                illegal_test_games_test_saver.append(illegal_games * 100.0 / total)
                 update_test.append(update)
 
                 save_csv(statistics_csv + 'games_wonAI_test.csv', games_wonAI_test_saver)
@@ -464,6 +471,7 @@ def learn(policy, env, seed, nsteps, nstack=4, total_timesteps=int(80e6), vf_coe
                 save_csv(statistics_csv + 'illegal_games_test.csv', illegal_test_games_test_saver)
                 save_csv(statistics_csv + 'update_test.csv', update_test)
 
+                games_wonAI, games_wonRandom, games_finish_in_draw, illegal_games, total = 0, 0, 0, 0, 0
                 summary_writer.flush()
         else:
             obs, states, rewards, masks, actions, values = runner.run(temp)
@@ -535,7 +543,7 @@ def learn(policy, env, seed, nsteps, nstack=4, total_timesteps=int(80e6), vf_coe
                     logger.record_tabular("explained_variance", float(ev))
                     # logger.dump_tabular()
 
-                    games_wonAI, games_wonRandom, games_finish_in_draw, illegal_games = env.get_stadistics()
+                    games_wonAI, games_wonRandom, games_finish_in_draw, illegal_games, _ = env.get_stadistics2()
 
                     summary = tf.Summary()
                     summary.value.add(tag='train/policy_entropy', simple_value=float(policy_entropy))
