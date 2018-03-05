@@ -2,6 +2,7 @@ import time
 
 import joblib
 import numpy as np
+import threading
 import tensorflow as tf
 
 from AlphaGomoku.common import logger
@@ -243,7 +244,7 @@ class Runner(object):
         mb_masks = mb_masks.flatten()
         return mb_obs, mb_states, mb_rewards, mb_masks, mb_actions, mb_values
 
-    def test(self, temp, print_test=False):
+    def test(self, temp, print_test=False, expert=True):
         self.obs = self.obs * 0
         for n in range(self.nsteps):
             t_obs = np.array([self.env.current_state(self.obs[-1], 0, 1)])
@@ -255,7 +256,7 @@ class Runner(object):
             a_dist = a_dist / np.sum(a_dist)
             actions = [np.argmax(a_dist)]
             # print(actions, self.env.get_illegal_moves())
-            obs, rewards, dones, _, illegal = self.env.step_smart(actions, True)
+            obs, rewards, dones, _, illegal = self.env.step_smart(actions, expert)
 
             if print_test:
                 self.show_state(self.obs[-1])
@@ -464,7 +465,7 @@ def learn(policy, env, seed, nsteps, nstack=4, total_timesteps=int(80e6), vf_coe
 
     for update in range(0, total_timesteps // nbatch + 1):
         if update % 100 == 0:
-            print('^ ' * 20)
+            print('^ ' * 15 + 'Test (expert)' + ' ^' * 15)
             print_test = True
             for _ in range(50):
                 print_test = runner.test(np.ones(1), print_test)
@@ -475,9 +476,19 @@ def learn(policy, env, seed, nsteps, nstack=4, total_timesteps=int(80e6), vf_coe
             illegal_games += ill
             total += tot
             print('update: ', update)
-            runner.print_state = True
-            import threading
+            print('^ ' * 15 + 'Test (expert)' + ' ^' * 15)
             env.print_stadistics(threading.get_ident())
+            print('^ ' * 15 + 'Test (expert)' + ' ^' * 15)
+
+            print('* ' * 15 + 'Test (not expert)' + ' *' * 15)
+            print_test = True
+            for _ in range(50):
+                print_test = runner.test(np.ones(1), print_test, False)
+            print('* ' * 15 + 'Test (not expert)' + ' *' * 15)
+            env.print_stadistics(threading.get_ident())
+            print('* ' * 15 + 'Test (not expert)' + ' *' * 15)
+
+            runner.print_state = True
 
         if (update % RUN_TEST < 1000) and (update % RUN_TEST > 0) and (update != 0):
             # print("Aqui")
