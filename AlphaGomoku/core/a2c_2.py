@@ -341,7 +341,7 @@ def learn(policy, env, seed, nsteps, nstack=4, total_timesteps=int(80e6), vf_coe
     counter_stadistics = 0
     parameters = now.strftime("%d-%m-%Y_%H-%M-%S") + "_seed_" + str(
         seed) + "_BATCH_" + str(BATCH_SIZE) + "_TEMP_" + str(TEMP_CTE) + "_DA_" + str(data_augmentation) + "_VF_" + str(
-        vf_coef) + str(policy) + str(np.sqrt(nsteps))+ 'x'+ str(np.sqrt(nsteps))
+        vf_coef) + str(policy) + str(np.sqrt(nsteps))+ 'x'+ str(np.sqrt(nsteps)) + 'expert' + str(expert)
     statistics_path = "../statistics/random/"
     BATCH_SIZE = np.sqrt(nsteps) * BATCH_SIZE
     model_path_load = model_path
