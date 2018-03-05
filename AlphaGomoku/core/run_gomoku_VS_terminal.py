@@ -3,8 +3,8 @@ import sys
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '../../'))
 from AlphaGomoku.core.AI_vs_AI_2 import learn
-from AlphaGomoku.core.policies import CnnPolicy_slim_scope5x5, CnnPolicy_slim_scope5x5_1x1, CnnPolicy_slim_scope9x9, \
-    CnnPolicy_slim_scope9x9_1x1
+from AlphaGomoku.core.policies import CnnPolicy_slim_scope5x5, CnnPolicy_slim_scope5x5_1x1, CnnPolicy_slim_scope5x5_3, \
+    CnnPolicy_slim_scope5x5_3_1x1
 from AlphaGomoku.games.tic_tac_toe_x_2 import TicTacToeXGameSpec
 
 if __name__ == '__main__':
@@ -15,9 +15,9 @@ if __name__ == '__main__':
     elif policy_comand == 2:
         policy_fn = CnnPolicy_slim_scope5x5_1x1
     elif policy_comand == 3:
-        policy_fn = CnnPolicy_slim_scope9x9
+        policy_fn = CnnPolicy_slim_scope5x5_3
     elif policy_comand == 4:
-        policy_fn = CnnPolicy_slim_scope9x9_1x1
+        policy_fn = CnnPolicy_slim_scope5x5_3_1x1
     size_board = int(sys.argv[2])
     winning_length = int(sys.argv[3])
     NUMBER_OF_MODELS = int(sys.argv[4])
