@@ -496,7 +496,6 @@ class CnnPolicy_slim_scope5x5_1x1(object):
 
 
 class CnnPolicy_ni(object):
-
     def __init__(self, sess, ob_space, ac_space, nenv, nsteps, nstack, scope, reuse=False):
         nbatch = nenv * nsteps
         nh, nw, nc = ob_space.shape
@@ -519,22 +518,28 @@ class CnnPolicy_ni(object):
                                 kernel_size=[3, 3], stride=[1, 1], padding='same')
 
             action_conv = slim.conv2d(activation_fn=tf.nn.relu,
-                                inputs=conv3, num_outputs=4,
-                                kernel_size=[1, 1], stride=[1, 1], padding='same')
+                                      inputs=conv3, num_outputs=4,
+                                      kernel_size=[1, 1], stride=[1, 1], padding='same')
 
             action_conv_flat = tf.reshape(action_conv, [-1, 4 * nh * nw])
-            hidden = slim.fully_connected(action_conv_flat, nh * nw, activation_fn=tf.nn.relu)
+            pi = tf.layers.dense(action_conv_flat, nh * nw, activation=tf.nn.softmax)
 
-            pi = slim.fully_connected(hidden, nact,
-                                      activation_fn=None,
-                                      weights_initializer=normalized_columns_initializer(0.01),
-                                      biases_initializer=None,
-                                      weights_regularizer=slim.l2_regularizer(0.0005))
-            vf = slim.fully_connected(hidden, 1,
-                                      activation_fn=None,
-                                      weights_initializer=normalized_columns_initializer(1.0),
-                                      biases_initializer=None,
-                                      weights_regularizer=slim.l2_regularizer(0.0005))
+            eval_conv = tf.layers.conv2d(inputs=conv3, filters=2, kernel_size=[1, 1],
+                                         padding="same", activation=tf.nn.relu)
+            eval_conv_flat = tf.reshape(eval_conv, [-1, 2 * nh * nw])
+            conv_fc = tf.layers.dense(inputs=eval_conv_flat, units=nh * nw, activation=tf.nn.relu)
+            vf = tf.layers.dense(inputs=conv_fc, units=1, activation=tf.nn.tanh)
+
+            # pi = slim.fully_connected(pi, nact,
+            #                           activation_fn=None,
+            #                           weights_initializer=normalized_columns_initializer(0.01),
+            #                           biases_initializer=None,
+            #                           weights_regularizer=slim.l2_regularizer(0.0005))
+            # vf = slim.fully_connected(pi, 1,
+            #                           activation_fn=None,
+            #                           weights_initializer=normalized_columns_initializer(1.0),
+            #                           biases_initializer=None,
+            #                           weights_regularizer=slim.l2_regularizer(0.0005))
         # pi = tf.nn.softmax(pi / TEMP)
         v0 = vf[:, 0]
         p0 = [pi]

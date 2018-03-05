@@ -127,11 +127,10 @@ class Runner(object):
 
     def softmax_b(self, x, temp):
         illegal_moves = self.env.get_illegal_moves()
-        x = np.clip(x, 1e-20, 80.0)
+        # x = np.clip(x, 1e-20, 80.0)
         x = np.delete(x, illegal_moves)
-        # print(x)
-        x = x / temp
-        x = np.exp(x) / np.sum(np.exp(x), axis=0)
+        # x = x / temp
+        # x = np.exp(x) / np.sum(np.exp(x), axis=0)
         for i in range(len(illegal_moves)):
             x = np.insert(x, illegal_moves[i], 0)
         return x
@@ -140,6 +139,22 @@ class Runner(object):
         x = np.clip(x, 1e-20, 80.0)
         return np.exp(x) / np.sum(np.exp(x), axis=0)
 
+    def show_state(self, state):
+        print('- ' * 15 + 'state' + ' -' * 15)
+        for x in range(len(state)):
+            print("{0:5}".format(x), end='')
+        print('\r\n')
+        for i in range(len(state)):
+            print("{0:2d}".format(i), end='')
+            for j in range(len(state)):
+                if state[i, j, 0] == -1:
+                    print('X'.center(5), end='')
+                elif state[i, j, 0] == 1:
+                    print('O'.center(5), end='')
+                else:
+                    print('_'.center(5), end='')
+            print('\r\n')
+
     def run(self, temp):
         mb_obs, mb_rewards, mb_actions, mb_values, mb_dones = [], [], [], [], []
         mb_states = self.states
@@ -147,14 +162,21 @@ class Runner(object):
         t_obs = np.array([self.env.current_state(self.obs[-1], 0, 1)])
         side = 'A'
         for n in range(self.nsteps):
+            # self.show_state(self.obs[-1])
             counter = n
             actions, values, states, probs = self.model.step(t_obs, np.ones(1), [], [])
+            # print('value', values)
+            # print('prob', probs)
             a_dist = np.squeeze(probs)
-            a_dist = np.clip(a_dist, 1e-20, 1)
+            # a_dist = np.clip(a_dist, 1e-20, 1)
             a_dist = self.softmax_b(a_dist, temp)
+            # print(a_dist)
             a_dist = a_dist / np.sum(a_dist)
+            # print(a_dist)
             a = np.random.choice(a_dist, p=a_dist)
             actions = [np.argmax(a_dist == a)]
+            # actions = [np.argmax(a_dist)]
+            # print('action', actions)
 
             mb_obs.append(np.copy(self.obs))
 
@@ -224,7 +246,7 @@ class Runner(object):
             actions, values, states, probs = self.model.step(t_obs, np.ones(1), self.states, self.dones)
 
             a_dist = np.squeeze(probs)
-            a_dist = np.clip(a_dist, 1e-20, 1)
+            # a_dist = np.clip(a_dist, 1e-20, 1)
             a_dist = self.softmax_b(a_dist, temp)
             a_dist = a_dist / np.sum(a_dist)
             actions = [np.argmax(a_dist)]
