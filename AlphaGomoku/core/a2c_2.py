@@ -141,7 +141,7 @@ class Runner(object):
         x = np.clip(x, 1e-20, 80.0)
         return np.exp(x) / np.sum(np.exp(x), axis=0)
 
-    def run(self, temp):
+    def run(self, temp,expert):
         mb_obs, mb_rewards, mb_actions, mb_values, mb_dones = [], [], [], [], []
         mb_states = self.states
         self.obs = self.obs * 0
@@ -159,7 +159,7 @@ class Runner(object):
             mb_actions.append(actions)
             mb_values.append(values)
             mb_dones.append(self.dones)
-            obs, rewards, dones, _, illegal = self.env.step_smart(actions, False)
+            obs, rewards, dones, _, illegal = self.env.step_smart(actions, expert)
             if illegal:
                 counter = 0
                 mb_obs, mb_rewards, mb_actions, mb_values, mb_dones = [], [], [], [], []
@@ -203,7 +203,7 @@ class Runner(object):
         mb_masks = mb_masks.flatten()
         return mb_obs, mb_states, mb_rewards, mb_masks, mb_actions, mb_values
 
-    def test(self, temp):
+    def test(self, temp, expert):
         self.obs = self.obs * 0
         for n in range(self.nsteps):
             actions, values, states, probs = self.model.step(self.obs, np.ones(1), self.states, self.dones)
@@ -214,7 +214,7 @@ class Runner(object):
             a_dist = a_dist / np.sum(a_dist)
             actions = [np.argmax(a_dist)]
             # print(actions, self.env.get_illegal_moves())
-            obs, rewards, dones, _, illegal = self.env.step_smart(actions, False)
+            obs, rewards, dones, _, illegal = self.env.step_smart(actions, expert)
 
             # print(illegal, )
             self.obs = obs
@@ -325,7 +325,7 @@ def train_without_data_augmentation(obs, states, rewards, masks, actions, values
 def learn(policy, env, seed, nsteps, nstack=4, total_timesteps=int(80e6), vf_coef=0.5, ent_coef=0.01,
           max_grad_norm=0.5, lr=7e-4, lrschedule='linear', epsilon=1e-5, alpha=0.99, gamma=0.99, log_interval=1000,
           load_model=False, model_path='', data_augmentation=True, BATCH_SIZE=10,
-          TEMP_CTE=30000, RUN_TEST=5000):
+          TEMP_CTE=30000, RUN_TEST=5000, expert=True):
 
 
     tf.reset_default_graph()
@@ -399,7 +399,7 @@ def learn(policy, env, seed, nsteps, nstack=4, total_timesteps=int(80e6), vf_coe
             env.print_stadistics(threading.get_ident())
         if (update % RUN_TEST < 1000) and (update % RUN_TEST > 0) and (update != 0):
             # print("Aqui")
-            runner.test(np.ones(1))
+            runner.test(np.ones(1), expert)
             temp = (0.8 * np.exp(-(update / TEMP_CTE)) + 0.2) * np.ones(1)
 
 
@@ -426,7 +426,7 @@ def learn(policy, env, seed, nsteps, nstack=4, total_timesteps=int(80e6), vf_coe
 
                 summary_writer.flush()
         else:
-            obs, states, rewards, masks, actions, values = runner.run(temp)
+            obs, states, rewards, masks, actions, values = runner.run(temp,expert)
             # print('obs',obs,'actions',actions)
             # print('values',values,'rewards',rewards,)
 
