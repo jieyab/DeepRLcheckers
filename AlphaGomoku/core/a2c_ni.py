@@ -93,6 +93,7 @@ class Model(object):
 
 class Runner(object):
     def __init__(self, env, model, nsteps=5, nstack=4, gamma=0.7):
+        self.print_state = False
         self.env = env
         self.model = model
         nh, nw, nc = env.observation_space.shape
@@ -162,7 +163,8 @@ class Runner(object):
         t_obs = np.array([self.env.current_state(self.obs[-1], 0, 1)])
         side = 'A'
         for n in range(self.nsteps):
-            # self.show_state(self.obs[-1])
+            if self.print_state:
+                self.show_state(self.obs[-1])
             counter = n
             actions, values, states, probs = self.model.step(t_obs, np.ones(1), [], [])
             # print('value', values)
@@ -172,11 +174,12 @@ class Runner(object):
             a_dist = self.softmax_b(a_dist, temp)
             # print(a_dist)
             a_dist = a_dist / np.sum(a_dist)
-            # print(a_dist)
             a = np.random.choice(a_dist, p=a_dist)
             actions = [np.argmax(a_dist == a)]
+            if self.print_state:
+                print(a_dist)
+                print('action', actions)
             # actions = [np.argmax(a_dist)]
-            # print('action', actions)
 
             mb_obs.append(np.copy(self.obs))
 
@@ -210,6 +213,7 @@ class Runner(object):
             else:
                 side = 'A'
 
+        self.print_state = False
         # for ob in mb_obs:
         #     print(ob[0, :, :, 0])
         mb_dones.append(self.dones)
@@ -239,7 +243,7 @@ class Runner(object):
         mb_masks = mb_masks.flatten()
         return mb_obs, mb_states, mb_rewards, mb_masks, mb_actions, mb_values
 
-    def test(self, temp):
+    def test(self, temp, print_test=False):
         self.obs = self.obs * 0
         for n in range(self.nsteps):
             t_obs = np.array([self.env.current_state(self.obs[-1], 0, 1)])
@@ -253,11 +257,14 @@ class Runner(object):
             # print(actions, self.env.get_illegal_moves())
             obs, rewards, dones, _, illegal = self.env.step_smart(actions, True)
 
+            if print_test:
+                self.show_state(self.obs[-1])
             # print(illegal, )
             self.obs = obs
 
             if dones[0] or illegal:
                 break
+        return False
 
     def put_in_batch_normally(self, obs, states, reward, masks, actions, values):
         size = len(self.batch)
@@ -457,8 +464,10 @@ def learn(policy, env, seed, nsteps, nstack=4, total_timesteps=int(80e6), vf_coe
 
     for update in range(0, total_timesteps // nbatch + 1):
         if update % 100 == 0:
+            print('^ ' * 20)
+            print_test = True
             for _ in range(50):
-                runner.test(np.ones(1))
+                print_test = runner.test(np.ones(1), print_test)
             ai, ran, draw, ill, tot = env.get_stadistics2()
             games_wonAI += ai
             games_wonRandom += ran
@@ -466,6 +475,7 @@ def learn(policy, env, seed, nsteps, nstack=4, total_timesteps=int(80e6), vf_coe
             illegal_games += ill
             total += tot
             print('update: ', update)
+            runner.print_state = True
             import threading
             env.print_stadistics(threading.get_ident())
 
