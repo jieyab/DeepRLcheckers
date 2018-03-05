@@ -836,6 +836,7 @@ class TicTacToeXGameSpec(BaseGameSpec):
             # print(self.board_state[0, :, :, 0])
             self.board_state = _new_board(self._board_size)
             self.print = True
+
             # if (((self.games_wonAI + self.games_wonRandom + self.games_finish_in_draw + self.illegal_games) % 999 == 0) and self.print):
             # self.print_stadistics()
 
