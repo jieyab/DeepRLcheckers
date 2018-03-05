@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --time=20:00:00 #This is one hour
+#SBATCH --time=3:00:00 #This is one hour
 #SBATCH --mail-type=BEGIN,END
 #SBATCH --mail-user=adrianalvarez15@gmail.com
 #SBATCH --output=job-%j.log
