@@ -387,7 +387,6 @@ class CnnPolicy_slim_scope5x5(object):
         ob_shape = (nbatch, nh, nw, nc * nstack)
         nact = ac_space
         X = tf.placeholder(tf.float32, ob_shape)  # obs
-        X = X+1.1/2.2
         TEMP = tf.placeholder(tf.float32, 1)
         with tf.variable_scope(scope, reuse=reuse):
             conv1 = slim.conv2d(activation_fn=tf.nn.relu,
@@ -444,7 +443,6 @@ class CnnPolicy_slim_scope5x5_1x1(object):
         print(ob_shape)
         nact = ac_space
         X = tf.placeholder(tf.float32, ob_shape)  # obs
-        X = X+1.1/2.2
         TEMP = tf.placeholder(tf.float32, 1)
         with tf.variable_scope(scope, reuse=reuse):
             conv1 = slim.conv2d(activation_fn=tf.nn.relu,
@@ -505,7 +503,6 @@ class CnnPolicy_slim_scope5x5_3_1x1(object):
         print(ob_shape)
         nact = ac_space
         X = tf.placeholder(tf.float32, ob_shape)  # obs
-        X = X+1.1/2.2
         TEMP = tf.placeholder(tf.float32, 1)
         with tf.variable_scope(scope, reuse=reuse):
             conv1 = slim.conv2d(activation_fn=tf.nn.relu,
@@ -566,7 +563,6 @@ class CnnPolicy_slim_scope5x5_3(object):
         print(ob_shape)
         nact = ac_space
         X = tf.placeholder(tf.float32, ob_shape)  # obs
-        X = X+1.1/2.2
         TEMP = tf.placeholder(tf.float32, 1)
         with tf.variable_scope(scope, reuse=reuse):
             conv1 = slim.conv2d(activation_fn=tf.nn.relu,
