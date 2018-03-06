@@ -228,3 +228,17 @@ class policy_4x4_1x1_2x2_1x1_features(object):
         def step(ob, temp, *_args, **_kwargs):
             a, v, pi = sess.run([a0, v0, p0], {X: ob, TEMP: temp})
             return a, v, [], pi
+
+        def value(ob, temp, *_args, **_kwargs):
+            return sess.run(v0, {X: ob, TEMP: temp})
+
+        def get_pi(ob, *_args, **_kwargs):
+            a, v, pi = sess.run([a0, v0, p0], {X: ob})
+            return a, v, [], pi
+
+        self.X = X
+        self.TEMP = TEMP
+        self.pi = pi
+        self.vf = vf
+        self.step = step
+        self.value = value
