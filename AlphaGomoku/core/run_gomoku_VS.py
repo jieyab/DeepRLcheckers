@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from AlphaGomoku.core.AI_vs_AI_2 import learn
-from AlphaGomoku.core.policies import CnnPolicy_slim_scope5x5, CnnPolicy_slim_scope5x5_1x1,CnnPolicy_slim_scope9x9_1x1, CnnPolicy_slim_scope9x9_1x1
+from AlphaGomoku.core.policies import policy_4x4_2x2, policy_4x4_2x2_1x1, policy_4x4_1x1_2x2_1x1, policy_4x4_1x1_2x2_1x1_features
 from AlphaGomoku.games.tic_tac_toe_x_2 import TicTacToeXGameSpec
 
 
@@ -9,7 +9,7 @@ if __name__ == '__main__':
     policy_fn = CnnPolicy_slim_scope5x5_1x1
     size_board = 5
     winning_length = 4
-    NUMBER_OF_MODELS = 4
+    NUMBER_OF_MODELS = 2
     BATCH_SIZE = 256
     seed = 10
     print(size_board,winning_length,NUMBER_OF_MODELS,policy_fn)

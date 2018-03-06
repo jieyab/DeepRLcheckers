@@ -673,7 +673,7 @@ def learn(policy, env, seed, nsteps, nstack=4, total_timesteps=int(80e6), vf_coe
 
     CHANGE_PLAYER = 4000
     NUMBER_TEST = 1000
-    TEMP_CTE = 10000
+    TEMP_CTE = 20000
     counter_stadistics = 0
     temp = np.ones(1)
 
