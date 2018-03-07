@@ -49,10 +49,11 @@ class Model(object):
             grads, grad_norm = tf.clip_by_global_norm(grads, max_grad_norm)
         grads = list(zip(grads, params))
         #trainer = tf.train.RMSPropOptimizer(learning_rate=LR, decay=alpha, epsilon=epsilon)
-        trainer = tf.train.AdamOptimizer(learning_rate=0.001)
+        print(lr)
+        trainer = tf.train.AdamOptimizer(lr)
         _train = trainer.apply_gradients(grads)
 
-        lr = Scheduler(v=lr, nvalues=total_timesteps, schedule=lrschedule)
+        #lr = Scheduler(v=lr, nvalues=total_timesteps, schedule=lrschedule)
 
         def train(obs, states, rewards, masks, actions, values, temp):
             advs = rewards - values
@@ -660,11 +661,11 @@ def train(temp, runner,model, model_2, data_augmentation,BATCH_SIZE,env,summary_
 
 
 def learn(policy, env, seed, nsteps, nstack=4, total_timesteps=int(80e6), vf_coef=0.5, ent_coef=0.01,
-          max_grad_norm=0.5, lr=1e-3, lrschedule='linear', epsilon=1e-5, alpha=0.99, gamma=0.99, log_interval=1000,
-          load_model=False, model_path='', data_augmentation=True, BATCH_SIZE=100,NUMBER_OF_MODELS=4):
+          max_grad_norm=0.5, lrschedule='linear', epsilon=1e-5, alpha=0.99, gamma=0.99, log_interval=1000,
+          load_model=False, model_path='', data_augmentation=True, BATCH_SIZE=100,NUMBER_OF_MODELS=3, CF=0.01,learning_rate=0.001):
     tf.reset_default_graph()
     set_global_seeds(seed)
-
+    print('CF',CF)
     nenvs = env.num_envs
     ob_space = env.observation_space
     ac_space = env.action_space
@@ -678,7 +679,9 @@ def learn(policy, env, seed, nsteps, nstack=4, total_timesteps=int(80e6), vf_coe
     temp = np.ones(1)
 
     parameters = now.strftime("%d-%m-%Y_%H-%M-%S") + "_seed_" + str(
-        seed) + "_BATCH_" + str(BATCH_SIZE) + "_TEMP_" + str(TEMP_CTE) + "_DA_" + str(data_augmentation) + str(np.sqrt(nsteps))+ 'x'+ str(np.sqrt(nsteps)) +'_num_players_' +str(NUMBER_OF_MODELS) + str(policy) + 'works'
+        seed) + "_BATCH_" + str(BATCH_SIZE) + "_TEMP_" + str(TEMP_CTE) + "_DA_" + str(data_augmentation) + str(
+        np.sqrt(nsteps)) + 'x' + str(np.sqrt(nsteps)) + '_num_players_' + str(NUMBER_OF_MODELS) + str(
+        policy) + 'works' + '_CF_' + str(CF) + '_lr_' + str(learning_rate)
     statistics_path = ('../statistics/AI_vs_AI/' + parameters )
 
     models_path= statistics_path + '/model/'
@@ -688,7 +691,7 @@ def learn(policy, env, seed, nsteps, nstack=4, total_timesteps=int(80e6), vf_coe
     summary_writer = tf.summary.FileWriter(statistics_path)
 
     models = create_models(NUMBER_OF_MODELS,policy, ob_space, ac_space, nenvs, nsteps, nstack, num_procs, ent_coef, vf_coef,
-                           max_grad_norm, lr, alpha, epsilon, total_timesteps, lrschedule)
+                           max_grad_norm, learning_rate, alpha, epsilon, total_timesteps, lrschedule)
 
     BATCH_SIZE = np.sqrt(nsteps) * BATCH_SIZE
 
@@ -722,7 +725,7 @@ def learn(policy, env, seed, nsteps, nstack=4, total_timesteps=int(80e6), vf_coe
         if update % CHANGE_PLAYER == 0 and update != 0:
             env.print_stadistics_vs()
             print_tensorboard_training_score(summary_writer, update, env)
-            temp = (0.5 * np.exp(-(update / TEMP_CTE)) + 0.01) * np.ones(1)
+            temp = ((1-CF) * np.exp(-(update / TEMP_CTE)) + CF) * np.ones(1)
             print('Testing players, update:', update)
             runner.test(temp, model,NUMBER_TEST,summary_writer, env, update)
             runner.test(temp, model_2,NUMBER_TEST,summary_writer, env, update)
