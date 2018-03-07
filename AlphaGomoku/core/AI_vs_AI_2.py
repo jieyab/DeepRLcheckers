@@ -17,7 +17,7 @@ from AlphaGomoku.core.utils_2 import discount_with_dones
 
 class Model(object):
     def __init__(self, policy,scope, ob_space, ac_space, nenvs, nsteps, nstack, num_procs,
-                 ent_coef=0.1, vf_coef=0.5, max_grad_norm=0.5, lr=7e-4,
+                 ent_coef=0.1, vf_coef=0.5, max_grad_norm=0.5, lr=1e-4,
                  alpha=0.99, epsilon=1e-5, total_timesteps=int(80e6), lrschedule='linear'):
         config = tf.ConfigProto(allow_soft_placement=True,
                                 intra_op_parallelism_threads=num_procs,
@@ -48,8 +48,8 @@ class Model(object):
         if max_grad_norm is not None:
             grads, grad_norm = tf.clip_by_global_norm(grads, max_grad_norm)
         grads = list(zip(grads, params))
-        trainer = tf.train.RMSPropOptimizer(learning_rate=LR, decay=alpha, epsilon=epsilon)
-        #trainer = tf.train.AdamOptimizer(LR)
+        #trainer = tf.train.RMSPropOptimizer(learning_rate=LR, decay=alpha, epsilon=epsilon)
+        trainer = tf.train.AdamOptimizer()
         _train = trainer.apply_gradients(grads)
 
         lr = Scheduler(v=lr, nvalues=total_timesteps, schedule=lrschedule)
@@ -660,7 +660,7 @@ def train(temp, runner,model, model_2, data_augmentation,BATCH_SIZE,env,summary_
 
 
 def learn(policy, env, seed, nsteps, nstack=4, total_timesteps=int(80e6), vf_coef=0.5, ent_coef=0.01,
-          max_grad_norm=0.5, lr=7e-4, lrschedule='linear', epsilon=1e-5, alpha=0.99, gamma=0.99, log_interval=1000,
+          max_grad_norm=0.5, lr=1e-3, lrschedule='linear', epsilon=1e-5, alpha=0.99, gamma=0.99, log_interval=1000,
           load_model=False, model_path='', data_augmentation=True, BATCH_SIZE=100,NUMBER_OF_MODELS=4):
     tf.reset_default_graph()
     set_global_seeds(seed)
@@ -673,7 +673,7 @@ def learn(policy, env, seed, nsteps, nstack=4, total_timesteps=int(80e6), vf_coe
 
     CHANGE_PLAYER = 4000
     NUMBER_TEST = 1000
-    TEMP_CTE = 20000
+    TEMP_CTE = 30000
     counter_stadistics = 0
     temp = np.ones(1)
 
@@ -722,7 +722,7 @@ def learn(policy, env, seed, nsteps, nstack=4, total_timesteps=int(80e6), vf_coe
         if update % CHANGE_PLAYER == 0 and update != 0:
             env.print_stadistics_vs()
             print_tensorboard_training_score(summary_writer, update, env)
-            temp = (0.9 * np.exp(-(update / TEMP_CTE)) + 0.1) * np.ones(1)
+            temp = (0.99 * np.exp(-(update / TEMP_CTE)) + 0.01) * np.ones(1)
             print('Testing players, update:', update)
             runner.test(temp, model,NUMBER_TEST,summary_writer, env, update)
             runner.test(temp, model_2,NUMBER_TEST,summary_writer, env, update)
