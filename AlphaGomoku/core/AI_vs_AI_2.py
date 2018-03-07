@@ -17,7 +17,7 @@ from AlphaGomoku.core.utils_2 import discount_with_dones
 
 class Model(object):
     def __init__(self, policy,scope, ob_space, ac_space, nenvs, nsteps, nstack, num_procs,
-                 ent_coef=0.1, vf_coef=0.5, max_grad_norm=0.5, lr=1e-4,
+                 ent_coef=0.1, vf_coef=0.5, max_grad_norm=0.5, l_rate=1e-4,
                  alpha=0.99, epsilon=1e-5, total_timesteps=int(80e6), lrschedule='linear'):
         config = tf.ConfigProto(allow_soft_placement=True,
                                 intra_op_parallelism_threads=num_procs,
@@ -48,12 +48,13 @@ class Model(object):
         if max_grad_norm is not None:
             grads, grad_norm = tf.clip_by_global_norm(grads, max_grad_norm)
         grads = list(zip(grads, params))
-        #trainer = tf.train.RMSPropOptimizer(learning_rate=LR, decay=alpha, epsilon=epsilon)
-        print(lr)
-        trainer = tf.train.AdamOptimizer(lr)
+        #trainer = tf.train.RMSPropOptimizer(learning_rate=LR, decay=alpha, epsilon=
+        
+        print(l_rate)
+        trainer = tf.train.AdamOptimizer(l_rate)
         _train = trainer.apply_gradients(grads)
-
-        #lr = Scheduler(v=lr, nvalues=total_timesteps, schedule=lrschedule)
+        lr = l_rate
+        lr = Scheduler(v=lr, nvalues=total_timesteps, schedule=lrschedule)
 
         def train(obs, states, rewards, masks, actions, values, temp):
             advs = rewards - values
@@ -563,7 +564,7 @@ def create_models(NUMBER_OF_MODELS,policy, ob_space, ac_space, nenvs, nsteps, ns
 
         models.append(Model(policy=policy, scope=model_name, ob_space=ob_space, ac_space=ac_space, nenvs=nenvs, nsteps=np.sqrt(nsteps), nstack=nstack,
                     num_procs=num_procs, ent_coef=ent_coef, vf_coef=vf_coef,
-                    max_grad_norm=max_grad_norm, lr=lr, alpha=alpha, epsilon=epsilon, total_timesteps=total_timesteps,
+                    max_grad_norm=max_grad_norm, l_rate=lr, alpha=alpha, epsilon=epsilon, total_timesteps=total_timesteps,
                     lrschedule=lrschedule))
 
 
