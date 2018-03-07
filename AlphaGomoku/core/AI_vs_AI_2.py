@@ -49,7 +49,7 @@ class Model(object):
             grads, grad_norm = tf.clip_by_global_norm(grads, max_grad_norm)
         grads = list(zip(grads, params))
         #trainer = tf.train.RMSPropOptimizer(learning_rate=LR, decay=alpha, epsilon=epsilon)
-        trainer = tf.train.AdamOptimizer()
+        trainer = tf.train.AdamOptimizer(learning_rate=0.001)
         _train = trainer.apply_gradients(grads)
 
         lr = Scheduler(v=lr, nvalues=total_timesteps, schedule=lrschedule)
@@ -673,7 +673,7 @@ def learn(policy, env, seed, nsteps, nstack=4, total_timesteps=int(80e6), vf_coe
 
     CHANGE_PLAYER = 4000
     NUMBER_TEST = 1000
-    TEMP_CTE = 30000
+    TEMP_CTE = 10000
     counter_stadistics = 0
     temp = np.ones(1)
 
@@ -722,7 +722,7 @@ def learn(policy, env, seed, nsteps, nstack=4, total_timesteps=int(80e6), vf_coe
         if update % CHANGE_PLAYER == 0 and update != 0:
             env.print_stadistics_vs()
             print_tensorboard_training_score(summary_writer, update, env)
-            temp = (0.99 * np.exp(-(update / TEMP_CTE)) + 0.01) * np.ones(1)
+            temp = (0.5 * np.exp(-(update / TEMP_CTE)) + 0.01) * np.ones(1)
             print('Testing players, update:', update)
             runner.test(temp, model,NUMBER_TEST,summary_writer, env, update)
             runner.test(temp, model_2,NUMBER_TEST,summary_writer, env, update)
