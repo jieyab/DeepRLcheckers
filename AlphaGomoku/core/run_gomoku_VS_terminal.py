@@ -18,18 +18,28 @@ if __name__ == '__main__':
     elif policy_comand == 4:
         policy_fn = policy_4x4_1x1_2x2_1x1_features
     size_board = int(sys.argv[2])
+    data = int(sys.argv[3])
+
+    if data == 0:
+        data_augmentation = False
+    else:
+        data_augmentation = True
+
+
     winning_length = 4
-    NUMBER_OF_MODELS = 2
+
     BATCH_SIZE = 128
 
-    learning_rate = float(sys.argv[3])
-    CF = float(sys.argv[4])
-    seed = int(sys.argv[5])
+    learning_rate = float(sys.argv[4])
+    CF = 0.01
+    NUMBER_OF_MODELS = int(sys.argv[5])
+    BATCH_SIZE = int(sys.argv[6])
+    seed = int(sys.argv[7])
 
     print('________________________policy', policy_fn, 'size_board', size_board, 'winning_length', winning_length, 'NUMBER_OF_MODELS',
           NUMBER_OF_MODELS, 'batch size', BATCH_SIZE, 'seed', seed)
     env = TicTacToeXGameSpec(size_board, winning_length)
     learn(policy_fn, env, nsteps=size_board * size_board
           , nstack=1, seed=seed, total_timesteps=1000000000, load_model=False, model_path='./models/tic_tac_toe.cpkt',
-          data_augmentation=True, BATCH_SIZE=BATCH_SIZE, NUMBER_OF_MODELS=NUMBER_OF_MODELS, CF=CF,learning_rate=learning_rate)
+          data_augmentation=data_augmentation, BATCH_SIZE=BATCH_SIZE, NUMBER_OF_MODELS=NUMBER_OF_MODELS, CF=CF,learning_rate=learning_rate)
     env.close()
